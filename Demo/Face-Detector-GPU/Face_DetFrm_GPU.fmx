@@ -1,0 +1,85 @@
+object Face_DetForm: TFace_DetForm
+  Left = 0
+  Top = 0
+  Caption = 'Face detector (GPU).'
+  ClientHeight = 695
+  ClientWidth = 1301
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Lines.Strings = (
+      'Face-Detector-GPU'#30340#25216#26415#25351#26631
+      #25805#20316#31995#32479#65306'windows,linux'
+      #22788#29702#22120#26550#26500#65306'intel x86,x64'
+      'IOT'#65306#19981#25903#25345
+      #20869#23384#38656#27714#65306#20302
+      'GPU'#38656#27714#65306#26159
+      #24182#34892#65306#25903#25345
+      #25968#25454#20860#23481#65306#20840#20860#23481
+      #23454#26102#24615#65306#39640
+      ''
+      'GPU'#30340#20154#33080#26816#27979#22120#65292#26159#22806#32622#30340#65292#38656#35201#33258#34892#21152#36733#26469#33258'ZAI'#30340'Demo'#25968#25454
+      #26377#29305#27530#38656#35201#65292#21487#20351#29992'DNN-OD'#30340#26041#26696#33258#34892#35757#32451
+      ''
+      'by.qq600585')
+    Anchors = [akTop, akRight, akBottom]
+    Position.X = 704.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 585.000000000000000000
+    Size.Height = 660.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Viewport.Width = 581.000000000000000000
+    Viewport.Height = 656.000000000000000000
+  end
+  object PaintBox1: TPaintBox
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    ClipChildren = True
+    Position.X = 16.000000000000000000
+    Position.Y = 56.000000000000000000
+    Size.Width = 681.000000000000000000
+    Size.Height = 620.000000000000000000
+    Size.PlatformDefault = False
+    OnMouseDown = PaintBox1MouseDown
+    OnMouseMove = PaintBox1MouseMove
+    OnMouseUp = PaintBox1MouseUp
+    OnMouseWheel = PaintBox1MouseWheel
+    OnPaint = PaintBox1Paint
+  end
+  object AddPicButton: TButton
+    Position.X = 16.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 249.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    Text = 'Add picture('#21487#20197#22810#36873')'
+    OnClick = AddPicButtonClick
+  end
+  object Scale2CheckBox: TCheckBox
+    IsChecked = True
+    Position.X = 280.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 177.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 6
+    Text = #31934#30830#26816#27979'('#36895#24230#24930')'
+  end
+  object OpenDialog: TOpenDialog
+    Options = [ofHideReadOnly, ofAllowMultiSelect, ofEnableSizing]
+    Left = 640
+    Top = 328
+  end
+  object Timer1: TTimer
+    Interval = 10
+    OnTimer = Timer1Timer
+    Left = 592
+    Top = 424
+  end
+end

@@ -1,0 +1,204 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{5ABD8102-41DB-4A8F-B5B6-C2828A627FCD}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="SVM-OD\SVM_OD.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="SVM-OD-Traiing-API-ImgDataset\SVM_OD_TrainingAPI_ImgDataset_Demo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="SVM-OD-Traiing-API-XMLDataset\SVM_OD_TrainingAPI_XML_Demo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="SVM-OD-Traiing-API-ImgMat\SVM_OD_TrainingAPI_ImgMat_Demo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="ShapePredictor\ShapePredictor.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="ShapePredictor-Training-API\SP_TrainingAPI_ImgMat_Demo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Face-Detector-CPU\Face_Det_CPU.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Face-Detector-GPU\Face_Det_GPU.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Face-Alignment\Face_Alignment.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Face-Recognition-CPU\Face_Rec_cpu.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Face-Recognition-GPU\Face_Rec_GPU.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Face-Recognition-Training-API-ImageMatrix\Face_Metric_ResNet_TrainingAPI_ImgMat_Demo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="DNN-OD\DNN_OD.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Resnet-144Layer-ImageClassifier\ResNetImgClassifier.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="VideoTracker\VideoTrackerAndSoftDecode.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="SVM_OD">
+        <MSBuild Projects="SVM-OD\SVM_OD.dproj"/>
+    </Target>
+    <Target Name="SVM_OD:Clean">
+        <MSBuild Projects="SVM-OD\SVM_OD.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="SVM_OD:Make">
+        <MSBuild Projects="SVM-OD\SVM_OD.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="SVM_OD_TrainingAPI_ImgDataset_Demo">
+        <MSBuild Projects="SVM-OD-Traiing-API-ImgDataset\SVM_OD_TrainingAPI_ImgDataset_Demo.dproj"/>
+    </Target>
+    <Target Name="SVM_OD_TrainingAPI_ImgDataset_Demo:Clean">
+        <MSBuild Projects="SVM-OD-Traiing-API-ImgDataset\SVM_OD_TrainingAPI_ImgDataset_Demo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="SVM_OD_TrainingAPI_ImgDataset_Demo:Make">
+        <MSBuild Projects="SVM-OD-Traiing-API-ImgDataset\SVM_OD_TrainingAPI_ImgDataset_Demo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="SVM_OD_TrainingAPI_XML_Demo">
+        <MSBuild Projects="SVM-OD-Traiing-API-XMLDataset\SVM_OD_TrainingAPI_XML_Demo.dproj"/>
+    </Target>
+    <Target Name="SVM_OD_TrainingAPI_XML_Demo:Clean">
+        <MSBuild Projects="SVM-OD-Traiing-API-XMLDataset\SVM_OD_TrainingAPI_XML_Demo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="SVM_OD_TrainingAPI_XML_Demo:Make">
+        <MSBuild Projects="SVM-OD-Traiing-API-XMLDataset\SVM_OD_TrainingAPI_XML_Demo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="SVM_OD_TrainingAPI_ImgMat_Demo">
+        <MSBuild Projects="SVM-OD-Traiing-API-ImgMat\SVM_OD_TrainingAPI_ImgMat_Demo.dproj"/>
+    </Target>
+    <Target Name="SVM_OD_TrainingAPI_ImgMat_Demo:Clean">
+        <MSBuild Projects="SVM-OD-Traiing-API-ImgMat\SVM_OD_TrainingAPI_ImgMat_Demo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="SVM_OD_TrainingAPI_ImgMat_Demo:Make">
+        <MSBuild Projects="SVM-OD-Traiing-API-ImgMat\SVM_OD_TrainingAPI_ImgMat_Demo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ShapePredictor">
+        <MSBuild Projects="ShapePredictor\ShapePredictor.dproj"/>
+    </Target>
+    <Target Name="ShapePredictor:Clean">
+        <MSBuild Projects="ShapePredictor\ShapePredictor.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ShapePredictor:Make">
+        <MSBuild Projects="ShapePredictor\ShapePredictor.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="SP_TrainingAPI_ImgMat_Demo">
+        <MSBuild Projects="ShapePredictor-Training-API\SP_TrainingAPI_ImgMat_Demo.dproj"/>
+    </Target>
+    <Target Name="SP_TrainingAPI_ImgMat_Demo:Clean">
+        <MSBuild Projects="ShapePredictor-Training-API\SP_TrainingAPI_ImgMat_Demo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="SP_TrainingAPI_ImgMat_Demo:Make">
+        <MSBuild Projects="ShapePredictor-Training-API\SP_TrainingAPI_ImgMat_Demo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Face_Det_CPU">
+        <MSBuild Projects="Face-Detector-CPU\Face_Det_CPU.dproj"/>
+    </Target>
+    <Target Name="Face_Det_CPU:Clean">
+        <MSBuild Projects="Face-Detector-CPU\Face_Det_CPU.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Face_Det_CPU:Make">
+        <MSBuild Projects="Face-Detector-CPU\Face_Det_CPU.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Face_Det_GPU">
+        <MSBuild Projects="Face-Detector-GPU\Face_Det_GPU.dproj"/>
+    </Target>
+    <Target Name="Face_Det_GPU:Clean">
+        <MSBuild Projects="Face-Detector-GPU\Face_Det_GPU.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Face_Det_GPU:Make">
+        <MSBuild Projects="Face-Detector-GPU\Face_Det_GPU.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Face_Alignment">
+        <MSBuild Projects="Face-Alignment\Face_Alignment.dproj"/>
+    </Target>
+    <Target Name="Face_Alignment:Clean">
+        <MSBuild Projects="Face-Alignment\Face_Alignment.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Face_Alignment:Make">
+        <MSBuild Projects="Face-Alignment\Face_Alignment.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Face_Rec_cpu">
+        <MSBuild Projects="Face-Recognition-CPU\Face_Rec_cpu.dproj"/>
+    </Target>
+    <Target Name="Face_Rec_cpu:Clean">
+        <MSBuild Projects="Face-Recognition-CPU\Face_Rec_cpu.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Face_Rec_cpu:Make">
+        <MSBuild Projects="Face-Recognition-CPU\Face_Rec_cpu.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Face_Rec_GPU">
+        <MSBuild Projects="Face-Recognition-GPU\Face_Rec_GPU.dproj"/>
+    </Target>
+    <Target Name="Face_Rec_GPU:Clean">
+        <MSBuild Projects="Face-Recognition-GPU\Face_Rec_GPU.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Face_Rec_GPU:Make">
+        <MSBuild Projects="Face-Recognition-GPU\Face_Rec_GPU.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Face_Metric_ResNet_TrainingAPI_ImgMat_Demo">
+        <MSBuild Projects="Face-Recognition-Training-API-ImageMatrix\Face_Metric_ResNet_TrainingAPI_ImgMat_Demo.dproj"/>
+    </Target>
+    <Target Name="Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean">
+        <MSBuild Projects="Face-Recognition-Training-API-ImageMatrix\Face_Metric_ResNet_TrainingAPI_ImgMat_Demo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make">
+        <MSBuild Projects="Face-Recognition-Training-API-ImageMatrix\Face_Metric_ResNet_TrainingAPI_ImgMat_Demo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="DNN_OD">
+        <MSBuild Projects="DNN-OD\DNN_OD.dproj"/>
+    </Target>
+    <Target Name="DNN_OD:Clean">
+        <MSBuild Projects="DNN-OD\DNN_OD.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="DNN_OD:Make">
+        <MSBuild Projects="DNN-OD\DNN_OD.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ResNetImgClassifier">
+        <MSBuild Projects="Resnet-144Layer-ImageClassifier\ResNetImgClassifier.dproj"/>
+    </Target>
+    <Target Name="ResNetImgClassifier:Clean">
+        <MSBuild Projects="Resnet-144Layer-ImageClassifier\ResNetImgClassifier.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ResNetImgClassifier:Make">
+        <MSBuild Projects="Resnet-144Layer-ImageClassifier\ResNetImgClassifier.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="VideoTrackerAndSoftDecode">
+        <MSBuild Projects="VideoTracker\VideoTrackerAndSoftDecode.dproj"/>
+    </Target>
+    <Target Name="VideoTrackerAndSoftDecode:Clean">
+        <MSBuild Projects="VideoTracker\VideoTrackerAndSoftDecode.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="VideoTrackerAndSoftDecode:Make">
+        <MSBuild Projects="VideoTracker\VideoTrackerAndSoftDecode.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_GPU;Face_Alignment;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;ResNetImgClassifier;VideoTrackerAndSoftDecode"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;ResNetImgClassifier:Clean;VideoTrackerAndSoftDecode:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;ResNetImgClassifier:Make;VideoTrackerAndSoftDecode:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

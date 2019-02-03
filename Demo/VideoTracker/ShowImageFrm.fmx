@@ -1,0 +1,23 @@
+object ShowImageForm: TShowImageForm
+  Left = 0
+  Top = 0
+  Caption = 'Image.'
+  ClientHeight = 490
+  ClientWidth = 923
+  Position = MainFormCenter
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnClose = FormClose
+  OnKeyUp = FormKeyUp
+  DesignerMasterStyle = 0
+  object ImageViewer: TImageViewer
+    Align = Client
+    Size.Width = 923.000000000000000000
+    Size.Height = 490.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Viewport.Width = 919.000000000000000000
+    Viewport.Height = 486.000000000000000000
+  end
+end

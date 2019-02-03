@@ -1,0 +1,98 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  Caption = 'Video Tracker.'
+  ClientHeight = 721
+  ClientWidth = 1554
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Lines.Strings = (
+      'VideoTracker'#30340#25216#26415#25351#26631
+      #25805#20316#31995#32479#65306'ios,android,windows,linux'
+      #22788#29702#22120#26550#26500#65306'intel x86,x64,arm32,arm64'
+      'IOT'#65306#25903#25345
+      #20869#23384#38656#27714#65306#20302
+      'GPU'#38656#27714#65306#20302
+      #24182#34892#65306#25903#25345
+      #25968#25454#20860#23481#65306#20840#20860#23481
+      #23454#26102#24615#65306#20013#39640
+      ''
+      ''
+      #26412'Demo'#28436#31034#20102#24590#26679#22312#35270#39057#20013#26816#27979#23545#35937#65292#28982#21518#65292#36890#36807#26816#27979#26694#20307#65292#38145#23450#23427#65292#24320#22987#36861#36394#38145#23450#30340#30446#26631
+      ''
+      #21482#35201#30446#26631#22312#23631#24149#34987#39318#27425#26816#27979#20986#26469#65292#30446#26631#23601#21487#20197#19968#30452#34987#38145#23450
+      ''
+      #21478#22806#65292'Tracker'#20063#28436#31034#20102#19968#20123#31616#21333#30340#21518#26399#35270#39057#25928#26524#65288#35753'output'#26356#26377#35270#39057#24863#35273#65289
+      ''
+      'by.qq600585'
+      '')
+    Anchors = [akTop, akRight, akBottom]
+    Position.X = 912.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 625.000000000000000000
+    Size.Height = 689.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Viewport.Width = 621.000000000000000000
+    Viewport.Height = 685.000000000000000000
+  end
+  object PaintBox1: TPaintBox
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    Position.X = 8.000000000000000000
+    Position.Y = 56.000000000000000000
+    Size.Width = 897.000000000000000000
+    Size.Height = 649.000000000000000000
+    Size.PlatformDefault = False
+    OnPaint = PaintBox1Paint
+  end
+  object Timer1: TTimer
+    Interval = 10
+    OnTimer = Timer1Timer
+    Left = 736
+    Top = 344
+  end
+  object Tracker_CheckBox: TCheckBox
+    IsChecked = True
+    Position.X = 16.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 81.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 4
+    Text = 'Tracker'
+  end
+  object HistogramEqualizeCheckBox: TCheckBox
+    IsChecked = True
+    Position.X = 96.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 145.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 5
+    Text = 'Histogram Equalize'
+  end
+  object AntialiasCheckBox: TCheckBox
+    Position.X = 256.000000000000000000
+    Position.Y = 24.000000000000000000
+    TabOrder = 6
+    Text = 'Antialias'
+  end
+  object SepiaCheckBox: TCheckBox
+    Position.X = 384.000000000000000000
+    Position.Y = 24.000000000000000000
+    TabOrder = 7
+    Text = 'Sepia'
+  end
+  object SharpenCheckBox: TCheckBox
+    Position.X = 512.000000000000000000
+    Position.Y = 24.000000000000000000
+    TabOrder = 8
+    Text = 'Sharpen'
+  end
+end

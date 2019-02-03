@@ -1,0 +1,90 @@
+object Face_DetForm: TFace_DetForm
+  Left = 0
+  Top = 0
+  Caption = 'Face detector (CPU).'
+  ClientHeight = 676
+  ClientWidth = 1301
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Lines.Strings = (
+      'Face-Detector-CPU'#30340#25216#26415#25351#26631
+      #25805#20316#31995#32479#65306'ios,android,windows,linux'
+      #22788#29702#22120#26550#26500#65306'intel x86,x64,arm32,arm64'
+      'IOT'#65306#25903#25345
+      #20869#23384#38656#27714#65306#20302
+      'GPU'#38656#27714#65306#26080
+      #24182#34892#65306#25903#25345
+      #25968#25454#20860#23481#65306#20840#20860#23481
+      #23454#26102#24615#65306#20013#65292#23454#26102#26816#27979#38656#35201#20248#21270#65292#38656#35201#38477#20302#20998#36776#29575
+      ''
+      'ZAI'#20869#32622#24050#32463#38598#25104#20102#20154#33080#26816#27979#22120#65292#19981#29992#33258#24049#35757#32451#20154#33080#26816#27979#22120
+      #27880#24847#65306'ZAI'#30340#20869#32622'face'#26816#27979#22120#65292#29992'15000'#20010#27491#24120#20154#31867#29305#24449#35757#32451#32780#20986
+      #27880#24847#65306'ZAI'#30340#20869#32622'face'#26816#27979#22120#19981#21253#21547#27531#30142#20154#65292#27531#30142#20154#30340#38754#37096#26816#27979#22120#35831#21442#32771'OD'#26041#26696#33258#34892#35757#32451
+      #27880#24847#65306'ZAI'#30340#20869#32622'face'#26816#27979#22120#19981#21253#21547#20799#31461#65292#20799#31461#30340#38754#37096#26816#27979#22120#35831#21442#32771'OD'#26041#26696#33258#34892#35757#32451
+      ''
+      #27880#24847#65306#33258#34892#35757#32451'face'#26816#27979#22120#65292#22312#38543#38468'Demo'#26377#19975#20154#38754#37096#24211#65292#20351#29992'ImgMatrix_Tool'#24448#37324#38754#28155#21152#26694#20303#30340#20154#33080#21363#21487
+      #35686#21578#65306#23545#19975#20154'face'#24211#37325#24314#21644#35757#32451#24456#33457#26102#38388
+      ''
+      'by.qq600585')
+    Anchors = [akTop, akRight, akBottom]
+    Position.X = 704.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 585.000000000000000000
+    Size.Height = 641.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Viewport.Width = 581.000000000000000000
+    Viewport.Height = 637.000000000000000000
+  end
+  object PaintBox1: TPaintBox
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    ClipChildren = True
+    Position.X = 16.000000000000000000
+    Position.Y = 56.000000000000000000
+    Size.Width = 681.000000000000000000
+    Size.Height = 601.000000000000000000
+    Size.PlatformDefault = False
+    OnMouseDown = PaintBox1MouseDown
+    OnMouseMove = PaintBox1MouseMove
+    OnMouseUp = PaintBox1MouseUp
+    OnMouseWheel = PaintBox1MouseWheel
+    OnPaint = PaintBox1Paint
+  end
+  object AddPicButton: TButton
+    Position.X = 16.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 249.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    Text = 'Add picture('#21487#20197#22810#36873')'
+    OnClick = AddPicButtonClick
+  end
+  object Scale2CheckBox: TCheckBox
+    IsChecked = True
+    Position.X = 280.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 177.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 6
+    Text = #31934#30830#26816#27979'('#36895#24230#24930')'
+  end
+  object OpenDialog: TOpenDialog
+    Options = [ofHideReadOnly, ofAllowMultiSelect, ofEnableSizing]
+    Left = 640
+    Top = 328
+  end
+  object Timer1: TTimer
+    Interval = 10
+    OnTimer = Timer1Timer
+    Left = 592
+    Top = 424
+  end
+end

@@ -1,0 +1,84 @@
+object DNN_OD_Form: TDNN_OD_Form
+  Left = 0
+  Top = 0
+  Caption = 'DNN-OD'
+  ClientHeight = 760
+  ClientWidth = 1486
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object DNN_OD_Button: TButton
+    Position.X = 16.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 217.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    Text = #26816#27979#23545#35937
+    OnClick = DNN_OD_ButtonClick
+  end
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Lines.Strings = (
+      'DNN OD'#25216#26415#25351#26631
+      #25805#20316#31995#32479#65306'windows,linux'
+      #22788#29702#22120#26550#26500#65306'intel x86,x64'
+      'IOT'#65306#19981
+      #20869#23384#38656#27714#65306#20302
+      'GPU'#38656#27714#65306#38656#35201
+      #24182#34892#65306#25903#25345
+      #25968#25454#20860#23481#65306#20840#20860#23481
+      #23454#26102#24615#65306#39640#65292#25903#25345#23454#26102
+      ''
+      #26412'Demo'#24050#32463#21253#21547#20102'dnn od'#30340#35757#32451#25216#26415#20869#23481#65292#20063#19981#20877#38656#35201#19987#38376#30340'OD'#35757#32451'demo'#20102
+      #26412'Demo'#21253#21547#30340#35757#32451#25216#26415#21516#26679#20063#21487#20197#29992#20110#20154#33080#26816#27979#35757#32451
+      #26412'Demo'#21253#21547#30340#35757#32451#25216#26415#21487#20197#36866#29992#20110#19975#29289#35782#21035#30340#26816#27979#35757#32451
+      ''
+      'DNN OD'#26159'ZAI'#20013#26368#19987#19994#30340#23545#35937#26816#27979#22120#65292#20063#26159#25972#20010'AI'#22280#38750#24120#21069#27839#30340'OD'#26816#27979#22120
+      'DNN OD'#19981#21516#20110'SVM OD'#65292'DNN OD'#20855#26377#37325#21472#26816#27979#21151#33021#65292#21516#26102#20063#33021#36755#20986#26816#27979#26631#31614
+      ''
+      #26356#22810#30340#25216#26415#32454#33410#65292#25105#37117#22791#27880#22312#28304#30721#20013
+      ''
+      ''
+      'by.qq600585')
+    Anchors = [akTop, akRight, akBottom]
+    Position.X = 768.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 697.000000000000000000
+    Size.Height = 737.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    Viewport.Width = 693.000000000000000000
+    Viewport.Height = 733.000000000000000000
+  end
+  object Timer1: TTimer
+    Interval = 100
+    OnTimer = Timer1Timer
+    Left = 728
+    Top = 368
+  end
+  object Image1: TImageViewer
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    Position.X = 16.000000000000000000
+    Position.Y = 48.000000000000000000
+    Size.Width = 745.000000000000000000
+    Size.Height = 697.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 6
+    Viewport.Width = 741.000000000000000000
+    Viewport.Height = 693.000000000000000000
+  end
+  object ResetButton: TButton
+    Position.X = 240.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 185.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Text = #37325#32622
+    OnClick = ResetButtonClick
+  end
+end
