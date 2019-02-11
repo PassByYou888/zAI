@@ -24,10 +24,16 @@
         <Projects Include="Face-Detector-CPU\Face_Det_CPU.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="Face-Detector-CPU-Parallel\Face_Det_CPU_Parallel.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="Face-Detector-GPU\Face_Det_GPU.dproj">
             <Dependencies/>
         </Projects>
         <Projects Include="Face-Alignment\Face_Alignment.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Face-Alignment-Parallel\Face_Alignment_Parallel.dproj">
             <Dependencies/>
         </Projects>
         <Projects Include="Face-Recognition-CPU\Face_Rec_cpu.dproj">
@@ -45,7 +51,13 @@
         <Projects Include="Resnet-144Layer-ImageClassifier\ResNetImgClassifier.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="VideoTracker\VideoTrackerAndSoftDecode.dproj">
+        <Projects Include="FastSurf\FastSurfDemo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="VideoTracker_GPU\VideoTrackerAndSoftDecode_GPU.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="VideoTracker_CPU\VideoTrackerAndSoftDecode_CPU.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -119,6 +131,15 @@
     <Target Name="Face_Det_CPU:Make">
         <MSBuild Projects="Face-Detector-CPU\Face_Det_CPU.dproj" Targets="Make"/>
     </Target>
+    <Target Name="Face_Det_CPU_Parallel">
+        <MSBuild Projects="Face-Detector-CPU-Parallel\Face_Det_CPU_Parallel.dproj"/>
+    </Target>
+    <Target Name="Face_Det_CPU_Parallel:Clean">
+        <MSBuild Projects="Face-Detector-CPU-Parallel\Face_Det_CPU_Parallel.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Face_Det_CPU_Parallel:Make">
+        <MSBuild Projects="Face-Detector-CPU-Parallel\Face_Det_CPU_Parallel.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Face_Det_GPU">
         <MSBuild Projects="Face-Detector-GPU\Face_Det_GPU.dproj"/>
     </Target>
@@ -136,6 +157,15 @@
     </Target>
     <Target Name="Face_Alignment:Make">
         <MSBuild Projects="Face-Alignment\Face_Alignment.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Face_Alignment_Parallel">
+        <MSBuild Projects="Face-Alignment-Parallel\Face_Alignment_Parallel.dproj"/>
+    </Target>
+    <Target Name="Face_Alignment_Parallel:Clean">
+        <MSBuild Projects="Face-Alignment-Parallel\Face_Alignment_Parallel.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Face_Alignment_Parallel:Make">
+        <MSBuild Projects="Face-Alignment-Parallel\Face_Alignment_Parallel.dproj" Targets="Make"/>
     </Target>
     <Target Name="Face_Rec_cpu">
         <MSBuild Projects="Face-Recognition-CPU\Face_Rec_cpu.dproj"/>
@@ -182,23 +212,41 @@
     <Target Name="ResNetImgClassifier:Make">
         <MSBuild Projects="Resnet-144Layer-ImageClassifier\ResNetImgClassifier.dproj" Targets="Make"/>
     </Target>
-    <Target Name="VideoTrackerAndSoftDecode">
-        <MSBuild Projects="VideoTracker\VideoTrackerAndSoftDecode.dproj"/>
+    <Target Name="FastSurfDemo">
+        <MSBuild Projects="FastSurf\FastSurfDemo.dproj"/>
     </Target>
-    <Target Name="VideoTrackerAndSoftDecode:Clean">
-        <MSBuild Projects="VideoTracker\VideoTrackerAndSoftDecode.dproj" Targets="Clean"/>
+    <Target Name="FastSurfDemo:Clean">
+        <MSBuild Projects="FastSurf\FastSurfDemo.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="VideoTrackerAndSoftDecode:Make">
-        <MSBuild Projects="VideoTracker\VideoTrackerAndSoftDecode.dproj" Targets="Make"/>
+    <Target Name="FastSurfDemo:Make">
+        <MSBuild Projects="FastSurf\FastSurfDemo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="VideoTrackerAndSoftDecode_GPU">
+        <MSBuild Projects="VideoTracker_GPU\VideoTrackerAndSoftDecode_GPU.dproj"/>
+    </Target>
+    <Target Name="VideoTrackerAndSoftDecode_GPU:Clean">
+        <MSBuild Projects="VideoTracker_GPU\VideoTrackerAndSoftDecode_GPU.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="VideoTrackerAndSoftDecode_GPU:Make">
+        <MSBuild Projects="VideoTracker_GPU\VideoTrackerAndSoftDecode_GPU.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="VideoTrackerAndSoftDecode_CPU">
+        <MSBuild Projects="VideoTracker_CPU\VideoTrackerAndSoftDecode_CPU.dproj"/>
+    </Target>
+    <Target Name="VideoTrackerAndSoftDecode_CPU:Clean">
+        <MSBuild Projects="VideoTracker_CPU\VideoTrackerAndSoftDecode_CPU.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="VideoTrackerAndSoftDecode_CPU:Make">
+        <MSBuild Projects="VideoTracker_CPU\VideoTrackerAndSoftDecode_CPU.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_GPU;Face_Alignment;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;ResNetImgClassifier;VideoTrackerAndSoftDecode"/>
+        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_CPU_Parallel;Face_Det_GPU;Face_Alignment;Face_Alignment_Parallel;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;ResNetImgClassifier;FastSurfDemo;VideoTrackerAndSoftDecode_GPU;VideoTrackerAndSoftDecode_CPU"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;ResNetImgClassifier:Clean;VideoTrackerAndSoftDecode:Clean"/>
+        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_CPU_Parallel:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Alignment_Parallel:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;ResNetImgClassifier:Clean;FastSurfDemo:Clean;VideoTrackerAndSoftDecode_GPU:Clean;VideoTrackerAndSoftDecode_CPU:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;ResNetImgClassifier:Make;VideoTrackerAndSoftDecode:Make"/>
+        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_CPU_Parallel:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Alignment_Parallel:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;ResNetImgClassifier:Make;FastSurfDemo:Make;VideoTrackerAndSoftDecode_GPU:Make;VideoTrackerAndSoftDecode_CPU:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

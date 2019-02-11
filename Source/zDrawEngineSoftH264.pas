@@ -70,7 +70,7 @@ end;
 
 procedure TDrawEngine_H264.Progress(deltaTime: Double);
 begin
-  Engine.Progress(1 / FH264W.PerSecondFrame);
+  Engine.Progress(1.0 / FH264W.PerSecondFrame);
 end;
 
 procedure TDrawEngine_H264.Flush;

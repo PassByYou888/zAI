@@ -89,6 +89,7 @@ end;
 
 function TAggCustomVertexSource.Vertex(x, y: PDouble): Cardinal;
 begin
+  Result := 0;
 end;
 
 function TAggCustomVertexSource.FuncOperatorGamma;

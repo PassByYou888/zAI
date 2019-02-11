@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<?xml-stylesheet type='text/xsl' href='bear_sp_dataset.xsl'?>
+<dataset>
+<name>bear_sp_dataset.xml</name>
+<comment>bear_sp_dataset.xml</comment>
+<images>
+ <image file='bear_sp_datasetaf4327ba8d47e4b4889131cffefa0bcf.bmp'>
+  <box top='66' left='101' width='172' height='172'>
+    <label>熊本熊</label>
+    <part name='00' x='169' y='85'/>
+    <part name='01' x='222' y='87'/>
+    <part name='02' x='176' y='118'/>
+    <part name='03' x='221' y='118'/>
+    <part name='04' x='209' y='120'/>
+  </box>
+ </image>
+ <image file='bear_sp_dataset9e0390f0cb1a72d1db42818a166499a0.bmp'>
+  <box top='70' left='53' width='171' height='171'>
+    <label>熊本熊</label>
+    <part name='00' x='76' y='128'/>
+    <part name='01' x='114' y='94'/>
+    <part name='02' x='98' y='140'/>
+    <part name='03' x='130' y='110'/>
+    <part name='04' x='116' y='121'/>
+  </box>
+ </image>
+ <image file='bear_sp_datasetacfe48c7f3d14b08162c8f3183ce9b31.bmp'>
+  <box top='44' left='100' width='206' height='206'>
+    <label>熊本熊</label>
+    <part name='00' x='126' y='134'/>
+    <part name='01' x='178' y='67'/>
+    <part name='02' x='170' y='156'/>
+    <part name='03' x='208' y='102'/>
+    <part name='04' x='203' y='136'/>
+  </box>
+ </image>
+ <image file='bear_sp_dataset708597b147ff67e882ed47728026b507.bmp'>
+  <box top='97' left='49' width='173' height='173'>
+    <label>熊本熊</label>
+    <part name='00' x='87' y='126'/>
+    <part name='01' x='144' y='112'/>
+    <part name='02' x='100' y='154'/>
+    <part name='03' x='149' y='142'/>
+    <part name='04' x='124' y='148'/>
+  </box>
+ </image>
+ <image file='bear_sp_datasetba18e14cfb90244e69ade272b1fa4aa8.bmp'>
+  <box top='23' left='122' width='193' height='193'>
+    <label>熊本熊</label>
+    <part name='00' x='153' y='55'/>
+    <part name='01' x='230' y='32'/>
+    <part name='02' x='171' y='97'/>
+    <part name='03' x='234' y='78'/>
+    <part name='04' x='203' y='96'/>
+  </box>
+ </image>
+</images>
+</dataset>

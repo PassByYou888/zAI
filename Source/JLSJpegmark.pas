@@ -41,19 +41,19 @@ const
   JPEGLS_MARKER_SOI2 = $FF8D; { start of image } // modify by 600585@qq.com
   JPEGLS_MARKER_EOI2 = $FF9D; { end of image }   // modify by 600585@qq.com
   // publish marker
-  JPEGLS_MARKER_SOS  = $FFDA; { Start of scan }
-  JPEGLS_MARKER_DNL  = $FFDC; { Define number of lines }
-  JPEGLS_MARKER_DRI  = $FFDD; { Define restart interval }
+  JPEGLS_MARKER_SOS = $FFDA;  { Start of scan }
+  JPEGLS_MARKER_DNL = $FFDC;  { Define number of lines }
+  JPEGLS_MARKER_DRI = $FFDD;  { Define restart interval }
   JPEGLS_MARKER_RSTm = $FFD0; { Restart marker (FFD0-FFD7) }
-  JPEGLS_MARKER_COM  = $FFFE; { Comment }
+  JPEGLS_MARKER_COM = $FFFE;  { Comment }
 
   { JPEG-LS specific }
-  SOF_LS        = $FFF7; { Start of JPEG-LS regular frame }
-  LSE           = $FFF8; { JPEG-LS extension marker }
-  LSE_PARAMS    = 1;     { Marker type within LSE - parameters }
-  LSE_MAPTABLE  = 2;     { Marker type within LSE - map tables }
-  LSE_XMAPTABLE = 3;     { Marker type within LSE - map table continuation }
-  LSE_XY        = 4;     { Marker type within LSE - image dimensions }
+  SOF_LS = $FFF7;    { Start of JPEG-LS regular frame }
+  LSE = $FFF8;       { JPEG-LS extension marker }
+  LSE_PARAMS = 1;    { Marker type within LSE - parameters }
+  LSE_MAPTABLE = 2;  { Marker type within LSE - map tables }
+  LSE_XMAPTABLE = 3; { Marker type within LSE - map table continuation }
+  LSE_XY = 4;        { Marker type within LSE - image dimensions }
 
 type
   TJLSJpegMark = class
@@ -236,15 +236,13 @@ var
   MAXTAB,       { Maximum index of table }
   length: uint; { Marker length }
   i: Int;
-
 begin
   ct := 0;
 
   { For Type 1 - non default parameters }
   if (IDtype = LSE_PARAMS) then
     begin
-      ct := ct + write_marker(outstrm, LSE); { write JPEG-LS extended marker id }
-
+      ct := ct + write_marker(outstrm, LSE);             { write JPEG-LS extended marker id }
       ct := ct + write_n_bytes(outstrm, 13, 2);          { marker length }
       ct := ct + write_n_bytes(outstrm, LSE_PARAMS, 1);  { ext marker id }
       ct := ct + write_n_bytes(outstrm, JP^.alp - 1, 2); { MAXVAL }
@@ -252,21 +250,9 @@ begin
       ct := ct + write_n_bytes(outstrm, JP^.t2, 2);
       ct := ct + write_n_bytes(outstrm, JP^.t3, 2);
       ct := ct + write_n_bytes(outstrm, JP^.res, 2);
-
-      Result := ct;
     end;
 
-  { For Type 2 - Mapping Table }
-  if (IDtype = LSE_MAPTABLE) then
-    begin
-
-    end
-  else
-    begin
-      // fprintf(stderr, "LSE Parameter %i not defined in this implementation.\n",IDtype);
-      // exit(1);
-    end;
-
+  Result := ct;
 end;
 
 { Writes the DRI header to the JLS file }
@@ -365,14 +351,8 @@ end;
 function TJLSJpegMark.read_jpegls_frame(instrm: TCoreClassStream; JP: pjpeg_ls_header): Int;
 { reads the JPEG-LS frame marker (not including marker head) }
 var
-  i,
-    marker_len,
-    bpp,
-    tq,
-    comp,
-    ct: Int;
+  i, marker_len, bpp, tq, comp, ct: Int;
   SX, SY, cid: Int;
-
 begin
   ct := 0;
 
@@ -434,7 +414,6 @@ function TJLSJpegMark.read_jpegls_scan(instrm: TCoreClassStream; JP: pjpeg_ls_he
 var
   i, marker_len, comp, ct: Int;
   cid, TM: Int;
-
 begin
   ct := 0;
 
@@ -517,13 +496,11 @@ var
   marker_len, { marker length }
   MaxVal,     { max value }
   t1, t2, t3, { thresholds }
-  ct,
-    IDtype, { LSE type }
-  TID,      { table ID }
-  WT,       { width of each table entry }
-  MAXTAB,   { maximum table index }
-  i: Int;
-
+  IDtype,     { LSE type }
+  TID,        { table ID }
+  WT,         { width of each table entry }
+  MAXTAB,     { maximum table index }
+  i, ct: Int;
 begin
   ct := 0;
 
@@ -612,7 +589,6 @@ var
   ct: Int;
   marker_len: Int; { the marker length }
   Ri: Int;         { the restart interval }
-
 begin
   ct := 0;
 
@@ -629,7 +605,4 @@ begin
   Result := ct;
 end;
 
-end. 
- 
- 
- 
+end.

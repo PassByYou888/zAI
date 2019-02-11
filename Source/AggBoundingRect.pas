@@ -40,7 +40,9 @@ unit AggBoundingRect;
 
 {$DEFINE FPC_DELPHI_MODE}
 {$INCLUDE zDefine.inc}
+
 interface
+
 uses
   AggBasics,
   AggVertexSource;
@@ -121,7 +123,7 @@ end;
 function BoundingRect(Vs: TAggVertexSource; Gi: PCardinal; Start, Num: Cardinal;
   var Rect: TRectDouble): Boolean;
 begin
-  BoundingRect(Vs, Gi, Start, Num, @Rect.x1, @Rect.y1, @Rect.x2, @Rect.y2);
+  Result := BoundingRect(Vs, Gi, Start, Num, @Rect.x1, @Rect.y1, @Rect.x2, @Rect.y2);
 end;
 
 function BoundingRectVertexSource(Vs, Gi: TAggVertexSource; Start, Num: Cardinal;
@@ -186,8 +188,7 @@ end;
 function BoundingRectVertexSource(Vs, Gi: TAggVertexSource; Start, Num: Cardinal;
   var Rect: TRectDouble): Boolean;
 begin
-  BoundingRectVertexSource(Vs, Gi, Start, Num, @Rect.x1, @Rect.y1, @Rect.x2,
-    @Rect.y2)
+  Result := BoundingRectVertexSource(Vs, Gi, Start, Num, @Rect.x1, @Rect.y1, @Rect.x2, @Rect.y2)
 end;
 
 function BoundingRectInteger(Vs: TAggVertexSource; Ul: TCardinalList;
@@ -299,8 +300,7 @@ begin
   Result := (x1^ <= x2^) and (y1^ <= y2^);
 end;
 
-function BoundingRectAllPaths(Vs: TAggVertexSource;
-  x1, y1, x2, y2: PDouble): Boolean;
+function BoundingRectAllPaths(Vs: TAggVertexSource; x1, y1, x2, y2: PDouble): Boolean;
 var
   i, Paths: Cardinal;
   Sx1, Sy1, Sx2, Sy2: Double;
@@ -352,11 +352,8 @@ begin
 end;
 
 function BoundingRectAllPaths(Vs: TAggVertexSource; Rect: TRectDouble): Boolean;
-  overload;
 begin
-  BoundingRectAllPaths(Vs, @Rect.x1, @Rect.y1, @Rect.x2, @Rect.y2);
+  Result := BoundingRectAllPaths(Vs, @Rect.x1, @Rect.y1, @Rect.x2, @Rect.y2);
 end;
 
-end. 
- 
- 
+end.

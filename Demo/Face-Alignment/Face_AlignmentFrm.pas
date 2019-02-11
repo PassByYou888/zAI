@@ -62,6 +62,11 @@ begin
   OpenDialog.Filter := TBitmapCodecManager.GetFilterString;
   if not OpenDialog.Execute then
       exit;
+
+  for i := 0 to rList.Count - 1 do
+      DisposeObject(rList[i]);
+  rList.clear;
+
   for i := 0 to OpenDialog.Files.Count - 1 do
     begin
       mr := NewRasterFromFile(OpenDialog.Files[i]);
@@ -81,7 +86,7 @@ begin
       if face_hnd <> nil then
         begin
           d := TDrawEngine.Create;
-          d.Rasterization.Memory.SetWorkMemory(mr);
+          d.Rasterization.SetWorkMemory(mr);
           d.SetSize(mr);
           for j := 0 to ai.Face_Rect_Num(face_hnd) - 1 do
             begin

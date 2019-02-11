@@ -906,6 +906,11 @@ begin
     end;
 end;
 
+procedure TMemoryRaster.ZoomFrom(const Source: TMemoryRaster; const f: TGeoFloat);
+begin
+  ZoomFrom(Source, Round(Source.width * f), Round(Source.height * f));
+end;
+
 procedure TMemoryRaster.Zoom(const NewWidth, NewHeight: Integer);
 var
   n: TMemoryRaster;

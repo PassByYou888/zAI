@@ -58,7 +58,7 @@ begin
       rnic_vec: TLVec;
       i, index: Integer;
     begin
-      output_fn := umlCombineFileName(TPath.GetLibraryPath, 'MiniImgClassifier' + zAI.C_RNIC_Ext);
+      output_fn := umlCombineFileName(TPath.GetLibraryPath, 'MiniImgClassifier' + C_RNIC_Ext);
       index_fn := umlCombineFileName(TPath.GetLibraryPath, 'MiniImgClassifier.index');
 
       if (not umlFileExists(output_fn)) or (not umlFileExists(index_fn)) then
@@ -104,7 +104,7 @@ begin
         end);
       try
         sync_fn := umlCombineFileName(TPath.GetLibraryPath, 'MiniImgClassifier.imgMat.sync');
-        output_fn := umlCombineFileName(TPath.GetLibraryPath, 'MiniImgClassifier' + zAI.C_RNIC_Ext);
+        output_fn := umlCombineFileName(TPath.GetLibraryPath, 'MiniImgClassifier' + C_RNIC_Ext);
         index_fn := umlCombineFileName(TPath.GetLibraryPath, 'MiniImgClassifier.index');
 
         if (not umlFileExists(output_fn)) or (not umlFileExists(index_fn)) then
@@ -226,7 +226,7 @@ procedure TResNetImgClassifierForm.ResetButtonClick(Sender: TObject);
 begin
   d(umlCombineFileName(TPath.GetLibraryPath, 'MiniImgClassifier.imgMat.sync'));
   d(umlCombineFileName(TPath.GetLibraryPath, 'MiniImgClassifier.imgMat.sync_'));
-  d(umlCombineFileName(TPath.GetLibraryPath, 'MiniImgClassifier' + zAI.C_RNIC_Ext));
+  d(umlCombineFileName(TPath.GetLibraryPath, 'MiniImgClassifier' + C_RNIC_Ext));
   d(umlCombineFileName(TPath.GetLibraryPath, 'MiniImgClassifier.index'));
 end;
 

@@ -61,6 +61,11 @@ begin
   OpenDialog.Filter := TBitmapCodecManager.GetFilterString;
   if not OpenDialog.Execute then
       exit;
+
+  for i := 0 to rList.Count - 1 do
+      DisposeObject(rList[i]);
+  rList.clear;
+
   for i := 0 to OpenDialog.Files.Count - 1 do
     begin
       mr := NewRasterFromFile(OpenDialog.Files[i]);
@@ -70,7 +75,7 @@ begin
           nmr := NewRaster;
           nmr.ZoomFrom(mr, mr.width * 4, mr.height * 4);
           face_hnd := ai.Face_Detector_Rect(nmr);
-          disposeObject(nmr);
+          DisposeObject(nmr);
         end
       else
         begin
@@ -81,14 +86,15 @@ begin
         for j := 0 to ai.Face_Rect_Num(face_hnd) - 1 do
           begin
             d := TDrawEngine.Create;
-            d.Rasterization.Memory.SetWorkMemory(mr);
+            d.Rasterization.SetWorkMemory(mr);
+            d.SetSize(mr);
 
             r := ai.Face_RectV2(face_hnd, j);
             if Scale2CheckBox.IsChecked then
                 r := RectMul(r, 0.25);
             d.DrawBox(r, DEColor(1, 0, 0, 0.9), 4);
             d.Flush;
-            disposeObject(d);
+            DisposeObject(d);
           end;
 
       ai.Face_Close(face_hnd);

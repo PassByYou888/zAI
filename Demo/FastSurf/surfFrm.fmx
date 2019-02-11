@@ -1,0 +1,37 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 660
+  ClientWidth = 1497
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnPaint = FormPaint
+  DesignerMasterStyle = 0
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Lines.Strings = (
+      'surf'#26159#32431'cpu'#23454#29616#30340#29305#24449#25552#21462#31639#27861#65292#26159#26367#20195'sift'#30340#39640#25928#31639#27861
+      ''
+      'by.qq600585')
+    TextSettings.FontColor = claRed
+    Anchors = [akRight, akBottom]
+    Position.X = 952.000000000000000000
+    Position.Y = 248.000000000000000000
+    Size.Width = 537.000000000000000000
+    Size.Height = 409.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Viewport.Width = 533.000000000000000000
+    Viewport.Height = 405.000000000000000000
+  end
+  object Timer1: TTimer
+    Interval = 10
+    OnTimer = Timer1Timer
+    Left = 736
+    Top = 320
+  end
+end

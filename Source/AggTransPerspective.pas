@@ -47,7 +47,9 @@ unit AggTransPerspective;
 
 {$DEFINE FPC_DELPHI_MODE}
 {$INCLUDE zDefine.inc}
+
 interface
+
 uses
   Math,
   AggBasics,
@@ -224,8 +226,7 @@ type
 
     function IsValid(Epsilon: Double = CAggAffineEpsilon): Boolean;
     function IsIdentity(Epsilon: Double = CAggAffineEpsilon): Boolean;
-    function IsEqual(M: TAggTransPerspective;
-      Epsilon: Double = CAggAffineEpsilon): Boolean;
+    function IsEqual(M: TAggTransPerspective; Epsilon: Double = CAggAffineEpsilon): Boolean;
 
     // Determine the major affine parameters. Use with caution
     // considering possible degenerate cases.
@@ -359,10 +360,8 @@ begin
       Left[ix, 3] := 0.0;
       Left[ix, 4] := 0.0;
       Left[ix, 5] := 0.0;
-      Left[ix, 6] := -PDouble(PtrComp(Src) + ix * SizeOf(Double))^ *
-        PDouble(PtrComp(Dst) + ix * SizeOf(Double))^;
-      Left[ix, 7] := -PDouble(PtrComp(Src) + iy * SizeOf(Double))^ *
-        PDouble(PtrComp(Dst) + ix * SizeOf(Double))^;
+      Left[ix, 6] := -PDouble(PtrComp(Src) + ix * SizeOf(Double))^ * PDouble(PtrComp(Dst) + ix * SizeOf(Double))^;
+      Left[ix, 7] := -PDouble(PtrComp(Src) + iy * SizeOf(Double))^ * PDouble(PtrComp(Dst) + ix * SizeOf(Double))^;
       Right[ix, 0] := PDouble(PtrComp(Dst) + ix * SizeOf(Double))^;
 
       Left[iy, 0] := 0.0;
@@ -371,18 +370,15 @@ begin
       Left[iy, 3] := 1.0;
       Left[iy, 4] := PDouble(PtrComp(Src) + ix * SizeOf(Double))^;
       Left[iy, 5] := PDouble(PtrComp(Src) + iy * SizeOf(Double))^;
-      Left[iy, 6] := -PDouble(PtrComp(Src) + ix * SizeOf(Double))^ *
-        PDouble(PtrComp(Dst) + iy * SizeOf(Double))^;
-      Left[iy, 7] := -PDouble(PtrComp(Src) + iy * SizeOf(Double))^ *
-        PDouble(PtrComp(Dst) + iy * SizeOf(Double))^;
+      Left[iy, 6] := -PDouble(PtrComp(Src) + ix * SizeOf(Double))^ * PDouble(PtrComp(Dst) + iy * SizeOf(Double))^;
+      Left[iy, 7] := -PDouble(PtrComp(Src) + iy * SizeOf(Double))^ * PDouble(PtrComp(Dst) + iy * SizeOf(Double))^;
       Right[iy, 0] := PDouble(PtrComp(Dst) + iy * SizeOf(Double))^;
     end;
 
   FValid := SimulEqSolve(@Left, @Right, @FMatrix, 8, 1);
 end;
 
-procedure TAggTransPerspective23.RectToQuad(x1, y1, x2, y2: Double;
-  Quad: PQuadDouble);
+procedure TAggTransPerspective23.RectToQuad(x1, y1, x2, y2: Double; Quad: PQuadDouble);
 var
   Src: TQuadDouble;
 begin
@@ -390,8 +386,7 @@ begin
   QuadToQuad(@Src, Quad);
 end;
 
-procedure TAggTransPerspective23.RectToQuad(Rect: TRectDouble;
-  Quad: PQuadDouble);
+procedure TAggTransPerspective23.RectToQuad(Rect: TRectDouble; Quad: PQuadDouble);
 var
   Src: TQuadDouble;
 begin
@@ -399,8 +394,7 @@ begin
   QuadToQuad(@Src, Quad);
 end;
 
-procedure TAggTransPerspective23.QuadToRect(Quad: PQuadDouble; x1, y1, x2,
-  y2: Double);
+procedure TAggTransPerspective23.QuadToRect(Quad: PQuadDouble; x1, y1, x2, y2: Double);
 var
   Dst: TQuadDouble;
 begin
@@ -423,8 +417,7 @@ end;
 
 { TAggIteratorXRecord }
 
-procedure TAggIteratorXRecord.Initialize(x, y, Step: Double;
-  M: TAggTransPerspective);
+procedure TAggIteratorXRecord.Initialize(x, y, Step: Double; M: TAggTransPerspective);
 var
   d: Double;
 begin
@@ -453,8 +446,7 @@ begin
 end;
 
 // Direct transformation of x and y
-procedure TransPerspectiveTransform(This: TAggTransPerspective; Px,
-  Py: PDouble);
+procedure TransPerspectiveTransform(This: TAggTransPerspective; Px, Py: PDouble);
 var
   x, y, M: Double;
 begin
@@ -472,8 +464,7 @@ begin
 end;
 
 // Direct transformation of x and y, affine part only
-procedure TransPerspectiveTransformAffine(This: TAggTransPerspective; x,
-  y: PDouble);
+procedure TransPerspectiveTransformAffine(This: TAggTransPerspective; x, y: PDouble);
 var
   tmp: Double;
 begin
@@ -484,8 +475,7 @@ begin
 end;
 
 // Direct transformation of x and y, 2x2 matrix only, no translation
-procedure TransPerspectiveTransform2x2(This: TAggTransPerspective; x,
-  y: PDouble);
+procedure TransPerspectiveTransform2x2(This: TAggTransPerspective; x, y: PDouble);
 var
   tmp: Double;
 begin
@@ -499,8 +489,7 @@ end;
 // it explicitly inverts the matrix on every call. For massive
 // operations it's better to invert() the matrix and then use
 // direct transformations.
-procedure TransPerspectiveInverseTransform(This: TAggTransPerspective; x,
-  y: PDouble);
+procedure TransPerspectiveInverseTransform(This: TAggTransPerspective; x, y: PDouble);
 var
   t: TAggTransPerspective;
 begin
@@ -531,8 +520,7 @@ begin
   W2 := 1;
 end;
 
-constructor TAggTransPerspective.Create(v0, v1, v2, v3, v4, V5, V6, V7,
-  V8: Double);
+constructor TAggTransPerspective.Create(v0, v1, v2, v3, v4, V5, V6, V7, V8: Double);
 begin
   inherited Create;
   InitializeTransforms;
@@ -596,8 +584,7 @@ begin
   W2 := p.W2;
 end;
 
-constructor TAggTransPerspective.Create(x1, y1, x2, y2: Double;
-  Quad: PAggQuadrilateral);
+constructor TAggTransPerspective.Create(x1, y1, x2, y2: Double; Quad: PAggQuadrilateral);
 begin
   inherited Create;
   InitializeTransforms;
@@ -605,8 +592,7 @@ begin
   RectToQuad(x1, y1, x2, y2, Quad);
 end;
 
-constructor TAggTransPerspective.Create(Quad: PAggQuadrilateral;
-  x1, y1, x2, y2: Double);
+constructor TAggTransPerspective.Create(Quad: PAggQuadrilateral; x1, y1, x2, y2: Double);
 begin
   inherited Create;
   InitializeTransforms;
@@ -622,8 +608,7 @@ begin
   QuadToQuad(Src, Dst);
 end;
 
-constructor TAggTransPerspective.Create(Rect: TRectDouble;
-  Quad: PAggQuadrilateral);
+constructor TAggTransPerspective.Create(Rect: TRectDouble; Quad: PAggQuadrilateral);
 begin
   inherited Create;
   InitializeTransforms;
@@ -631,8 +616,7 @@ begin
   RectToQuad(Rect, Quad);
 end;
 
-constructor TAggTransPerspective.Create(Quad: PAggQuadrilateral;
-  Rect: TRectDouble);
+constructor TAggTransPerspective.Create(Quad: PAggQuadrilateral; Rect: TRectDouble);
 begin
   inherited Create;
   InitializeTransforms;
@@ -670,8 +654,7 @@ begin
   Result := True;
 end;
 
-function TAggTransPerspective.RectToQuad(x1, y1, x2, y2: Double;
-  q: PAggQuadrilateral): Boolean;
+function TAggTransPerspective.RectToQuad(x1, y1, x2, y2: Double; q: PAggQuadrilateral): Boolean;
 var
   Src: TQuadDouble;
 begin
@@ -679,8 +662,7 @@ begin
   Result := QuadToQuad(@Src, q);
 end;
 
-function TAggTransPerspective.RectToQuad(Rect: TRectDouble;
-  q: PAggQuadrilateral): Boolean;
+function TAggTransPerspective.RectToQuad(Rect: TRectDouble; q: PAggQuadrilateral): Boolean;
 var
   Src: TQuadDouble;
 begin
@@ -688,8 +670,7 @@ begin
   Result := QuadToQuad(@Src, q);
 end;
 
-function TAggTransPerspective.QuadToRect(q: PAggQuadrilateral;
-  x1, y1, x2, y2: Double): Boolean;
+function TAggTransPerspective.QuadToRect(q: PAggQuadrilateral; x1, y1, x2, y2: Double): Boolean;
 var
   Dst: TQuadDouble;
 begin
@@ -697,8 +678,7 @@ begin
   Result := QuadToQuad(q, @Dst);
 end;
 
-function TAggTransPerspective.QuadToRect(var q: TAggQuadrilateral;
-  Rect: TRectDouble): Boolean;
+function TAggTransPerspective.QuadToRect(var q: TAggQuadrilateral; Rect: TRectDouble): Boolean;
 var
   Dst: TQuadDouble;
 begin
@@ -706,8 +686,7 @@ begin
   Result := QuadToQuad(@q, @Dst);
 end;
 
-function TAggTransPerspective.QuadToRect(q: PAggQuadrilateral;
-  Rect: TRectDouble): Boolean;
+function TAggTransPerspective.QuadToRect(q: PAggQuadrilateral; Rect: TRectDouble): Boolean;
 var
   Dst: TQuadDouble;
 begin
@@ -902,8 +881,7 @@ begin
   Result := Self;
 end;
 
-function TAggTransPerspective.Multiply(a: TAggTransPerspective)
-  : TAggTransPerspective;
+function TAggTransPerspective.Multiply(a: TAggTransPerspective): TAggTransPerspective;
 var
   b: TAggTransPerspective;
 begin
@@ -925,8 +903,7 @@ begin
   Result := Self;
 end;
 
-function TAggTransPerspective.PreMultiply(b: TAggTransPerspective)
-  : TAggTransPerspective;
+function TAggTransPerspective.PreMultiply(b: TAggTransPerspective): TAggTransPerspective;
 var
   a: TAggTransPerspective;
 begin
@@ -948,8 +925,7 @@ begin
   Result := Self;
 end;
 
-function TAggTransPerspective.MultiplyInv(M: TAggTransPerspective)
-  : TAggTransPerspective;
+function TAggTransPerspective.MultiplyInv(M: TAggTransPerspective): TAggTransPerspective;
 var
   t: TAggTransPerspective;
 begin
@@ -964,8 +940,7 @@ begin
   Result := Self;
 end;
 
-function TAggTransPerspective.PreMultiplyInv(M: TAggTransPerspective)
-  : TAggTransPerspective;
+function TAggTransPerspective.PreMultiplyInv(M: TAggTransPerspective): TAggTransPerspective;
 var
   t: TAggTransPerspective;
 begin
@@ -977,13 +952,10 @@ begin
       t.Free;
   end;
 
-  // Create(TAggTransPerspective(Self)); //???????
-
   Result := Self;
 end;
 
-function TAggTransPerspective.MultiplyAffine(a: TAggTransAffine)
-  : TAggTransPerspective;
+function TAggTransPerspective.MultiplyAffine(a: TAggTransAffine): TAggTransPerspective;
 var
   b: TAggTransPerspective;
 begin
@@ -1002,8 +974,7 @@ begin
   Result := Self;
 end;
 
-function TAggTransPerspective.PreMultiplyAffine(b: TAggTransAffine)
-  : TAggTransPerspective;
+function TAggTransPerspective.PreMultiplyAffine(b: TAggTransAffine): TAggTransPerspective;
 var
   a: TAggTransPerspective;
 begin
@@ -1025,8 +996,7 @@ begin
   Result := Self;
 end;
 
-function TAggTransPerspective.MultiplyInvAffine(M: TAggTransAffine)
-  : TAggTransPerspective;
+function TAggTransPerspective.MultiplyInvAffine(M: TAggTransAffine): TAggTransPerspective;
 var
   t: TAggTransAffine;
 begin
@@ -1041,8 +1011,7 @@ begin
   Result := Self;
 end;
 
-function TAggTransPerspective.PreMultiplyInvAffine(M: TAggTransAffine)
-  : TAggTransPerspective;
+function TAggTransPerspective.PreMultiplyInvAffine(M: TAggTransAffine): TAggTransPerspective;
 var
   t: TAggTransPerspective;
 begin
@@ -1073,8 +1042,7 @@ begin
   M[8] := W2;
 end;
 
-function TAggTransPerspective.LoadFrom(M: PAggQuadrilateral)
-  : TAggTransPerspective;
+function TAggTransPerspective.LoadFrom(M: PAggQuadrilateral): TAggTransPerspective;
 begin
   SX := M[0];
   Shy := M[1];
@@ -1085,10 +1053,11 @@ begin
   TX := M[6];
   TY := M[7];
   W2 := M[8];
+
+  Result := Self;
 end;
 
-function TAggTransPerspective.FromAffine(a: TAggTransAffine)
-  : TAggTransPerspective;
+function TAggTransPerspective.FromAffine(a: TAggTransAffine): TAggTransPerspective;
 begin
   SX := a.M0;
   Shy := a.m1;
@@ -1119,8 +1088,7 @@ begin
   Result := (Abs(SX) > Epsilon) and (Abs(SY) > Epsilon) and (Abs(W2) > Epsilon);
 end;
 
-function TAggTransPerspective.IsIdentity
-  (Epsilon: Double = CAggAffineEpsilon): Boolean;
+function TAggTransPerspective.IsIdentity(Epsilon: Double = CAggAffineEpsilon): Boolean;
 begin
   Result := IsEqualEpsilon(SX, 1.0, Epsilon) and
     IsEqualEpsilon(Shy, 0.0, Epsilon) and
@@ -1133,8 +1101,7 @@ begin
     IsEqualEpsilon(W2, 1.0, Epsilon);
 end;
 
-function TAggTransPerspective.IsEqual(M: TAggTransPerspective;
-  Epsilon: Double = CAggAffineEpsilon): Boolean;
+function TAggTransPerspective.IsEqual(M: TAggTransPerspective; Epsilon: Double = CAggAffineEpsilon): Boolean;
 begin
   Result := IsEqualEpsilon(SX, M.SX, Epsilon) and
     IsEqualEpsilon(Shy, M.Shy, Epsilon) and
@@ -1221,7 +1188,4 @@ begin
   Result.Initialize(x, y, Step, Self);
 end;
 
-end. 
- 
- 
- 
+end.

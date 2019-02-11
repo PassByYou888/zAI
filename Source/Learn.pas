@@ -355,6 +355,49 @@ procedure TagSortFast(var a: TLVec; const n: TLInt);
 procedure TagHeapPushI(var a: TLVec; var b: TLIVec; var n: TLInt; const VA: TLFloat; const VB: TLInt);
 procedure TagHeapReplaceTopI(var a: TLVec; var b: TLIVec; const n: TLInt; const VA: TLFloat; const VB: TLInt);
 procedure TagHeapPopI(var a: TLVec; var b: TLIVec; var n: TLInt);
+
+(* ************************************************************************
+  More precise dot-product. Absolute error of  subroutine  result  is  about
+  1 ulp of max(MX,V), where:
+  MX = max( |a[i]*b[i]| )
+  V  = |(a,b)|
+
+  INPUT PARAMETERS
+  A       -   array[0..N-1], vector 1
+  B       -   array[0..N-1], vector 2
+  N       -   vectors length, N<2^29.
+  Temp    -   array[0..N-1], pre-allocated temporary storage
+
+  OUTPUT PARAMETERS
+  R       -   (A,B)
+  RErr    -   estimate of error. This estimate accounts for both  errors
+  during  calculation  of  (A,B)  and  errors  introduced by
+  rounding of A and B to fit in TLFloat (about 1 ulp).
+  ************************************************************************ *)
+procedure XDot(const a: TLVec; const b: TLVec; n: TLInt;
+  var Temp: TLVec; var r: TLFloat; var RErr: TLFloat);
+
+(* ************************************************************************
+  Internal subroutine for extra-precise calculation of SUM(w[i]).
+
+  INPUT PARAMETERS:
+  W   -   array[0..N-1], values to be added
+  W is modified during calculations.
+  MX  -   max(W[i])
+  N   -   array size
+
+  OUTPUT PARAMETERS:
+  R   -   SUM(w[i])
+  RErr-   error estimate for R
+  ************************************************************************ *)
+procedure XSum(var w: TLVec; mx: TLFloat; n: TLInt;
+  var r: TLFloat; var RErr: TLFloat);
+
+(* ************************************************************************
+  Fast Pow
+  ************************************************************************ *)
+function XFastPow(r: TLFloat; n: TLInt): TLFloat;
+
 {$ENDREGION 'FloatAPI'}
 
 {$REGION 'LowLevelMatrix'}

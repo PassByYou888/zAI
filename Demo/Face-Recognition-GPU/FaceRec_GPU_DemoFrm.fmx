@@ -57,8 +57,8 @@ object FaceRecForm: TFaceRecForm
     Size.Height = 737.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 3
-    Viewport.Width = 697.000000000000000000
-    Viewport.Height = 737.000000000000000000
+    Viewport.Width = 693.000000000000000000
+    Viewport.Height = 717.000000000000000000
   end
   object ResetButton: TButton
     Position.X = 240.000000000000000000

@@ -9,11 +9,6 @@
 { * https://github.com/PassByYou888/zGameWare                                  * }
 { * https://github.com/PassByYou888/zRasterization                             * }
 { ****************************************************************************** }
-procedure XSum(var w: TLVec; mx: TLFloat; n: TLInt;
-  var r: TLFloat; var RErr: TLFloat); forward;
-
-function XFastPow(r: TLFloat; n: TLInt): TLFloat; forward;
-
 
 (* ************************************************************************
   More precise dot-product. Absolute error of  subroutine  result  is  about
@@ -36,9 +31,9 @@ function XFastPow(r: TLFloat; n: TLInt): TLFloat; forward;
 procedure XDot(const a: TLVec; const b: TLVec; n: TLInt;
   var Temp: TLVec; var r: TLFloat; var RErr: TLFloat);
 var
-  i : TLInt;
+  i: TLInt;
   mx: TLFloat;
-  v : TLFloat;
+  v: TLFloat;
 begin
 
   //
@@ -91,9 +86,9 @@ procedure XCDot(const a: TLComplexVec; const b: TLComplexVec;
   n: TLInt; var Temp: TLVec; var r: TLComplex;
   var RErr: TLFloat);
 var
-  i    : TLInt;
-  mx   : TLFloat;
-  v    : TLFloat;
+  i: TLInt;
+  mx: TLFloat;
+  v: TLFloat;
   RErrX: TLFloat;
   RErrY: TLFloat;
 begin
@@ -189,13 +184,13 @@ end;
 procedure XSum(var w: TLVec; mx: TLFloat; n: TLInt;
   var r: TLFloat; var RErr: TLFloat);
 var
-  i       : TLInt;
-  k       : TLInt;
-  KS      : TLInt;
-  v       : TLFloat;
-  s       : TLFloat;
-  LN2     : TLFloat;
-  Chunk   : TLFloat;
+  i: TLInt;
+  k: TLInt;
+  KS: TLInt;
+  v: TLFloat;
+  s: TLFloat;
+  LN2: TLFloat;
+  Chunk: TLFloat;
   InvChunk: TLFloat;
   AllZeros: Boolean;
 begin
@@ -311,12 +306,12 @@ begin
           Result := r * XFastPow(r, n - 1);
         end;
       Exit;
-    end;
-  if n = 0 then
+    end
+  else if n = 0 then
     begin
       Result := 1;
-    end;
-  if n < 0 then
+    end
+  else
     begin
       Result := XFastPow(1 / r, -n);
     end;
@@ -450,7 +445,6 @@ procedure HPDBasicCholeskySolve(const CHA: TLComplexMatrix;
   SqrtScaleA: TLFloat; n: TLInt; IsUpper: Boolean;
   var XB: TLComplexVec; var tmp: TLComplexVec); forward;
 
-
 (* ************************************************************************
   Dense solver.
 
@@ -546,12 +540,12 @@ procedure RMatrixSolveM(const a: TLMatrix; n: TLInt;
   const b: TLMatrix; M: TLInt; RFS: Boolean;
   var Info: TLInt; var Rep: TDenseSolverReport; var x: TLMatrix);
 var
-  DA    : TLMatrix;
+  DA: TLMatrix;
   EmptyA: TLMatrix;
-  p     : TLIVec;
+  p: TLIVec;
   ScaleA: TLFloat;
-  i     : TLInt;
-  j     : TLInt;
+  i: TLInt;
+  j: TLInt;
 begin
 
   //
@@ -687,8 +681,8 @@ procedure RMatrixLUSolveM(const LUA: TLMatrix; const p: TLIVec;
   var Info: TLInt; var Rep: TDenseSolverReport; var x: TLMatrix);
 var
   EmptyA: TLMatrix;
-  i     : TLInt;
-  j     : TLInt;
+  i: TLInt;
+  j: TLInt;
   ScaleA: TLFloat;
 begin
 
@@ -808,8 +802,8 @@ procedure RMatrixMixedSolveM(const a: TLMatrix; const LUA: TLMatrix;
   var x: TLMatrix);
 var
   ScaleA: TLFloat;
-  i     : TLInt;
-  j     : TLInt;
+  i: TLInt;
+  j: TLInt;
 begin
 
   //
@@ -875,13 +869,13 @@ procedure CMatrixSolveM(const a: TLComplexMatrix; n: TLInt;
   const b: TLComplexMatrix; M: TLInt; RFS: Boolean;
   var Info: TLInt; var Rep: TDenseSolverReport; var x: TLComplexMatrix);
 var
-  DA    : TLComplexMatrix;
+  DA: TLComplexMatrix;
   EmptyA: TLComplexMatrix;
-  p     : TLIVec;
+  p: TLIVec;
   ScaleA: TLFloat;
-  i     : TLInt;
-  j     : TLInt;
-  i_    : TLInt;
+  i: TLInt;
+  j: TLInt;
+  i_: TLInt;
 begin
 
   //
@@ -1010,8 +1004,8 @@ procedure CMatrixLUSolveM(const LUA: TLComplexMatrix; const p: TLIVec;
   var Info: TLInt; var Rep: TDenseSolverReport; var x: TLComplexMatrix);
 var
   EmptyA: TLComplexMatrix;
-  i     : TLInt;
-  j     : TLInt;
+  i: TLInt;
+  j: TLInt;
   ScaleA: TLFloat;
 begin
 
@@ -1126,8 +1120,8 @@ procedure CMatrixMixedSolveM(const a: TLComplexMatrix;
   var Rep: TDenseSolverReport; var x: TLComplexMatrix);
 var
   ScaleA: TLFloat;
-  i     : TLInt;
-  j     : TLInt;
+  i: TLInt;
+  j: TLInt;
 begin
 
   //
@@ -1244,12 +1238,12 @@ procedure SPDMatrixSolveM(const a: TLMatrix; n: TLInt;
   IsUpper: Boolean; const b: TLMatrix; M: TLInt;
   var Info: TLInt; var Rep: TDenseSolverReport; var x: TLMatrix);
 var
-  DA        : TLMatrix;
+  DA: TLMatrix;
   SqrtScaleA: TLFloat;
-  i         : TLInt;
-  j         : TLInt;
-  j1        : TLInt;
-  j2        : TLInt;
+  i: TLInt;
+  j: TLInt;
+  j1: TLInt;
+  j2: TLInt;
 begin
 
   //
@@ -1419,12 +1413,12 @@ procedure SPDMatrixCholeskySolveM(const CHA: TLMatrix; n: TLInt;
   IsUpper: Boolean; const b: TLMatrix; M: TLInt;
   var Info: TLInt; var Rep: TDenseSolverReport; var x: TLMatrix);
 var
-  EmptyA    : TLMatrix;
+  EmptyA: TLMatrix;
   SqrtScaleA: TLFloat;
-  i         : TLInt;
-  j         : TLInt;
-  j1        : TLInt;
-  j2        : TLInt;
+  i: TLInt;
+  j: TLInt;
+  j1: TLInt;
+  j2: TLInt;
 begin
 
   //
@@ -1557,13 +1551,13 @@ procedure HPDMatrixSolveM(const a: TLComplexMatrix; n: TLInt;
   IsUpper: Boolean; const b: TLComplexMatrix; M: TLInt;
   var Info: TLInt; var Rep: TDenseSolverReport; var x: TLComplexMatrix);
 var
-  DA        : TLComplexMatrix;
+  DA: TLComplexMatrix;
   SqrtScaleA: TLFloat;
-  i         : TLInt;
-  j         : TLInt;
-  j1        : TLInt;
-  j2        : TLInt;
-  i_        : TLInt;
+  i: TLInt;
+  j: TLInt;
+  j1: TLInt;
+  j2: TLInt;
+  i_: TLInt;
 begin
 
   //
@@ -1737,12 +1731,12 @@ procedure HPDMatrixCholeskySolveM(const CHA: TLComplexMatrix; n: TLInt;
   IsUpper: Boolean; const b: TLComplexMatrix; M: TLInt;
   var Info: TLInt; var Rep: TDenseSolverReport; var x: TLComplexMatrix);
 var
-  EmptyA    : TLComplexMatrix;
+  EmptyA: TLComplexMatrix;
   SqrtScaleA: TLFloat;
-  i         : TLInt;
-  j         : TLInt;
-  j1        : TLInt;
-  j2        : TLInt;
+  i: TLInt;
+  j: TLInt;
+  j1: TLInt;
+  j2: TLInt;
 begin
 
   //
@@ -1891,30 +1885,30 @@ procedure RMatrixSolveLS(const a: TLMatrix; NRows: TLInt;
   NCols: TLInt; const b: TLVec; Threshold: TLFloat;
   var Info: TLInt; var Rep: TDenseSolverLSReport; var x: TLVec);
 var
-  SV               : TLVec;
-  u                : TLMatrix;
-  VT               : TLMatrix;
-  RP               : TLVec;
-  UTB              : TLVec;
-  SUTB             : TLVec;
-  tmp              : TLVec;
-  TA               : TLVec;
-  TX               : TLVec;
-  Buf              : TLVec;
-  w                : TLVec;
-  i                : TLInt;
-  j                : TLInt;
-  NSV              : TLInt;
-  KernelIdx        : TLInt;
-  v                : TLFloat;
-  VErr             : TLFloat;
-  SVDFailed        : Boolean;
-  ZeroA            : Boolean;
-  RFS              : TLInt;
-  NRFS             : TLInt;
+  SV: TLVec;
+  u: TLMatrix;
+  VT: TLMatrix;
+  RP: TLVec;
+  UTB: TLVec;
+  SUTB: TLVec;
+  tmp: TLVec;
+  TA: TLVec;
+  TX: TLVec;
+  Buf: TLVec;
+  w: TLVec;
+  i: TLInt;
+  j: TLInt;
+  NSV: TLInt;
+  KernelIdx: TLInt;
+  v: TLFloat;
+  VErr: TLFloat;
+  SVDFailed: Boolean;
+  ZeroA: Boolean;
+  RFS: TLInt;
+  NRFS: TLInt;
   TerminateNextTime: Boolean;
-  SmallErr         : Boolean;
-  i_               : TLInt;
+  SmallErr: Boolean;
+  i_: TLInt;
 begin
   if (NRows <= 0) or (NCols <= 0) or AP_FP_Less(Threshold, 0) then
     begin
@@ -2137,24 +2131,24 @@ procedure RMatrixLUSolveInternal(const LUA: TLMatrix;
   M: TLInt; var Info: TLInt; var Rep: TDenseSolverReport;
   var x: TLMatrix);
 var
-  i                : TLInt;
-  j                : TLInt;
-  k                : TLInt;
-  RFS              : TLInt;
-  NRFS             : TLInt;
-  XC               : TLVec;
-  y                : TLVec;
-  BC               : TLVec;
-  XA               : TLVec;
-  XB               : TLVec;
-  TX               : TLVec;
-  v                : TLFloat;
-  VErr             : TLFloat;
-  MXB              : TLFloat;
-  ScaleRight       : TLFloat;
-  SmallErr         : Boolean;
+  i: TLInt;
+  j: TLInt;
+  k: TLInt;
+  RFS: TLInt;
+  NRFS: TLInt;
+  XC: TLVec;
+  y: TLVec;
+  BC: TLVec;
+  XA: TLVec;
+  XB: TLVec;
+  TX: TLVec;
+  v: TLFloat;
+  VErr: TLFloat;
+  MXB: TLFloat;
+  ScaleRight: TLFloat;
+  SmallErr: Boolean;
   TerminateNextTime: Boolean;
-  i_               : TLInt;
+  i_: TLInt;
 begin
   Assert(AP_FP_Greater(ScaleA, 0));
 
@@ -2326,24 +2320,24 @@ procedure SPDMatrixCholeskySolveInternal(const CHA: TLMatrix;
   M: TLInt; var Info: TLInt; var Rep: TDenseSolverReport;
   var x: TLMatrix);
 var
-  i                : TLInt;
-  j                : TLInt;
-  k                : TLInt;
-  RFS              : TLInt;
-  NRFS             : TLInt;
-  XC               : TLVec;
-  y                : TLVec;
-  BC               : TLVec;
-  XA               : TLVec;
-  XB               : TLVec;
-  TX               : TLVec;
-  v                : TLFloat;
-  VErr             : TLFloat;
-  MXB              : TLFloat;
-  ScaleRight       : TLFloat;
-  SmallErr         : Boolean;
+  i: TLInt;
+  j: TLInt;
+  k: TLInt;
+  RFS: TLInt;
+  NRFS: TLInt;
+  XC: TLVec;
+  y: TLVec;
+  BC: TLVec;
+  XA: TLVec;
+  XB: TLVec;
+  TX: TLVec;
+  v: TLFloat;
+  VErr: TLFloat;
+  MXB: TLFloat;
+  ScaleRight: TLFloat;
+  SmallErr: Boolean;
   TerminateNextTime: Boolean;
-  i_               : TLInt;
+  i_: TLInt;
 begin
   Assert(AP_FP_Greater(SqrtScaleA, 0));
 
@@ -2452,25 +2446,25 @@ procedure CMatrixLUSolveInternal(const LUA: TLComplexMatrix;
   M: TLInt; var Info: TLInt; var Rep: TDenseSolverReport;
   var x: TLComplexMatrix);
 var
-  i                : TLInt;
-  j                : TLInt;
-  k                : TLInt;
-  RFS              : TLInt;
-  NRFS             : TLInt;
-  XC               : TLComplexVec;
-  y                : TLComplexVec;
-  BC               : TLComplexVec;
-  XA               : TLComplexVec;
-  XB               : TLComplexVec;
-  TX               : TLComplexVec;
-  TmpBuf           : TLVec;
-  v                : TLComplex;
-  VErr             : TLFloat;
-  MXB              : TLFloat;
-  ScaleRight       : TLFloat;
-  SmallErr         : Boolean;
+  i: TLInt;
+  j: TLInt;
+  k: TLInt;
+  RFS: TLInt;
+  NRFS: TLInt;
+  XC: TLComplexVec;
+  y: TLComplexVec;
+  BC: TLComplexVec;
+  XA: TLComplexVec;
+  XB: TLComplexVec;
+  TX: TLComplexVec;
+  TmpBuf: TLVec;
+  v: TLComplex;
+  VErr: TLFloat;
+  MXB: TLFloat;
+  ScaleRight: TLFloat;
+  SmallErr: Boolean;
   TerminateNextTime: Boolean;
-  i_               : TLInt;
+  i_: TLInt;
 begin
   Assert(AP_FP_Greater(ScaleA, 0));
 
@@ -2655,24 +2649,24 @@ procedure HPDMatrixCholeskySolveInternal(const CHA: TLComplexMatrix;
   M: TLInt; var Info: TLInt; var Rep: TDenseSolverReport;
   var x: TLComplexMatrix);
 var
-  i                : TLInt;
-  j                : TLInt;
-  k                : TLInt;
-  RFS              : TLInt;
-  NRFS             : TLInt;
-  XC               : TLComplexVec;
-  y                : TLComplexVec;
-  BC               : TLComplexVec;
-  XA               : TLComplexVec;
-  XB               : TLComplexVec;
-  TX               : TLComplexVec;
-  v                : TLFloat;
-  VErr             : TLFloat;
-  MXB              : TLFloat;
-  ScaleRight       : TLFloat;
-  SmallErr         : Boolean;
+  i: TLInt;
+  j: TLInt;
+  k: TLInt;
+  RFS: TLInt;
+  NRFS: TLInt;
+  XC: TLComplexVec;
+  y: TLComplexVec;
+  BC: TLComplexVec;
+  XA: TLComplexVec;
+  XB: TLComplexVec;
+  TX: TLComplexVec;
+  v: TLFloat;
+  VErr: TLFloat;
+  MXB: TLFloat;
+  ScaleRight: TLFloat;
+  SmallErr: Boolean;
   TerminateNextTime: Boolean;
-  i_               : TLInt;
+  i_: TLInt;
 begin
   Assert(AP_FP_Greater(SqrtScaleA, 0));
 
@@ -2944,8 +2938,8 @@ procedure CBasicLUSolve(const LUA: TLComplexMatrix; const p: TLIVec;
   ScaleA: TLFloat; n: TLInt; var XB: TLComplexVec;
   var tmp: TLComplexVec);
 var
-  i : TLInt;
-  v : TLComplex;
+  i: TLInt;
+  v: TLComplex;
   i_: TLInt;
 begin
   i := 0;
@@ -2999,8 +2993,8 @@ procedure HPDBasicCholeskySolve(const CHA: TLComplexMatrix;
   SqrtScaleA: TLFloat; n: TLInt; IsUpper: Boolean;
   var XB: TLComplexVec; var tmp: TLComplexVec);
 var
-  i : TLInt;
-  v : TLComplex;
+  i: TLInt;
+  v: TLComplex;
   i_: TLInt;
 begin
 
@@ -3103,6 +3097,4 @@ begin
           dec(i);
         end;
     end;
-end; 
- 
- 
+end;

@@ -102,8 +102,6 @@ type
     procedure CopyBar(x1, y1, x2, y2: Integer; c: PAggColor); virtual;
     procedure BlendBar(x1, y1, x2, y2: Integer; c: PAggColor; Cover: Int8u); virtual;
 
-    function Span(x, y: Integer; Len: Cardinal): Pointer;
-
     procedure BlendSolidHSpan(x, y, Len: Integer; c: PAggColor; Covers: PInt8u); virtual;
     procedure BlendSolidVSpan(x, y, Len: Integer; c: PAggColor; Covers: PInt8u); virtual;
 
@@ -545,10 +543,6 @@ begin
           inc(y);
         end;
     end;
-end;
-
-function TAggRendererBase.Span(x, y: Integer; Len: Cardinal): Pointer;
-begin
 end;
 
 procedure TAggRendererBase.BlendSolidHSpan(x, y, Len: Integer; c: PAggColor;

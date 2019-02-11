@@ -90,7 +90,7 @@ begin
       DoStatus('开始训练');
       // 开始训练图片库矩阵
       // 我们训练大规模样本时，都应该选择图片矩阵方式来训练
-      param := TAI.Init_Metric_ResNet_Parameter(umlChangeFileExt(fn, '.sync'), umlChangeFileExt(fn, zAI.C_Metric_ResNet_Ext));
+      param := TAI.Init_Metric_ResNet_Parameter(umlChangeFileExt(fn, '.sync'), umlChangeFileExt(fn, C_Metric_ResNet_Ext));
 
       // 本次计划训练3小时
       // 在3小时条件满足时候，如果拟合度没有达到要求将会强行退出

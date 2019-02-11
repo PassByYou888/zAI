@@ -83,10 +83,10 @@ begin
       DoStatus('开始训练');
       // 后台训练
       dt := GetTimeTick();
-      if ai.OD_Train(fn, umlCombineFileName(TPath.GetLibraryPath, 'dog_training_output' + zAI.C_OD_Ext), 100, 100, 8) then
+      if ai.OD_Train(fn, umlCombineFileName(TPath.GetLibraryPath, 'dog_training_output' + C_OD_Ext), 100, 100, 8) then
         begin
           DoStatus('训练成功.耗时 %d 毫秒', [GetTimeTick() - dt]);
-          DoStatus('训练输出文件 "%s"', [umlCombineFileName(TPath.GetLibraryPath, 'dog_training_output' + zAI.C_OD_Ext).Text]);
+          DoStatus('训练输出文件 "%s"', [umlCombineFileName(TPath.GetLibraryPath, 'dog_training_output' + C_OD_Ext).Text]);
           DoStatus('使用.svm_od数据，请参考SVM_OD的Demo');
         end
       else

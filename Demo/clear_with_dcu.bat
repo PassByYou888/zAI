@@ -12,4 +12,3 @@ del/s *.tvsconfig
 del/s *.deployproj
 del/s *.stat
 del/s *.rsm
-del/s *.exe

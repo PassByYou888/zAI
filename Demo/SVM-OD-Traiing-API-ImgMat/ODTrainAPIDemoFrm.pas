@@ -107,7 +107,7 @@ begin
           TThread.Synchronize(Sender, procedure
             begin
               // 当训练完成后，我们将训练好的数据保存
-              SaveDialog.FileName := 'output' + zAI.C_OD_Marshal_Ext;
+              SaveDialog.FileName := 'output' + C_OD_Marshal_Ext;
               if not SaveDialog.Execute() then
                   exit;
 

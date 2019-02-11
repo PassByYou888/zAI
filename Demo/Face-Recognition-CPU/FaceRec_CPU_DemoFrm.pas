@@ -55,7 +55,7 @@ var
   end;
 
 begin
-  fn := umlCombineFileName(TPath.GetLibraryPath, 'lady_face' + zAI.C_Metric_ResNet_Ext);
+  fn := umlCombineFileName(TPath.GetLibraryPath, 'lady_face' + C_Metric_ResNet_Ext);
   d(fn);
   d(fn + '.sync');
   d(fn + '.sync_');
@@ -87,13 +87,13 @@ begin
           ResetButton.Enabled := False;
         end);
       try
-        DoStatus('检查度量化神经网络库:%s', ['lady_face' + zAI.C_Metric_ResNet_Ext]);
-        fn := umlCombineFileName(TPath.GetLibraryPath, 'lady_face' + zAI.C_Metric_ResNet_Ext);
+        DoStatus('检查度量化神经网络库:%s', ['lady_face' + C_Metric_ResNet_Ext]);
+        fn := umlCombineFileName(TPath.GetLibraryPath, 'lady_face' + C_Metric_ResNet_Ext);
         if not umlFileExists(fn) then
           begin
             // 这里我们用api方法来训练面部度量化的神经网络
             // 同样的训练也可以使用 TTrainingTask 方式
-            DoStatus('开始训练度量化神经网络库:%s', ['lady_face' + zAI.C_Metric_ResNet_Ext]);
+            DoStatus('开始训练度量化神经网络库:%s', ['lady_face' + C_Metric_ResNet_Ext]);
             param := TAI.Init_Metric_ResNet_Parameter(fn + '.sync', fn);
 
             // 在深度学习训练中，学习率是个不固定的东西，需要收敛

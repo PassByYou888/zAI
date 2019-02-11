@@ -214,7 +214,7 @@ function GetEquilateralTriangleCen(pt1, pt2: TVec2): TVec2; overload;
 
 procedure Rotate(RotAng: TGeoFloat; const x, y: TGeoFloat; out Nx, Ny: TGeoFloat); {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function Rotate(const RotAng: TGeoFloat; const Point: TVec2): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
-function NormalizeDegAngle(const angle: TGeoFloat): TGeoFloat; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+function NormalizeDegAngle(const Angle: TGeoFloat): TGeoFloat; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 
 // axis to pt angle
 function PointAngle(const axis, pt: TVec2): TGeoFloat; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
@@ -224,10 +224,10 @@ function PointAngle(const pt: TVec2): TGeoFloat; {$IFDEF INLINE_ASM} inline; {$E
 function Vec2Angle(const pt: TVec2): TGeoFloat; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 
 function AngleDistance(const s, a: TGeoFloat): TGeoFloat; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
-function PointRotation(const axis: TVec2; const Dist, angle: TGeoFloat): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
-function PointRotation(const axis, pt: TVec2; const angle: TGeoFloat): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
-function Vec2Rotation(const axis: TVec2; const Dist, angle: TGeoFloat): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
-function Vec2Rotation(const axis, pt: TVec2; const angle: TGeoFloat): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+function PointRotation(const axis: TVec2; const Dist, Angle: TGeoFloat): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+function PointRotation(const axis, pt: TVec2; const Angle: TGeoFloat): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+function Vec2Rotation(const axis: TVec2; const Dist, Angle: TGeoFloat): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+function Vec2Rotation(const axis, pt: TVec2; const Angle: TGeoFloat): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 
 function CircleInCircle(const cp1, cp2: TVec2; const r1, r2: TGeoFloat): Boolean; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function CircleInRect(const cp: TVec2; const radius: TGeoFloat; r: TRectV2): Boolean;
@@ -284,6 +284,7 @@ function RectMul(const r1, r2: TRectV2): TRectV2; {$IFDEF INLINE_ASM} inline; {$
 function RectMul(const r1: TRectV2; v2: TVec2): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectMul(const r1: TRectV2; r2: TGeoFloat): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectDiv(const r1, r2: TRectV2): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+function RectDiv(const r1: TRectV2; f2:TGeoFloat): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectOffset(const r: TRectV2; Offset: TVec2): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectSizeLerp(const r: TRectV2; const rSizeLerp: TGeoFloat): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectCenScale(const r: TRectV2; const rSizeScale: TGeoFloat): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
@@ -360,11 +361,11 @@ procedure ClosestPointOnSegmentFromPoint(const x1, y1, x2, y2, Px, Py: TGeoFloat
 function ClosestPointOnSegmentFromPoint(const lb, le, pt: TVec2): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 
 function MinimumDistanceFromPointToLine(const Px, Py, x1, y1, x2, y2: TGeoFloat): TGeoFloat; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
-function Quadrant(const angle: TGeoFloat): Integer; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+function Quadrant(const Angle: TGeoFloat): Integer; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 
 procedure ProjectPoint(const Srcx, Srcy, Dstx, Dsty, Dist: TGeoFloat; out Nx, Ny: TGeoFloat); {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 procedure ProjectPoint(const Srcx, Srcy, Srcz, Dstx, Dsty, Dstz, Dist: TGeoFloat; out Nx, Ny, Nz: TGeoFloat); {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
-procedure ProjectPoint(const Px, Py, angle, Distance: TGeoFloat; out Nx, Ny: TGeoFloat); {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+procedure ProjectPoint(const Px, Py, Angle, Distance: TGeoFloat; out Nx, Ny: TGeoFloat); {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 procedure ProjectPoint0(const Px, Py, Distance: TGeoFloat; out Nx, Ny: TGeoFloat); {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 procedure ProjectPoint45(const Px, Py, Distance: TGeoFloat; out Nx, Ny: TGeoFloat); {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 procedure ProjectPoint90(const Px, Py, Distance: TGeoFloat; out Nx, Ny: TGeoFloat); {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
@@ -443,7 +444,7 @@ type
 
     function PointInHere(pt: TVec2): Boolean; overload;
 
-    procedure RotateAngle(axis: TVec2; angle: TGeoFloat); overload;
+    procedure RotateAngle(axis: TVec2; Angle: TGeoFloat); overload;
 
     procedure Scale(axis: TVec2; Scale: TGeoFloat); overload;
 
@@ -498,7 +499,7 @@ type
 
   TPolyPoint = record
     Owner: TPoly;
-    angle: TGeoFloat;
+    Angle: TGeoFloat;
     Dist: TGeoFloat;
   end;
 
@@ -528,7 +529,7 @@ type
     procedure AddPoint(pt: TVec2); overload;
     procedure AddPoint(x, y: TGeoFloat); overload;
     procedure Add(AAngle, ADist: TGeoFloat); overload;
-    procedure Insert(idx: Integer; angle, Dist: TGeoFloat); overload;
+    procedure Insert(idx: Integer; Angle, Dist: TGeoFloat); overload;
     procedure Delete(idx: Integer); overload;
     procedure Clear; overload;
     function Count: Integer; overload;
@@ -573,7 +574,7 @@ type
     function LerpToEndge(pt: TVec2; AProjDistance, AExpandDistance: TGeoFloat; FromIdx, toidx: Integer): TVec2;
 
     property Scale: TGeoFloat read FScale write FScale;
-    property angle: TGeoFloat read FAngle write FAngle;
+    property Angle: TGeoFloat read FAngle write FAngle;
     property Position: TVec2 read FPosition write FPosition;
     property Poly[index: Integer]: PPolyPoint read GetPoly;
     property MaxRadius: TGeoFloat read FMaxRadius;
@@ -694,8 +695,8 @@ type
     LeftBottom: TVec2;
   public
     function IsZero: Boolean; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-    function Rotation(angle: TGeoFloat): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-    function Rotation(axis: TVec2; angle: TGeoFloat): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+    function Rotation(Angle: TGeoFloat): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+    function Rotation(axis: TVec2; Angle: TGeoFloat): TV2Rect4; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     function ScaleToRect(Area: TRectV2; endge: TGeoFloat): TV2Rect4; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     function Add(v: TVec2): TV2Rect4; {$IFDEF INLINE_ASM} inline; {$ENDIF}
     function Sub(v: TVec2): TV2Rect4; {$IFDEF INLINE_ASM} inline; {$ENDIF}
@@ -1520,9 +1521,9 @@ begin
   Rotate(RotAng, Point[0], Point[1], Result[0], Result[1]);
 end;
 
-function NormalizeDegAngle(const angle: TGeoFloat): TGeoFloat;
+function NormalizeDegAngle(const Angle: TGeoFloat): TGeoFloat;
 begin
-  Result := angle - Int(angle * (1 / 360)) * 360;
+  Result := Angle - Int(Angle * (1 / 360)) * 360;
   if Result > 180 then
       Result := Result - 360
   else if Result < -180 then
@@ -1556,26 +1557,26 @@ begin
       Result := 360 - Result;
 end;
 
-function PointRotation(const axis: TVec2; const Dist, angle: TGeoFloat): TVec2;
+function PointRotation(const axis: TVec2; const Dist, Angle: TGeoFloat): TVec2;
 begin
-  Result[0] := axis[0] - (Cos(DegToRad(angle)) * Dist);
-  Result[1] := axis[1] - (Sin(DegToRad(angle)) * Dist);
+  Result[0] := axis[0] - (Cos(DegToRad(Angle)) * Dist);
+  Result[1] := axis[1] - (Sin(DegToRad(Angle)) * Dist);
 end;
 
-function PointRotation(const axis, pt: TVec2; const angle: TGeoFloat): TVec2;
+function PointRotation(const axis, pt: TVec2; const Angle: TGeoFloat): TVec2;
 begin
-  Result := PointRotation(axis, PointDistance(axis, pt), angle);
+  Result := PointRotation(axis, PointDistance(axis, pt), Angle);
 end;
 
-function Vec2Rotation(const axis: TVec2; const Dist, angle: TGeoFloat): TVec2;
+function Vec2Rotation(const axis: TVec2; const Dist, Angle: TGeoFloat): TVec2;
 begin
-  Result[0] := axis[0] - (Cos(DegToRad(angle)) * Dist);
-  Result[1] := axis[1] - (Sin(DegToRad(angle)) * Dist);
+  Result[0] := axis[0] - (Cos(DegToRad(Angle)) * Dist);
+  Result[1] := axis[1] - (Sin(DegToRad(Angle)) * Dist);
 end;
 
-function Vec2Rotation(const axis, pt: TVec2; const angle: TGeoFloat): TVec2;
+function Vec2Rotation(const axis, pt: TVec2; const Angle: TGeoFloat): TVec2;
 begin
-  Result := Vec2Rotation(axis, Vec2Distance(axis, pt), angle);
+  Result := Vec2Rotation(axis, Vec2Distance(axis, pt), Angle);
 end;
 
 function CircleInCircle(const cp1, cp2: TVec2; const r1, r2: TGeoFloat): Boolean;
@@ -1891,6 +1892,12 @@ function RectDiv(const r1, r2: TRectV2): TRectV2;
 begin
   Result[0] := Vec2Div(r1[0], r2[0]);
   Result[1] := Vec2Div(r1[1], r2[1]);
+end;
+
+function RectDiv(const r1: TRectV2; f2:TGeoFloat): TRectV2;
+begin
+  Result[0] := Vec2Div(r1[0], f2);
+  Result[1] := Vec2Div(r1[1], f2);
 end;
 
 function RectOffset(const r: TRectV2; Offset: TVec2): TRectV2;
@@ -2864,18 +2871,18 @@ begin
   Result := Distance(Px, Py, Nx, Ny);
 end;
 
-function Quadrant(const angle: TGeoFloat): Integer;
+function Quadrant(const Angle: TGeoFloat): Integer;
 begin
   Result := 0;
-  if (angle >= 0.0) and (angle < 90.0) then
+  if (Angle >= 0.0) and (Angle < 90.0) then
       Result := 1
-  else if (angle >= 90.0) and (angle < 180.0) then
+  else if (Angle >= 90.0) and (Angle < 180.0) then
       Result := 2
-  else if (angle >= 180.0) and (angle < 270.0) then
+  else if (Angle >= 180.0) and (Angle < 270.0) then
       Result := 3
-  else if (angle >= 270.0) and (angle < 360.0) then
+  else if (Angle >= 270.0) and (Angle < 360.0) then
       Result := 4
-  else if angle = 360.0 then
+  else if Angle = 360.0 then
       Result := 1;
 end;
 
@@ -2899,33 +2906,33 @@ begin
 end;
 (* End of Project Point 3D *)
 
-procedure ProjectPoint(const Px, Py, angle, Distance: TGeoFloat; out Nx, Ny: TGeoFloat);
+procedure ProjectPoint(const Px, Py, Angle, Distance: TGeoFloat; out Nx, Ny: TGeoFloat);
 var
   dx: TGeoFloat;
   dy: TGeoFloat;
 begin
   dx := Zero;
   dy := Zero;
-  case Quadrant(angle) of
+  case Quadrant(Angle) of
     1:
       begin
-        dx := Cos(angle * PIDiv180) * Distance;
-        dy := Sin(angle * PIDiv180) * Distance;
+        dx := Cos(Angle * PIDiv180) * Distance;
+        dy := Sin(Angle * PIDiv180) * Distance;
       end;
     2:
       begin
-        dx := Sin((angle - 90.0) * PIDiv180) * Distance * -1.0;
-        dy := Cos((angle - 90.0) * PIDiv180) * Distance;
+        dx := Sin((Angle - 90.0) * PIDiv180) * Distance * -1.0;
+        dy := Cos((Angle - 90.0) * PIDiv180) * Distance;
       end;
     3:
       begin
-        dx := Cos((angle - 180.0) * PIDiv180) * Distance * -1.0;
-        dy := Sin((angle - 180.0) * PIDiv180) * Distance * -1.0;
+        dx := Cos((Angle - 180.0) * PIDiv180) * Distance * -1.0;
+        dy := Sin((Angle - 180.0) * PIDiv180) * Distance * -1.0;
       end;
     4:
       begin
-        dx := Sin((angle - 270.0) * PIDiv180) * Distance;
-        dy := Cos((angle - 270.0) * PIDiv180) * Distance * -1.0;
+        dx := Sin((Angle - 270.0) * PIDiv180) * Distance;
+        dy := Cos((Angle - 270.0) * PIDiv180) * Distance * -1.0;
       end;
   end;
   Nx := Px + dx;
@@ -3597,7 +3604,7 @@ begin
     end;
 end;
 
-procedure TVec2List.RotateAngle(axis: TVec2; angle: TGeoFloat);
+procedure TVec2List.RotateAngle(axis: TVec2; Angle: TGeoFloat);
 var
   i: Integer;
   p: PVec2;
@@ -3605,7 +3612,7 @@ begin
   for i := 0 to Count - 1 do
     begin
       p := Items[i];
-      p^ := PointRotation(axis, p^, PointAngle(axis, p^) + angle);
+      p^ := PointRotation(axis, p^, PointAngle(axis, p^) + Angle);
     end;
 end;
 
@@ -4603,7 +4610,7 @@ begin
           new(p);
           p2 := TPoly(Source).Poly[i];
           p^.Owner := Self;
-          p^.angle := p2^.angle;
+          p^.Angle := p2^.Angle;
           p^.Dist := p2^.Dist;
           FList.Add(p);
         end;
@@ -4635,18 +4642,18 @@ begin
       FMaxRadius := ADist;
   new(p);
   p^.Owner := Self;
-  p^.angle := AAngle - FAngle;
+  p^.Angle := AAngle - FAngle;
   p^.Dist := ADist / FScale;
   FList.Add(p);
 end;
 
-procedure TPoly.Insert(idx: Integer; angle, Dist: TGeoFloat);
+procedure TPoly.Insert(idx: Integer; Angle, Dist: TGeoFloat);
 var
   p: PPolyPoint;
 begin
   new(p);
   p^.Owner := Self;
-  p^.angle := angle;
+  p^.Angle := Angle;
   p^.Dist := Dist;
   FList.Insert(idx, p);
 end;
@@ -4680,7 +4687,7 @@ procedure TPoly.CopyPoly(pl: TPoly; AReversed: Boolean);
         FMaxRadius := d;
     new(p);
     p^.Owner := Self;
-    p^.angle := a;
+    p^.Angle := a;
     p^.Dist := d;
     FList.Add(p);
   end;
@@ -4697,13 +4704,13 @@ begin
     begin
       for i := pl.Count - 1 downto 0 do
         with pl.Poly[i]^ do
-            _Append(angle, Dist);
+            _Append(Angle, Dist);
     end
   else
     begin
       for i := 0 to pl.Count - 1 do
         with pl.Poly[i]^ do
-            _Append(angle, Dist);
+            _Append(Angle, Dist);
     end;
 end;
 
@@ -4768,7 +4775,7 @@ begin
 
   L := PPolyPoint(FList[0]);
   p := PPolyPoint(FList[Count - 1]);
-  while (Count >= 2) and (IsEqual(p^.angle, L^.angle)) and (IsEqual(p^.Dist, L^.Dist)) do
+  while (Count >= 2) and (IsEqual(p^.Angle, L^.Angle)) and (IsEqual(p^.Dist, L^.Dist)) do
     begin
       Delete(Count - 1);
       p := PPolyPoint(FList[Count - 1]);
@@ -4782,7 +4789,7 @@ begin
   while i < Count do
     begin
       p := PPolyPoint(FList[i]);
-      if (IsEqual(p^.angle, L^.angle)) and (IsEqual(p^.Dist, L^.Dist)) then
+      if (IsEqual(p^.Angle, L^.Angle)) and (IsEqual(p^.Dist, L^.Dist)) then
           Delete(i)
       else
         begin
@@ -5119,7 +5126,7 @@ begin
   for i := 0 to Count - 1 do
       pl.Add(GetPoint(i));
   Scale := AScale;
-  angle := AAngle;
+  Angle := AAngle;
   ExpandMode := AExpandMode;
   Position := APosition;
   RebuildPoly(pl);
@@ -5687,7 +5694,7 @@ var
   p: PPolyPoint;
 begin
   p := GetPoly(idx);
-  Result := PointRotation(FPosition, p^.Dist * FScale, p^.angle + FAngle);
+  Result := PointRotation(FPosition, p^.Dist * FScale, p^.Angle + FAngle);
 end;
 
 procedure TPoly.SetPoint(idx: Integer; Value: TVec2);
@@ -5695,7 +5702,7 @@ var
   p: PPolyPoint;
 begin
   p := GetPoly(idx);
-  p^.angle := PointAngle(FPosition, Value) - FAngle;
+  p^.Angle := PointAngle(FPosition, Value) - FAngle;
   p^.Dist := PointDistance(FPosition, Value);
   if p^.Dist > FMaxRadius then
       FMaxRadius := p^.Dist;
@@ -5773,7 +5780,7 @@ begin
   for i := 0 to Count - 1 do
     begin
       p := GetPoly(i);
-      stream.WriteSingle(p^.angle);
+      stream.WriteSingle(p^.Angle);
       stream.WriteSingle(p^.Dist);
     end;
 end;
@@ -5795,7 +5802,7 @@ begin
     begin
       new(p);
       p^.Owner := Self;
-      p^.angle := stream.ReadSingle;
+      p^.Angle := stream.ReadSingle;
       p^.Dist := stream.ReadSingle;
       FList.Add(p);
 
@@ -6316,23 +6323,23 @@ begin
     Geometry2DUnit.IsZero(LeftBottom);
 end;
 
-function TV2Rect4.Rotation(angle: TGeoFloat): TV2Rect4;
+function TV2Rect4.Rotation(Angle: TGeoFloat): TV2Rect4;
 var
   axis: TVec2;
 begin
   axis := Centroid;
-  Result.LeftTop := PointRotation(axis, LeftTop, PointAngle(axis, LeftTop) + angle);
-  Result.RightTop := PointRotation(axis, RightTop, PointAngle(axis, RightTop) + angle);
-  Result.RightBottom := PointRotation(axis, RightBottom, PointAngle(axis, RightBottom) + angle);
-  Result.LeftBottom := PointRotation(axis, LeftBottom, PointAngle(axis, LeftBottom) + angle);
+  Result.LeftTop := PointRotation(axis, LeftTop, PointAngle(axis, LeftTop) + Angle);
+  Result.RightTop := PointRotation(axis, RightTop, PointAngle(axis, RightTop) + Angle);
+  Result.RightBottom := PointRotation(axis, RightBottom, PointAngle(axis, RightBottom) + Angle);
+  Result.LeftBottom := PointRotation(axis, LeftBottom, PointAngle(axis, LeftBottom) + Angle);
 end;
 
-function TV2Rect4.Rotation(axis: TVec2; angle: TGeoFloat): TV2Rect4;
+function TV2Rect4.Rotation(axis: TVec2; Angle: TGeoFloat): TV2Rect4;
 begin
-  Result.LeftTop := PointRotation(axis, LeftTop, PointAngle(axis, LeftTop) + angle);
-  Result.RightTop := PointRotation(axis, RightTop, PointAngle(axis, RightTop) + angle);
-  Result.RightBottom := PointRotation(axis, RightBottom, PointAngle(axis, RightBottom) + angle);
-  Result.LeftBottom := PointRotation(axis, LeftBottom, PointAngle(axis, LeftBottom) + angle);
+  Result.LeftTop := PointRotation(axis, LeftTop, PointAngle(axis, LeftTop) + Angle);
+  Result.RightTop := PointRotation(axis, RightTop, PointAngle(axis, RightTop) + Angle);
+  Result.RightBottom := PointRotation(axis, RightBottom, PointAngle(axis, RightBottom) + Angle);
+  Result.LeftBottom := PointRotation(axis, LeftBottom, PointAngle(axis, LeftBottom) + Angle);
 end;
 
 function TV2Rect4.ScaleToRect(Area: TRectV2; endge: TGeoFloat): TV2Rect4;

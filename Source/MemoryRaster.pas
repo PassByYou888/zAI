@@ -196,7 +196,8 @@ type
     procedure NoLineZoomFrom(const Source: TMemoryRaster; const NewWidth, NewHeight: Integer);
     procedure NoLineZoom(const NewWidth, NewHeight: Integer);
     procedure ZoomLine(const Source, dest: TMemoryRaster; const pass: Integer);
-    procedure ZoomFrom(const Source: TMemoryRaster; const NewWidth, NewHeight: Integer);
+    procedure ZoomFrom(const Source: TMemoryRaster; const NewWidth, NewHeight: Integer); overload;
+    procedure ZoomFrom(const Source: TMemoryRaster; const f:TGeoFloat); overload;
     procedure Zoom(const NewWidth, NewHeight: Integer);
     procedure FastBlurZoomFrom(const Source: TMemoryRaster; const NewWidth, NewHeight: Integer);
     procedure FastBlurZoom(const NewWidth, NewHeight: Integer);

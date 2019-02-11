@@ -89,9 +89,9 @@ begin
           DoStatus('—µ¡∑≥…π¶.∫ƒ ± %d ∫¡√Î', [GetTimeTick() - dt]);
           TThread.Synchronize(Sender, procedure
             begin
-              SaveDialog.FileName := 'output' + zAI.C_SP_Ext;
-              SaveDialog.DefaultExt := zAI.C_SP_Ext;
-              SaveDialog.Filter := Format('%s|*%s', [zAI.C_SP_Ext, zAI.C_SP_Ext]);
+              SaveDialog.FileName := 'output' + C_SP_Ext;
+              SaveDialog.DefaultExt := C_SP_Ext;
+              SaveDialog.Filter := Format('%s|*%s', [C_SP_Ext, C_SP_Ext]);
               if not SaveDialog.Execute() then
                   exit;
               m64.SaveToFile(SaveDialog.FileName);

@@ -1172,27 +1172,17 @@ begin
       end;
 
     if LLastMatrixNumber = 0 then
-      begin
         LLastMatrixNumber := 1;
-      end;
 
     dx := 0;
     for i := 0 to 24 do
-      begin
         if (LMatrix[i] and MASK_MATRIX[i]) <> 0 then
-          begin
             inc(dx);
-          end;
-      end;
 
     if dx = 0 then
-      begin
-        LDiagonal := 1;
-      end
+        LDiagonal := 1
     else
-      begin
         LDiagonal := 2;
-      end;
 
     for y := 0 to (DestMR.height - 1) do
       begin

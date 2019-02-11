@@ -65,7 +65,7 @@ begin
         end);
       try
         bear_dataset_file := umlCombineFileName(TPath.GetLibraryPath, 'bear.ImgDataSet');
-        bear_od_file := umlChangeFileExt(bear_dataset_file, zAI.C_MMOD_Ext);
+        bear_od_file := umlChangeFileExt(bear_dataset_file, C_MMOD_Ext);
 
         bear_ImgL := TAI_ImageList.Create;
         bear_ImgL.LoadFromFile(bear_dataset_file);
@@ -281,7 +281,7 @@ var
   end;
 
 begin
-  fn := umlCombineFileName(TPath.GetLibraryPath, 'bear' + zAI.C_MMOD_Ext);
+  fn := umlCombineFileName(TPath.GetLibraryPath, 'bear' + C_MMOD_Ext);
   d(fn);
   d(umlChangeFileExt(fn, '.sync'));
   d(umlChangeFileExt(fn, '.sync_'));

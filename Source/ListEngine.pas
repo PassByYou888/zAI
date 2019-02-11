@@ -6195,7 +6195,8 @@ begin
     else if umlMultipleMatch([
       'expression(*)', 'expression[*]', 'expression<*>', 'expression"*"', 'expression'#39'*'#39,
       'exp(*)', 'exp[*]', 'exp<*>', 'exp"*"', 'exp'#39'*'#39,
-      'expr(*)', 'expr[*]', 'expr<*>', 'expr"*"', 'expr'#39'*'#39
+      'expr(*)', 'expr[*]', 'expr<*>', 'expr"*"', 'expr'#39'*'#39,
+      'express(*)', 'express[*]', 'express<*>', 'express"*"', 'exp'#39'*'#39
       ], n) then
       begin
         body := umlDeleteFirstStr_M(n, '([<"'#39);
@@ -7258,7 +7259,8 @@ begin
     else if umlMultipleMatch([
       'expression(*)', 'expression[*]', 'expression<*>', 'expression"*"', 'expression'#39'*'#39,
       'exp(*)', 'exp[*]', 'exp<*>', 'exp"*"', 'exp'#39'*'#39,
-      'expr(*)', 'expr[*]', 'expr<*>', 'expr"*"', 'expr'#39'*'#39
+      'expr(*)', 'expr[*]', 'expr<*>', 'expr"*"', 'expr'#39'*'#39,
+      'express(*)', 'express[*]', 'express<*>', 'express"*"', 'exp'#39'*'#39
       ], n) then
       begin
         body := umlDeleteFirstStr_M(n, '([<"'#39);

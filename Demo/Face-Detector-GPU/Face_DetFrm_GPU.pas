@@ -53,7 +53,7 @@ implementation
 
 procedure TFace_DetForm.AddPicButtonClick(Sender: TObject);
 var
-  i, j: Integer;
+  i: Integer;
   mr, nmr: TMemoryRaster;
   d: TDrawEngine;
   mmod_desc: TMMOD_Desc;
@@ -63,6 +63,11 @@ begin
   OpenDialog.Filter := TBitmapCodecManager.GetFilterString;
   if not OpenDialog.Execute then
       exit;
+
+  for i := 0 to rList.Count - 1 do
+      DisposeObject(rList[i]);
+  rList.clear;
+
   for i := 0 to OpenDialog.Files.Count - 1 do
     begin
       mr := NewRasterFromFile(OpenDialog.Files[i]);
@@ -72,7 +77,7 @@ begin
           nmr := NewRaster;
           nmr.ZoomFrom(mr, mr.width * 4, mr.height * 4);
           mmod_desc := ai.MMOD_DNN_Process(dnn_face_hnd, nmr);
-          disposeObject(nmr);
+          DisposeObject(nmr);
         end
       else
         begin
@@ -80,7 +85,8 @@ begin
         end;
 
       d := TDrawEngine.Create;
-      d.Rasterization.Memory.SetWorkMemory(mr);
+      d.Rasterization.SetWorkMemory(mr);
+      d.SetSize(mr);
       for mmod_rect in mmod_desc do
         begin
           r := mmod_rect.r;
@@ -89,7 +95,7 @@ begin
           d.DrawBox(r, DEColor(1, 0, 0, 0.9), 4);
         end;
       d.Flush;
-      disposeObject(d);
+      DisposeObject(d);
 
       rList.Add(mr);
     end;

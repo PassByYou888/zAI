@@ -427,7 +427,7 @@ type
 
   TDrawEngine = class(TCoreClassObject)
   protected
-    FRasterInterface: TDrawEngine_Raster;
+    FRasterization: TDrawEngine_Raster;
     FDrawInterface: TDrawEngineInterface;
     FDrawCommand: TDrawQueue;
     FDrawExecute: TDrawExecute;
@@ -707,7 +707,7 @@ type
     procedure Progress(deltaTime: Double); virtual;
 
     { build-in rasterization }
-    property Rasterization: TDrawEngine_Raster read FRasterInterface;
+    property Rasterization: TDrawEngine_Raster read FRasterization;
     { draw interface }
     property DrawInterface: TDrawEngineInterface read FDrawInterface write SetDrawInterface;
     { preset container }
@@ -774,6 +774,7 @@ type
     FMemory: TDETexture;
     FUsedAgg: Boolean;
     FEngine: TDrawEngine;
+    FFreeEngine: Boolean;
     function DEColor2RasterColor(const COLOR: TDEColor): TRasterColor; overload;
     function DEColor2RasterColor(const COLOR: TDEColor; const alpha: Byte): TRasterColor; overload;
   public
@@ -799,6 +800,7 @@ type
     property Memory: TDETexture read FMemory;
     property UsedAgg: Boolean read FUsedAgg write FUsedAgg;
     function Engine: TDrawEngine;
+    procedure SetWorkMemory(m: TMemoryRaster);
   end;
 
 const
@@ -2541,7 +2543,7 @@ end;
 procedure TDrawEngine.SetDrawInterface(const Value: TDrawEngineInterface);
 begin
   if Value = nil then
-      FDrawInterface := FRasterInterface
+      FDrawInterface := FRasterization
   else
       FDrawInterface := Value;
 end;
@@ -2598,8 +2600,11 @@ constructor TDrawEngine.Create;
 begin
   inherited Create;
 
-  FRasterInterface := TDrawEngine_Raster.Create;
-  FDrawInterface := FRasterInterface;
+  FRasterization := TDrawEngine_Raster.Create;
+  FRasterization.FEngine := Self;
+  FRasterization.FFreeEngine := False;
+
+  FDrawInterface := FRasterization;
 
   FDrawCommand := TDrawQueue.Create(Self);
   FDrawExecute := TDrawExecute.Create(Self);
@@ -2676,7 +2681,7 @@ begin
   DisposeObject(FTextureLibrary);
   DisposeObject(FDefaultTexture);
 
-  DisposeObject(FRasterInterface);
+  DisposeObject(FRasterization);
 
   if FUserVariants <> nil then
       DisposeObject(FUserVariants);
@@ -4440,12 +4445,13 @@ begin
   FEngine := nil;
   FMemory := DefaultTextureClass.Create;
   FUsedAgg := True;
+  FFreeEngine := False;
 end;
 
 destructor TDrawEngine_Raster.Destroy;
 begin
   DisposeObject(FMemory);
-  if FEngine <> nil then
+  if (FFreeEngine) and (FEngine <> nil) then
       DisposeObject(FEngine);
   inherited Destroy;
 end;
@@ -4560,9 +4566,18 @@ end;
 function TDrawEngine_Raster.Engine: TDrawEngine;
 begin
   if FEngine = nil then
+    begin
       FEngine := TDrawEngineClass.Create;
+      FFreeEngine := True;
+    end;
   FEngine.FDrawInterface := Self;
   Result := FEngine;
+end;
+
+procedure TDrawEngine_Raster.SetWorkMemory(m: TMemoryRaster);
+begin
+  Memory.SetWorkMemory(m);
+  Engine.SetSize(m);
 end;
 
 initialization

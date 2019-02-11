@@ -93,7 +93,7 @@ begin
       param.SetDefaultValue('window_height', 100);              // 训练完成后，窗口滑动用，检测尺度高，如果训练给高清图像用，这里就给100或则更大，低分辨率图像用，这里就给小
       param.SetDefaultValue('thread', 8);                       // 并行训练的线程数量
       param.SetDefaultValue('scale', 0.5);                      // 缩放系数，0.5可以有效提升训练速度
-      param.SetDefaultValue('output', 'output' + zAI.C_OD_Ext); // 训练完成后的输出文件
+      param.SetDefaultValue('output', 'output' + C_OD_Ext); // 训练完成后的输出文件
 
       tt.Write('param.txt', param);
 
@@ -112,18 +112,18 @@ begin
           DoStatus('开始训练');
           // 后台训练
           dt := GetTimeTick();
-          if tt.RunTraining(ai, 'param.txt') then
+          if RunTrainingTask(tt, ai, 'param.txt') then
             begin
               DoStatus('训练成功.耗时 %d 毫秒', [GetTimeTick() - dt]);
               TThread.Synchronize(Sender, procedure
                 begin
                   // 当训练完成后，我们将训练好的数据保存
-                  SaveDialog.FileName := param.GetDefaultValue('output', 'output' + zAI.C_OD_Ext);
+                  SaveDialog.FileName := param.GetDefaultValue('output', 'output' + C_OD_Ext);
                   if not SaveDialog.Execute() then
                       exit;
 
                   // 使用.svm_od数据，请参考SVM_OD的Demo
-                  tt.ReadToFile(param.GetDefaultValue('output', 'output' + zAI.C_OD_Ext), SaveDialog.FileName);
+                  tt.ReadToFile(param.GetDefaultValue('output', 'output' + C_OD_Ext), SaveDialog.FileName);
                 end);
             end
           else

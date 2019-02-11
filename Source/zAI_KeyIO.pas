@@ -1,5 +1,5 @@
 { ****************************************************************************** }
-{ * AI Key IO                                                                  * }
+{ * AI Key IO(platform compatible)                                             * }
 { * by QQ 600585@qq.com                                                        * }
 { ****************************************************************************** }
 { * https://github.com/PassByYou888/CoreCipher                                 * }
@@ -25,13 +25,18 @@ uses SysUtils,
   DoStatusIO,
   DataFrameEngine,
   PhysicsIO,
-  CommunicationFramework,
-  zAI_Common;
+  CommunicationFramework;
+
+type
+  TAI_Key = array [0 .. 39] of Byte;
 
 function AIKey(key: TAI_Key): TAI_Key;
 procedure AIKeyState(var expire: SystemString; var OD_key, SP_key, MetricDNN_key, MMOD_key, RNIC_key: Boolean);
 
 implementation
+
+
+uses zAI_Common;
 
 type
   TGetKeyServer_Remote = class
@@ -85,12 +90,12 @@ begin
   try
     if not Tunnel.RemoteInited then
       begin
-        DoStatus('open key server "%s".', [AI_Key_Server_Host]);
+        DoStatus('open key server "%s".', [AI_Key_Server_Host.Text]);
         tk := GetTimeTick();
 
         while not Tunnel.Connect(AI_Key_Server_Host, AI_Key_Server_Port) do
           begin
-            DoStatus('key server "%s" no reponse.', [AI_Key_Server_Host]);
+            DoStatus('key server "%s" no reponse.', [AI_Key_Server_Host.Text]);
             TCoreClassThread.Sleep(100);
             if GetTimeTick() - tk > 5 * C_Tick_Second then
                 exit;
@@ -126,12 +131,12 @@ begin
   try
     if not Tunnel.RemoteInited then
       begin
-        DoStatus('open key server "%s".', [AI_Key_Server_Host]);
+        DoStatus('open key server "%s".', [AI_Key_Server_Host.Text]);
         tk := GetTimeTick();
 
         while not Tunnel.Connect(AI_Key_Server_Host, AI_Key_Server_Port) do
           begin
-            DoStatus('key server "%s" no reponse.', [AI_Key_Server_Host]);
+            DoStatus('key server "%s" no reponse.', [AI_Key_Server_Host.Text]);
             TCoreClassThread.Sleep(100);
             if GetTimeTick() - tk > 15 * C_Tick_Second then
                 exit;

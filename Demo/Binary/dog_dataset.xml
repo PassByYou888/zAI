@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<?xml-stylesheet type='text/xsl' href='dog_dataset.xsl'?>
+<dataset>
+<name>dog_dataset.xml</name>
+<comment>dog_dataset.xml</comment>
+<images>
+ <image file='dog_dataset3b8f9bb609b927d75b81d218fdefadfb.bmp'>
+  <box top='84' left='164' width='147' height='146'>
+  </box>
+ </image>
+ <image file='dog_dataset5c27137f7dc2ccfe5388bfcc3c3867b9.bmp'>
+  <box top='78' left='182' width='134' height='135'>
+  </box>
+ </image>
+ <image file='dog_dataset81323420c3fc766c9e438250863cff11.bmp'>
+  <box top='98' left='190' width='98' height='99'>
+  </box>
+ </image>
+ <image file='dog_dataset6debc580028a0de4e12dc3b9dad0f65d.bmp'>
+  <box top='108' left='174' width='70' height='70'>
+  </box>
+ </image>
+ <image file='dog_datasetcd0c7b8307f4c9a3e78a5ecb7200aaf4.bmp'>
+  <box top='118' left='139' width='97' height='96'>
+  </box>
+ </image>
+ <image file='dog_datasetcc7b02fa352007a16a4c8573c86d31bc.bmp'>
+  <box top='84' left='168' width='104' height='104'>
+  </box>
+ </image>
+ <image file='dog_dataset3db3271f6df499d20a144606fe98bdf9.bmp'>
+  <box top='124' left='114' width='94' height='94'>
+  </box>
+ </image>
+</images>
+</dataset>

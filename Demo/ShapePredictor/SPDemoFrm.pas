@@ -81,7 +81,7 @@ var
   d: TDrawEngine;
   sr, dr, r: TRectV2;
   t_r: TRectV2;
-  od_r: TAI_Rect;
+  od_r: TOD_Rect;
   arryV2: TArrayVec2;
   i: Integer;
   v2, t_v2: TVec2;
@@ -183,7 +183,7 @@ var
   // ×ø±ê»¯µÄÔ¤²âÆ÷¾ä±ú
   sp_hnd: TSP_Handle;
 
-  od_r: TAI_Rect;
+  od_r: TOD_Rect;
   i: Integer;
 begin
   ai := TAI.OpenEngine();
