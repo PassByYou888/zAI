@@ -52,6 +52,7 @@ type
     procedure Write(name: SystemString; data: TCoreClassStrings); overload;
     procedure Write(name: SystemString; data: TMemoryRaster); overload;
     procedure Write(name: SystemString; data: TAI_ImageList); overload;
+    procedure Write(name: SystemString; data: TAI_ImageMatrix; SaveImg: Boolean); overload;
     procedure WriteFile(name: SystemString; fromfile: SystemString); overload;
 
     procedure Read(name: SystemString; m64: TMemoryStream64); overload;
@@ -60,6 +61,7 @@ type
     procedure Read(name: SystemString; data: TCoreClassStrings); overload;
     procedure Read(name: SystemString; data: TMemoryRaster); overload;
     procedure Read(name: SystemString; data: TAI_ImageList); overload;
+    procedure Read(name: SystemString; data: TAI_ImageMatrix); overload;
     procedure ReadToFile(name: SystemString; destfile: SystemString); overload;
 
     function Exists(name: SystemString): Boolean;
@@ -218,6 +220,16 @@ begin
   DisposeObject(m64);
 end;
 
+procedure TTrainingTask.Write(name: SystemString; data: TAI_ImageMatrix; SaveImg: Boolean);
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  data.SaveToStream(m64, SaveImg, True);
+  Write(Name, m64);
+  DisposeObject(m64);
+end;
+
 procedure TTrainingTask.WriteFile(name: SystemString; fromfile: SystemString);
 var
   m64: TMemoryStream64;
@@ -287,6 +299,17 @@ begin
 end;
 
 procedure TTrainingTask.Read(name: SystemString; data: TAI_ImageList);
+var
+  m64: TMemoryStream64;
+begin
+  data.Clear;
+  m64 := TMemoryStream64.Create;
+  read(name, m64);
+  data.LoadFromStream(m64);
+  DisposeObject(m64);
+end;
+
+procedure TTrainingTask.Read(name: SystemString; data: TAI_ImageMatrix);
 var
   m64: TMemoryStream64;
 begin
@@ -540,7 +563,7 @@ var
   inputfile1, inputfile2: SystemString;
   outputfile, syncfile: SystemString;
 
-  m1, m2: TStream64;
+  m1, m2: TMemoryStream64;
 begin
   Result := CheckTrainingBefore(paramFile, report);
   if not Result then

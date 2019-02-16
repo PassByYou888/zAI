@@ -137,6 +137,10 @@ procedure TForm1.PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
 
         // 把OD的框体以蓝色画出来
         d.DrawCorner(TV2Rect4.Init(RectV2(od_desc[0]), 0), DEColor(0.5, 0.5, 1, 1), 20, 2);
+
+        d.BeginCaptureShadow(vec2(1, 1), 0.9);
+        d.DrawText(Format('%f', [od_desc[0].confidence]), 12, RectV2(od_desc[0]), DEColor(1, 0, 1, 1), False);
+        d.EndCaptureShadow;
       end;
 
     // 执行绘图流指令

@@ -1,0 +1,90 @@
+object FaceClientForm: TFaceClientForm
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 743
+  ClientWidth = 1349
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object SaveFaceButton: TButton
+    Position.X = 16.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 113.000000000000000000
+    Size.Height = 22.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    Text = 'save face'
+    OnClick = SaveFaceButtonClick
+  end
+  object Edit1: TEdit
+    Touch.InteractiveGestures = [LongTap, DoubleTap]
+    TabOrder = 3
+    Position.X = 144.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 137.000000000000000000
+    Size.Height = 22.000000000000000000
+    Size.PlatformDefault = False
+    TextPrompt = 'face label'
+  end
+  object OpenDialog1: TOpenDialog
+    Options = [ofHideReadOnly, ofAllowMultiSelect, ofEnableSizing]
+    Left = 280
+    Top = 216
+  end
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Lines.Strings = (
+      #21709#24212#24335#20154#33080#35782#21035'CS'#27169#22411
+      ''
+      
+        'Reponse_FaceClient.pas '#25903#25345'Delphi+FPC'#65292#25903#25345'IOT'#65292#25903#25345#20840#37096#25163#26426#24179#21488#65292#36890#36807#32593#32476#39640#36895#36890#35759#23454#29616#20154#33080#36523 +
+        #20221#35782#21035#65292#20154#33080#20837#24211
+      ''
+      
+        'Reponse_FaceServer.pas '#21482#33021#24037#20316#20110'Windows'#24179#21488#65292#21482#33021#22312'Delphi'#32534#35793#21644#20351#29992#65292#19981#25903#25345'IOT'#65292#19981#25903#25345'L' +
+        'inux'#65292#38656#35201'ZAI'#30340'cuda'#24211
+      ''
+      #26381#21153#22120#22312#25910#21040#20102#20154#33080#20837#21475#26102#65292'30'#31186#20197#21518#65292#26381#21153#22120#31471#20250#33258#21160#23398#20064#20154#33080#65292#22312#23398#20064#36807#31243#20013#65292#19981#24433#21709#24037#20316#65292#20173#28982#21487#20197#36816#34892#35782#21035#26381#21153
+      ''
+      #21709#24212#24335#20154#33080'CS'#27169#22411#26159#23436#25104#35782#21035#19968#24352#22270#65292#20877#21457#36865#19979#19968#24352#32473#26381#21153#22120#35782#21035#65292#24182#19981#26159#23454#26102#35782#21035#65292#36866#21512#29992#20110#25293#29031#21518#30340#35782#21035#22330#26223
+      ''
+      #36825#26159#31283#23450'CS'#27169#22411#65292#35831#33258#34892#25644#31227#21040#25163#26426#21644'IOT'#36827#34892#27979#35797#21644#35780#20272)
+    Position.X = 16.000000000000000000
+    Position.Y = 72.000000000000000000
+    Size.Width = 1321.000000000000000000
+    Size.Height = 657.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 6
+    Viewport.Width = 1317.000000000000000000
+    Viewport.Height = 653.000000000000000000
+  end
+  object Timer1: TTimer
+    Interval = 5
+    OnTimer = Timer1Timer
+    Left = 368
+    Top = 216
+  end
+  object FaceRecButton: TButton
+    Position.X = 16.000000000000000000
+    Position.Y = 40.000000000000000000
+    Size.Width = 113.000000000000000000
+    Size.Height = 22.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Text = 'face recognition'
+    OnClick = FaceRecButtonClick
+  end
+  object DepthRecCheckBox: TCheckBox
+    Position.X = 144.000000000000000000
+    Position.Y = 42.000000000000000000
+    Size.Width = 169.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 12
+    Text = 'depth recognition'
+  end
+end

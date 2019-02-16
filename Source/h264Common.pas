@@ -18,7 +18,7 @@ unit h264Common;
 interface
 
 uses
-  h264Types, h264Stats, FPCGenericStructlist, CoreClasses, MemoryRaster;
+  h264Types, h264Stats, FPCGenericStructlist, CoreClasses, MemoryRaster, Math;
 
 const
   SLICE_P = 5;
@@ -107,8 +107,8 @@ type
   PMotionvec = ^TMotionvec;
 
 {$IFDEF FPC}
-TMotionVectorList = specialize TGenericsList<TMotionvec>;
-operator = (const a, b: TMotionvec): Boolean;
+  TMotionVectorList = specialize TGenericsList<TMotionvec>;
+  operator = (const a, b: TMotionvec): Boolean;
 operator / (const a: TMotionvec; const Divisor: int32_t): TMotionvec;
 operator * (const a: TMotionvec; const multiplier: int32_t): TMotionvec;
 operator + (const a, b: TMotionvec): TMotionvec;
@@ -338,7 +338,7 @@ end;
 procedure YV12ToRaster(const luma_ptr, u_ptr, v_ptr: uint8_p; const w, h, stride, stride_cr: int32_t; const dest: TMemoryRaster; const forceITU_BT_709, lumaFull: Boolean);
 // conversion works on 2x2 pixels at once, since they share chroma info
 var
-  y, x: int32_t;
+  nw, nh, y, x: int32_t;
   p, pu, pv, t: uint8_p;   // source plane ptrs
   d: int32_t;              // dest index for topleft pixel
   r0, r1, r2, r4: int32_t; // scaled yuv values for rgb calculation
@@ -355,7 +355,9 @@ var
   end;
 
 begin
-  dest.SetSize(w, h);
+  nw := (w shr 1) * 2;
+  nh := (h shr 1) * 2;
+  dest.SetSize(nw, nh);
 
   if forceITU_BT_709 then
     begin
@@ -443,30 +445,24 @@ procedure RasterToYV12(const sour: TMemoryRaster; const luma_ptr, u_ptr, v_ptr: 
   end;
 
 var
-  nm: TMemoryRaster;
-  i, j: int32_t;
+  nw, nh, i, j: int32_t;
   c: TRasterColorEntry;
   y, u, v, uu, vv, cv, nv, cu, nu: uint8_p;
   v01, v02, v11, v12, u01, u02, u11, u12: uint8_t;
 begin
-  if (sour.width <> w) or (sour.height <> h) then
-    begin
-      nm := TMemoryRaster.Create;
-      nm.ZoomFrom(sour, w, h);
-    end
-  else
-      nm := sour;
+  nw := (w shr 1) * 2;
+  nh := (h shr 1) * 2;
 
   y := luma_ptr;
-  uu := GetMemory(w * h * 2);
+  uu := GetMemory(nw * nh * 2);
   u := uu;
-  vv := @(uu[w * h]);
+  vv := @(uu[nw * nh]);
   v := vv;
 
-  for j := 0 to h - 1 do
-    for i := 0 to w - 1 do
+  for j := 0 to nh - 1 do
+    for i := 0 to nw - 1 do
       begin
-        c.BGRA := nm.Pixel[i, j];
+        c.BGRA := sour.Pixel[i, j];
         y^ := Clip(Trunc(0.256788 * c.r + 0.504129 * c.g + 0.097906 * c.b + 16));
         inc(y);
         u^ := Clip(Trunc(-0.148223 * c.r - 0.290993 * c.g + 0.439216 * c.b + 128));
@@ -478,15 +474,15 @@ begin
   u := u_ptr;
   v := v_ptr;
   j := 0;
-  while j < h do
+  while j < nh do
     begin
-      cv := vv + j * w;
-      nv := vv + (j + 1) * w;
-      cu := uu + j * w;
-      nu := uu + (j + 1) * w;
+      cv := vv + j * nw;
+      nv := vv + (j + 1) * nw;
+      cu := uu + j * nw;
+      nu := uu + (j + 1) * nw;
 
       i := 0;
-      while i < w do
+      while i < nw do
         begin
           v01 := (cv + i)^;
           v02 := (cv + i + 1)^;
@@ -508,9 +504,6 @@ begin
     end;
 
   FreeMemory(uu);
-
-  if nm <> sour then
-      DisposeObject(nm);
 end;
 
 procedure BuildLut;

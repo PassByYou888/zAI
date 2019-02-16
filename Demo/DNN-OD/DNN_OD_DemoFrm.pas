@@ -38,7 +38,6 @@ implementation
 
 {$R *.fmx}
 
-
 procedure TDNN_OD_Form.DNN_OD_ButtonClick(Sender: TObject);
 begin
   TComputeThread.RunP(nil, nil, procedure(Sender: TComputeThread)
@@ -156,6 +155,7 @@ begin
 
             // 使用texture atlas技术体系做纹理光栅的排序，输出排序后的新光栅
             detTarget := bear_ImgL.PackingRaster;
+            detTarget.Scale(0.5);
 
             // 处于简便演示，这里都不做具体的OD检测实现了，直接使用DrawMMOD来输出
             ai.DrawMMOD(mmod_hnd, detTarget, DEColor(0.5, 0.5, 1, 1));

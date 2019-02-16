@@ -85,6 +85,15 @@ begin
       Result[i] := v[i];
 end;
 
+function LVecCopy(const v: TLVec; const index, Count: TLInt): TLVec;
+var
+  i: Integer;
+begin
+  SetLength(Result, Count);
+  for i := 0 to Count - 1 do
+      Result[i] := v[i + index];
+end;
+
 function LVecCopy(const v: TLIVec): TLIVec;
 var
   i: Integer;
@@ -94,6 +103,15 @@ begin
       Result[i] := v[i];
 end;
 
+function LVecCopy(const v: TLIVec; const index, Count: TLInt): TLIVec;
+var
+  i: Integer;
+begin
+  SetLength(Result, Count);
+  for i := 0 to Count - 1 do
+      Result[i] := v[i + index];
+end;
+
 function LVecCopy(const v: TLBVec): TLBVec;
 var
   i: Integer;
@@ -101,6 +119,15 @@ begin
   SetLength(Result, length(v));
   for i := 0 to length(v) - 1 do
       Result[i] := v[i];
+end;
+
+function LVecCopy(const v: TLBVec; const index, Count: TLInt): TLBVec;
+var
+  i: Integer;
+begin
+  SetLength(Result, Count);
+  for i := 0 to Count - 1 do
+      Result[i] := v[i + index];
 end;
 
 function LMatrixCopy(const v: TLMatrix): TLMatrix;

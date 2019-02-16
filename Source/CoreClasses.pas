@@ -160,11 +160,13 @@ type
   TCritical = TCriticalSection;
 {$ENDIF SoftCritical}
 
+  TComputeThread = class;
+
+  TRunWithThreadCall               = procedure(Sender: TComputeThread);
+  TRunWithThreadMethod             = procedure(Sender: TComputeThread) of object;
+  {$IFNDEF FPC} TRunWithThreadProc = reference to procedure(Sender: TComputeThread); {$ENDIF FPC}
+
   TComputeThread = class(TCoreClassThread)
-  private type
-    TRunWithThreadCall               = procedure(Sender: TComputeThread);
-    TRunWithThreadMethod             = procedure(Sender: TComputeThread) of object;
-    {$IFNDEF FPC} TRunWithThreadProc = reference to procedure(Sender: TComputeThread); {$ENDIF FPC}
   protected
     OnRunCall: TRunWithThreadCall;
     OnRunMethod: TRunWithThreadMethod;
@@ -181,13 +183,13 @@ type
 
     constructor Create;
 
-    class function RunC(const Data: Pointer; const Obj: TCoreClassObject; const OnRun, OnDone: TRunWithThreadCall): TComputeThread; overload;
-    class function RunC(const Data: Pointer; const Obj: TCoreClassObject; const OnRun: TRunWithThreadCall): TComputeThread; overload;
-    class function RunM(const Data: Pointer; const Obj: TCoreClassObject; const OnRun, OnDone: TRunWithThreadMethod): TComputeThread; overload;
-    class function RunM(const Data: Pointer; const Obj: TCoreClassObject; const OnRun: TRunWithThreadMethod): TComputeThread; overload;
+    class procedure RunC(const Data: Pointer; const Obj: TCoreClassObject; const OnRun, OnDone: TRunWithThreadCall); overload;
+    class procedure RunC(const Data: Pointer; const Obj: TCoreClassObject; const OnRun: TRunWithThreadCall); overload;
+    class procedure RunM(const Data: Pointer; const Obj: TCoreClassObject; const OnRun, OnDone: TRunWithThreadMethod); overload;
+    class procedure RunM(const Data: Pointer; const Obj: TCoreClassObject; const OnRun: TRunWithThreadMethod); overload;
     {$IFNDEF FPC}
-    class function RunP(const Data: Pointer; const Obj: TCoreClassObject; const OnRun, OnDone: TRunWithThreadProc): TComputeThread; overload;
-    class function RunP(const Data: Pointer; const Obj: TCoreClassObject; const OnRun: TRunWithThreadProc): TComputeThread; overload;
+    class procedure RunP(const Data: Pointer; const Obj: TCoreClassObject; const OnRun, OnDone: TRunWithThreadProc); overload;
+    class procedure RunP(const Data: Pointer; const Obj: TCoreClassObject; const OnRun: TRunWithThreadProc); overload;
     {$ENDIF FPC}
   end;
 
@@ -271,8 +273,8 @@ procedure RaiseInfo(const n: SystemString; const Args: array of const); overload
 function IsMobile: Boolean;
 
 const
-  C_Tick_Second = 1000;
-  C_Tick_Minute = C_Tick_Second * 60;
+  C_Tick_Second = TTimeTick(1000);
+  C_Tick_Minute = TTimeTick(C_Tick_Second) * 60;
   C_Tick_Hour   = TTimeTick(C_Tick_Minute) * 60;
   C_Tick_Day    = TTimeTick(C_Tick_Hour) * 24;
   C_Tick_Week   = TTimeTick(C_Tick_Day) * 7;

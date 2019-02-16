@@ -284,13 +284,15 @@ function RectMul(const r1, r2: TRectV2): TRectV2; {$IFDEF INLINE_ASM} inline; {$
 function RectMul(const r1: TRectV2; v2: TVec2): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectMul(const r1: TRectV2; r2: TGeoFloat): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectDiv(const r1, r2: TRectV2): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
-function RectDiv(const r1: TRectV2; f2:TGeoFloat): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+function RectDiv(const r1: TRectV2; f2: TGeoFloat): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectOffset(const r: TRectV2; Offset: TVec2): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectSizeLerp(const r: TRectV2; const rSizeLerp: TGeoFloat): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectCenScale(const r: TRectV2; const rSizeScale: TGeoFloat): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectEndge(const r: TRectV2; const endge: TGeoFloat): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectEndge(const r: TRectV2; const endge: TVec2): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectCentre(const r: TRectV2): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+function RectCentre(const r: TRect): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+function RectCentre(const r: TRectf): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 
 function Vec2TransformToDest(const sour, dest: TRectV2; sour_sub: TVec2): TVec2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RectTransformToDest(const sour, dest, sour_sub: TRectV2): TRectV2; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
@@ -1894,7 +1896,7 @@ begin
   Result[1] := Vec2Div(r1[1], r2[1]);
 end;
 
-function RectDiv(const r1: TRectV2; f2:TGeoFloat): TRectV2;
+function RectDiv(const r1: TRectV2; f2: TGeoFloat): TRectV2;
 begin
   Result[0] := Vec2Div(r1[0], f2);
   Result[1] := Vec2Div(r1[1], f2);
@@ -1941,6 +1943,16 @@ end;
 function RectCentre(const r: TRectV2): TVec2;
 begin
   Result := PointLerp(r[0], r[1], 0.5);
+end;
+
+function RectCentre(const r: TRect): TVec2;
+begin
+  Result := RectCentre(RectV2(r));
+end;
+
+function RectCentre(const r: TRectf): TVec2;
+begin
+  Result := RectCentre(RectV2(r));
 end;
 
 function Vec2TransformToDest(const sour, dest: TRectV2; sour_sub: TVec2): TVec2;

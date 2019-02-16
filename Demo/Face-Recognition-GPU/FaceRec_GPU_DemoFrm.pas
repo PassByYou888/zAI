@@ -43,7 +43,6 @@ implementation
 
 {$R *.fmx}
 
-
 procedure TFaceRecForm.ResetButtonClick(Sender: TObject);
 var
   fn: U_String;

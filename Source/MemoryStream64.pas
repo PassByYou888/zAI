@@ -50,6 +50,8 @@ type
     constructor Create;
     constructor CustomCreate(const customDelta: NativeInt);
     destructor Destroy; override;
+
+    procedure DiscardMemory;
     procedure Clear;
 
     property Delta: NativeInt read FDelta write FDelta;
@@ -112,15 +114,13 @@ type
     function ReadMD5: TMD5;
   end;
 
-  TStream64 = TMemoryStream64;
-
 {$IFDEF FPC}
-  TStream64List_Decl = specialize TGenericsList<TMemoryStream64>;
+  TMemoryStream64List_Decl = specialize TGenericsList<TMemoryStream64>;
 {$ELSE FPC}
-  TStream64List_Decl = TGenericsObjectList<TMemoryStream64>;
+  TMemoryStream64List_Decl = TGenericsObjectList<TMemoryStream64>;
 {$ENDIF FPC}
 
-  TStream64List = class(TStream64List_Decl)
+  TMemoryStream64List = class(TMemoryStream64List_Decl)
   end;
 
   IMemoryStream64WriteTrigger = interface
@@ -256,6 +256,16 @@ destructor TMemoryStream64.Destroy;
 begin
   Clear;
   inherited Destroy;
+end;
+
+procedure TMemoryStream64.DiscardMemory;
+begin
+  if FProtectedMode then
+      Exit;
+  FMemory := nil;
+  FSize := 0;
+  FPosition := 0;
+  FCapacity := 0;
 end;
 
 procedure TMemoryStream64.Clear;

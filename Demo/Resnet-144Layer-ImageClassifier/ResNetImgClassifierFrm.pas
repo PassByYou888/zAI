@@ -199,6 +199,7 @@ begin
               begin
                 detDef := TAI_DetectorDefine.Create(imgL[j]);
                 detDef.R := imgL[j].Raster.BoundsRect;
+                detDef.Token := imgL.FileInfo;
                 imgL[j].DetectorDefineList.Add(detDef);
               end;
         end;

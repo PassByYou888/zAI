@@ -208,7 +208,6 @@ type
     procedure Scale(k: TGeoFloat);
     function FormatAsBGRA: TMemoryRaster;
     procedure FormatBGRA;
-    procedure FormatYV12;
     function BuildRGB(cSwapBR: Boolean): PByte;
     procedure InputRGB(var buff; w, h: Integer; cSwapBR: Boolean);
     procedure OutputRGB(var buff; cSwapBR: Boolean);

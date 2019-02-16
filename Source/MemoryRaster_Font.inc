@@ -5,13 +5,7 @@
 {$ENDIF LARGE_RASTER_FONT}
 
 
-type
-  TInitSystemFont_Thread = class(TCoreClassThread)
-  protected
-    procedure Execute; override;
-  end;
-
-procedure TInitSystemFont_Thread.Execute;
+procedure InitSystemFont_Thread_Run(Sender: TComputeThread);
 var
   rs: TCoreClassResourceStream;
   fn: TFontRaster;
@@ -27,13 +21,9 @@ begin
 end;
 
 procedure Init_DefaultFont;
-var
-  th: TInitSystemFont_Thread;
 begin
   SystemFont := nil;
-  th := TInitSystemFont_Thread.Create(True);
-  th.FreeOnTerminate := True;
-  th.Suspended := False;
+  TComputeThread.RunC(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}InitSystemFont_Thread_Run);
 end;
 
 procedure Free_DefaultFont;

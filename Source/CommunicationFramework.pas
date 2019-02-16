@@ -66,15 +66,19 @@ type
   TQueueState = (qsUnknow, qsSendConsoleCMD, qsSendStreamCMD, qsSendDirectConsoleCMD, qsSendDirectStreamCMD, qsSendBigStream, qsSendCompleteBuffer);
 
   TQueueData = record
+    // queue style
     State: TQueueState;
+    // ID
     IO_ID: Cardinal;
+    // command
     Cmd: SystemString;
+    // cipher key
     Cipher: TCipherSecurity;
-    //
+    // console
     ConsoleData: SystemString;
     OnConsoleMethod: TConsoleMethod;
 {$IFNDEF FPC} OnConsoleProc: TConsoleProc; {$ENDIF FPC}
-    //
+    // stream
     StreamData: TCoreClassStream;
     OnStreamMethod: TStreamMethod;
     OnStreamParamMethod: TStreamParamMethod;
@@ -82,15 +86,15 @@ type
     OnStreamProc: TStreamProc;
     OnStreamParamProc: TStreamParamProc;
 {$ENDIF FPC}
-    //
+    // bigStream
     BigStreamStartPos: Int64;
     BigStream: TCoreClassStream;
-
+    // complete buffer
     buffer: PByte;
     BufferSize: NativeInt;
-
+    // memory recycle
     DoneAutoFree: Boolean;
-
+    // stream param
     Param1: Pointer;
     Param2: TObject;
   end;
@@ -1354,7 +1358,7 @@ type
     procedure StopService; override;
     function StartService(Host: SystemString; Port: Word): Boolean; override;
 
-    // no blockMode
+    // sync
     function WaitSendConsoleCmd(P_IO: TPeerIO; const Cmd, ConsoleData: SystemString; Timeout: TTimeTick): SystemString; override;
     procedure WaitSendStreamCmd(P_IO: TPeerIO; const Cmd: SystemString; StreamData, ResultData: TDataFrameEngine; Timeout: TTimeTick); override;
   end;
@@ -1858,12 +1862,7 @@ begin
             DisposeObject(v^.BigStream);
 
         if v^.buffer <> nil then
-          begin
-            if v^.BufferSize > 0 then
-                FreeMem(v^.buffer, v^.BufferSize)
-            else
-                System.FreeMemory(v^.buffer);
-          end;
+            System.FreeMemory(v^.buffer);
       except
       end;
     end;
@@ -7866,8 +7865,6 @@ begin
       else
           Sender.PrintError('protocol version mismatch. upgrade zserver from https://github.com/PassByYou888/ZServer4D');
 
-      DoStatus(FInitedTimeMD5);
-
       Sender.RemoteExecutedForConnectInit := True;
 
       if FConnectInitWaiting then
@@ -10295,8 +10292,15 @@ begin
   else if c is TCommunicationFrameworkWithP2PVM_Client then
     begin
       LocalVMc := TCommunicationFrameworkWithP2PVM_Client(c).FVMClient;
-      LocalVMc.SaveReceiveBuffer(buff, siz);
-      LocalVMc.FillRecvBuffer(nil, False, False);
+      if LocalVMc <> nil then
+        begin
+          LocalVMc.SaveReceiveBuffer(buff, siz);
+          LocalVMc.FillRecvBuffer(nil, False, False);
+        end
+      else if not FQuietMode then
+        begin
+          DoStatus('LocalVM [%d] error: no interface', [frameworkID]);
+        end;
     end
   else if not FQuietMode then
     begin

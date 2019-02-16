@@ -17,7 +17,7 @@ unit zAI_KeyIO;
 
 interface
 
-uses SysUtils,
+uses SysUtils, Classes,
   DateUtils,
   CoreClasses,
   PascalStrings,
@@ -84,6 +84,12 @@ var
   sendDE, ResultDE: TDataFrameEngine;
   tk: TTimeTick;
 begin
+  if TCoreClassThread.CurrentThread.ThreadID <> MainThreadID then
+    begin
+      DoStatus('zAI Work only on MainThread.');
+      exit;
+    end;
+
   sendDE := TDataFrameEngine.Create;
   ResultDE := TDataFrameEngine.Create;
 
@@ -112,7 +118,6 @@ begin
         ResultDE.Reader.read(ResultKey[0], SizeOf(TAI_Key))
     else
         DoStatus(ResultDE.Reader.ReadString());
-    Tunnel.Progress;
     Tunnel.Disconnect;
     Tunnel.Progress;
   except
@@ -125,6 +130,12 @@ var
   sendDE, ResultDE: TDataFrameEngine;
   tk: TTimeTick;
 begin
+  if TCoreClassThread.CurrentThread.ThreadID <> MainThreadID then
+    begin
+      DoStatus('zAI Work only on MainThread.');
+      exit;
+    end;
+
   sendDE := TDataFrameEngine.Create;
   ResultDE := TDataFrameEngine.Create;
 
@@ -156,7 +167,6 @@ begin
         MMOD_key := ResultDE.Reader.ReadBool();
         RNIC_key := ResultDE.Reader.ReadBool();
       end;
-    Tunnel.Progress;
     Tunnel.Disconnect;
     Tunnel.Progress;
   except

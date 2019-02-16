@@ -1176,8 +1176,8 @@ begin
 
     dx := 0;
     for i := 0 to 24 do
-        if (LMatrix[i] and MASK_MATRIX[i]) <> 0 then
-            inc(dx);
+      if (LMatrix[i] and MASK_MATRIX[i]) <> 0 then
+          inc(dx);
 
     if dx = 0 then
         LDiagonal := 1
@@ -2355,8 +2355,8 @@ var
 begin
   head.Version := 10;
   head.Compessed := Byte(Compressed);
-  head.width := sour.width;
-  head.height := sour.height;
+  head.width := (sour.width shr 1) * 2;
+  head.height := (sour.height shr 1) * 2;
 
   memsiz := head.width * head.height + (head.width * head.height) div 2;
   luma_ptr := GetMemory(memsiz);

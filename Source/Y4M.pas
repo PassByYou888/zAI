@@ -194,6 +194,7 @@ var
   FP: Int64_t;
   magic: TFRAME_MAGIC;
 begin
+  Result := FImage;
   if frameIndex >= FFrameCount then
       Exit;
   if FCurrentFrame = frameIndex then

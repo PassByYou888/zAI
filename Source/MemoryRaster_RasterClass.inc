@@ -1120,27 +1120,6 @@ begin
       SwapBR(FBits^[pass]);
 end;
 
-procedure TMemoryRaster.FormatYV12;
-var
-  memsiz: NativeUInt;
-  luma_ptr, u_ptr, v_ptr: PByte;
-  stride, stride_c: Integer;
-begin
-  memsiz := width * height + (width * height) div 2;
-  luma_ptr := GetMemory(memsiz);
-  u_ptr := luma_ptr;
-  inc(u_ptr, width * height);
-  v_ptr := u_ptr;
-  inc(v_ptr, (width * height) div 4);
-  RasterToYV12(Self, luma_ptr, u_ptr, v_ptr, width, height);
-
-  stride := width;
-  stride_c := width div 2;
-  YV12ToRaster(luma_ptr, u_ptr, v_ptr, width, height, stride, stride_c, Self, False, True);
-
-  FreeMemory(luma_ptr);
-end;
-
 function TMemoryRaster.BuildRGB(cSwapBR: Boolean): PByte;
 begin
   Result := System.GetMemory(width * height * 3);
