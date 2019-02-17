@@ -117,11 +117,13 @@ type
 {$IFDEF FPC}
   TMemoryStream64List_Decl = specialize TGenericsList<TMemoryStream64>;
 {$ELSE FPC}
-  TMemoryStream64List_Decl = TGenericsObjectList<TMemoryStream64>;
+  TMemoryStream64List_Decl = TGenericsList<TMemoryStream64>;
 {$ENDIF FPC}
 
   TMemoryStream64List = class(TMemoryStream64List_Decl)
   end;
+
+  TStream64List = TMemoryStream64List;
 
   IMemoryStream64WriteTrigger = interface
     procedure TriggerWrite64(Count: Int64);

@@ -162,8 +162,8 @@ type
 
   TComputeThread = class;
 
-  TRunWithThreadCall               = procedure(Sender: TComputeThread);
-  TRunWithThreadMethod             = procedure(Sender: TComputeThread) of object;
+  TRunWithThreadCall = procedure(Sender: TComputeThread);
+  TRunWithThreadMethod = procedure(Sender: TComputeThread) of object;
   {$IFNDEF FPC} TRunWithThreadProc = reference to procedure(Sender: TComputeThread); {$ENDIF FPC}
 
   TComputeThread = class(TCoreClassThread)
@@ -227,13 +227,6 @@ const
   {$ELSE}
   CurrentPlatform = TExecutePlatform.epUnknow;
   {$IFEND}
-
-// NoP = No Operation. It's the empty function, whose purpose is only for the
-// debugging, or for the piece of code where intentionaly nothing is planned to be.
-procedure Nop;
-
-procedure CheckThreadSynchronize; overload;
-function CheckThreadSynchronize(Timeout: Integer): Boolean; overload;
 
 procedure DisposeObject(const Obj: TObject); overload;
 procedure DisposeObject(const objs: array of TObject); overload;
@@ -344,48 +337,19 @@ function N2LE(const AValue: Cardinal): Cardinal; overload;
 function N2LE(const AValue: Int64): Int64; overload;
 function N2LE(const AValue: UInt64): UInt64; overload;
 
+// NoP = No Operation. It's the empty function, whose purpose is only for the
+// debugging, or for the piece of code where intentionaly nothing is planned to be.
+procedure Nop;
+
+procedure CheckThreadSynchronize; overload;
+function CheckThreadSynchronize(Timeout: Integer): Boolean; overload;
+
 var
   GlobalMemoryHook: Boolean;
 
 implementation
 
 uses DoStatusIO;
-
-procedure Nop;
-begin
-end;
-
-var
-  CheckThreadSynchronizeing: Boolean;
-
-procedure CheckThreadSynchronize;
-begin
-  CheckThreadSynchronize(0);
-end;
-
-function CheckThreadSynchronize(Timeout: Integer): Boolean;
-begin
-  if TCoreClassThread.CurrentThread.ThreadID <> MainThreadID then
-    begin
-      TCoreClassThread.Sleep(Timeout);
-      Result := False;
-    end
-  else
-    begin
-      DoStatus;
-      if not CheckThreadSynchronizeing then
-        begin
-          CheckThreadSynchronizeing := True;
-          try
-              Result := CheckSynchronize(Timeout);
-          finally
-              CheckThreadSynchronizeing := False;
-          end;
-        end
-      else
-        Result := False;
-    end;
-end;
 
 {$INCLUDE CoreAtomic.inc}
 
@@ -887,6 +851,41 @@ end;
 
 {$INCLUDE CoreComputeThread.inc}
 
+procedure Nop;
+begin
+end;
+
+var
+  CheckThreadSynchronizeing: Boolean;
+
+procedure CheckThreadSynchronize;
+begin
+  CheckThreadSynchronize(0);
+end;
+
+function CheckThreadSynchronize(Timeout: Integer): Boolean;
+begin
+  if TCoreClassThread.CurrentThread.ThreadID <> MainThreadID then
+    begin
+      TCoreClassThread.Sleep(Timeout);
+      Result := False;
+    end
+  else
+    begin
+      DoStatus;
+      if not CheckThreadSynchronizeing then
+        begin
+          CheckThreadSynchronizeing := True;
+          try
+              Result := CheckSynchronize(Timeout);
+          finally
+              CheckThreadSynchronizeing := False;
+          end;
+        end
+      else
+        Result := False;
+    end;
+end;
 
 initialization
   GlobalMemoryHook := True;

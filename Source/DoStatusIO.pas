@@ -307,6 +307,8 @@ procedure CheckDoStatus(th: TCoreClassThread);
 var
   i: Integer;
 begin
+  if StatusCritical = nil then
+      exit;
   if (th = nil) or (th.ThreadID <> MainThreadID) then
       exit;
   StatusCritical.Acquire;
@@ -440,6 +442,7 @@ begin
 
   StatusActive := True;
   LastDoStatusNoLn := '';
+  StatusCritical := nil;
 end;
 
 initialization
