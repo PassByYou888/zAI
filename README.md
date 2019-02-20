@@ -3,4 +3,10 @@
 
 github下载如果太慢可以使用下列地址
 
-http://zpascal.net/zAI.rar
+基本地基和最核心的东西已经完成.
+
+开始补完文档和Demo.
+
+by qq600585
+
+

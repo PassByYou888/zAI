@@ -1,0 +1,252 @@
+object RasterizationFormatForm: TRasterizationFormatForm
+  Left = 0
+  Top = 0
+  Caption = 'Rasterization Format.'
+  ClientHeight = 1090
+  ClientWidth = 1616
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object Image1: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 16.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image2: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 280.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image3: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 544.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image4: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 808.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image5: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 1072.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image6: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 1336.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image7: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 16.000000000000000000
+    Position.Y = 288.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image8: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 280.000000000000000000
+    Position.Y = 288.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image9: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 544.000000000000000000
+    Position.Y = 288.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image10: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 808.000000000000000000
+    Position.Y = 288.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image11: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 1072.000000000000000000
+    Position.Y = 288.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image12: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 1336.000000000000000000
+    Position.Y = 288.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image13: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 16.000000000000000000
+    Position.Y = 552.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image14: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 280.000000000000000000
+    Position.Y = 552.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image15: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 544.000000000000000000
+    Position.Y = 552.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image16: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 808.000000000000000000
+    Position.Y = 552.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image17: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 1072.000000000000000000
+    Position.Y = 552.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image18: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 1336.000000000000000000
+    Position.Y = 552.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image19: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 16.000000000000000000
+    Position.Y = 816.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image20: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 280.000000000000000000
+    Position.Y = 816.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image21: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 544.000000000000000000
+    Position.Y = 816.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image22: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 808.000000000000000000
+    Position.Y = 816.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image23: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 1072.000000000000000000
+    Position.Y = 816.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Image24: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 1336.000000000000000000
+    Position.Y = 816.000000000000000000
+    Size.Width = 256.000000000000000000
+    Size.Height = 256.000000000000000000
+    Size.PlatformDefault = False
+  end
+end

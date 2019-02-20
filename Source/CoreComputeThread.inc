@@ -1,5 +1,5 @@
 type
-  TComputeDispatchData = record
+  TComputeDispatch = record
     OnRunCall: TRunWithThreadCall;
     OnRunMethod: TRunWithThreadMethod;
 {$IFNDEF FPC} OnRunProc: TRunWithThreadProc; {$ENDIF FPC}
@@ -11,7 +11,7 @@ type
     procedure Init;
   end;
 
-  PComputeDispatchData = ^TComputeDispatchData;
+  PComputeDispatchData = ^TComputeDispatch;
 
 {$IFDEF FPC}
   TCoreComputeThreadPool = specialize TGenericsList<TComputeThread>;
@@ -36,7 +36,7 @@ var
   ComputeDispatchDataPool: TComputeDispatchDataPool;
   ComputeDispatchTh: TComputeDispatchTh;
 
-procedure TComputeDispatchData.Init;
+procedure TComputeDispatch.Init;
 begin
   OnRunCall := nil;
   OnRunMethod := nil;
@@ -113,7 +113,7 @@ begin
   ComputeDispatchTh := nil;
 end;
 
-procedure PostComputeDispatchData(const data: TComputeDispatchData);
+procedure PostComputeDispatchData(const data: TComputeDispatch);
 var
   p: PComputeDispatchData;
 begin
@@ -244,7 +244,7 @@ end;
 
 class procedure TComputeThread.RunC(const data: Pointer; const Obj: TCoreClassObject; const OnRun, OnDone: TRunWithThreadCall);
 var
-  Dispatch_: TComputeDispatchData;
+  Dispatch_: TComputeDispatch;
 begin
   if not CoreThreadRuning then
       exit;
@@ -258,7 +258,7 @@ end;
 
 class procedure TComputeThread.RunC(const data: Pointer; const Obj: TCoreClassObject; const OnRun: TRunWithThreadCall);
 var
-  Dispatch_: TComputeDispatchData;
+  Dispatch_: TComputeDispatch;
 begin
   if not CoreThreadRuning then
       exit;
@@ -271,7 +271,7 @@ end;
 
 class procedure TComputeThread.RunM(const data: Pointer; const Obj: TCoreClassObject; const OnRun, OnDone: TRunWithThreadMethod);
 var
-  Dispatch_: TComputeDispatchData;
+  Dispatch_: TComputeDispatch;
 begin
   if not CoreThreadRuning then
       exit;
@@ -285,7 +285,7 @@ end;
 
 class procedure TComputeThread.RunM(const data: Pointer; const Obj: TCoreClassObject; const OnRun: TRunWithThreadMethod);
 var
-  Dispatch_: TComputeDispatchData;
+  Dispatch_: TComputeDispatch;
 begin
   if not CoreThreadRuning then
       exit;
@@ -301,7 +301,7 @@ end;
 
 class procedure TComputeThread.RunP(const data: Pointer; const Obj: TCoreClassObject; const OnRun, OnDone: TRunWithThreadProc);
 var
-  Dispatch_: TComputeDispatchData;
+  Dispatch_: TComputeDispatch;
 begin
   if not CoreThreadRuning then
       exit;
@@ -315,7 +315,7 @@ end;
 
 class procedure TComputeThread.RunP(const data: Pointer; const Obj: TCoreClassObject; const OnRun: TRunWithThreadProc);
 var
-  Dispatch_: TComputeDispatchData;
+  Dispatch_: TComputeDispatch;
 begin
   if not CoreThreadRuning then
       exit;

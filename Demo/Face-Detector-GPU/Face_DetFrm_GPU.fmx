@@ -34,8 +34,8 @@ object Face_DetForm: TFace_DetForm
     Size.Height = 660.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 1
-    Viewport.Width = 585.000000000000000000
-    Viewport.Height = 660.000000000000000000
+    Viewport.Width = 581.000000000000000000
+    Viewport.Height = 656.000000000000000000
   end
   object PaintBox1: TPaintBox
     Anchors = [akLeft, akTop, akRight, akBottom]

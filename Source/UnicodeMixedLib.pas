@@ -604,6 +604,15 @@ function GetExtLib(LibName: SystemString): HMODULE;
 function FreeExtLib(LibName: SystemString): Boolean;
 function GetExtProc(const LibName, ProcName: SystemString): Pointer;
 
+type
+  TArrayRawByte = array [0 .. MaxInt - 1] of Byte;
+  PArrayRawByte = ^TArrayRawByte;
+
+function umlCompareRawByteString(const s1: RawByteString; const s2: PArrayRawByte): Boolean; overload;
+function umlCompareRawByteString(const s1: PArrayRawByte; const s2: RawByteString): Boolean; overload;
+procedure umlSetRawByte(const sour: RawByteString; const dest: PArrayRawByte); overload;
+procedure umlSetRawByte(const dest: PArrayRawByte; const sour: RawByteString); overload;
+
 implementation
 
 uses
@@ -5871,8 +5880,33 @@ begin
 {$IFEND}
 end;
 
-initialization
+{$IFDEF RangeCheck}{$R-}{$ENDIF}
 
+
+function umlCompareRawByteString(const s1: RawByteString; const s2: PArrayRawByte): Boolean;
+begin
+  Result := CompareMemory(@s1[1], @s2^[0], length(s1));
+end;
+
+function umlCompareRawByteString(const s1: PArrayRawByte; const s2: RawByteString): Boolean;
+begin
+  Result := CompareMemory(@s2[1], @s1^[0], length(s2));
+end;
+
+procedure umlSetRawByte(const sour: RawByteString; const dest: PArrayRawByte);
+begin
+  CopyPtr(@sour[1], @dest^[0], length(sour));
+end;
+
+procedure umlSetRawByte(const dest: PArrayRawByte; const sour: RawByteString);
+begin
+  CopyPtr(@sour[1], @dest^[0], length(sour));
+end;
+
+{$IFDEF RangeCheck}{$R+}{$ENDIF}
+
+
+initialization
 
 finalization
 

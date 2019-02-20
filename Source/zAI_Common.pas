@@ -52,7 +52,7 @@ type
     constructor Create(AOwner: TAI_Image);
     destructor Destroy; override;
 
-    procedure SaveToStream(stream: TMemoryStream64; Yv12: Boolean); overload;
+    procedure SaveToStream(stream: TMemoryStream64; RasterSave_: TRasterSave); overload;
     procedure SaveToStream(stream: TMemoryStream64); overload;
     procedure LoadFromStream(stream: TMemoryStream64);
   end;
@@ -74,8 +74,12 @@ type
     function FoundNoTokenDetectorDefine(output: TMemoryRaster; color: TDEColor): Boolean; overload;
     function FoundNoTokenDetectorDefine: Boolean; overload;
 
-    procedure SaveToStream(stream: TMemoryStream64; SaveImg, Yv12: Boolean);
-    procedure LoadFromStream(stream: TMemoryStream64; LoadImg: Boolean);
+    procedure SaveToStream(stream: TMemoryStream64; SaveImg: Boolean; RasterSave_: TRasterSave); overload;
+    procedure SaveToStream(stream: TMemoryStream64); overload;
+
+    procedure LoadFromStream(stream: TMemoryStream64; LoadImg: Boolean); overload;
+    procedure LoadFromStream(stream: TMemoryStream64); overload;
+
     procedure LoadPicture(fileName: SystemString);
 
     procedure Scale(f: TGeoFloat);
@@ -116,11 +120,12 @@ type
     procedure SavePrepareRasterToPictureFile(fileName: SystemString);
 
     procedure SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean); overload;
-    procedure SaveToStream(stream: TCoreClassStream; SaveImg, Compressed, Yv12: Boolean); overload;
+    procedure SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean; RasterSave_: TRasterSave); overload;
     procedure LoadFromStream(stream: TCoreClassStream; LoadImg: Boolean); overload;
     procedure LoadFromStream(stream: TCoreClassStream); overload;
 
-    procedure SaveToFile(fileName: SystemString);
+    procedure SaveToFile(fileName: SystemString); overload;
+    procedure SaveToFile(fileName: SystemString; SaveImg, Compressed: Boolean; RasterSave_: TRasterSave); overload;
     procedure LoadFromFile(fileName: SystemString; LoadImg: Boolean); overload;
     procedure LoadFromFile(fileName: SystemString); overload;
 
@@ -166,11 +171,11 @@ type
 
     function FindImageList(FileInfo: TPascalString): TAI_ImageList;
 
-    procedure SaveToStream(stream: TCoreClassStream; SaveImg, Yv12: Boolean); overload;
+    procedure SaveToStream(stream: TCoreClassStream; SaveImg: Boolean; RasterSave_: TRasterSave); overload;
     procedure SaveToStream(stream: TCoreClassStream); overload;
     procedure LoadFromStream(stream: TCoreClassStream);
 
-    procedure SaveToFile(fileName: SystemString; SaveImg, Yv12: Boolean); overload;
+    procedure SaveToFile(fileName: SystemString; SaveImg: Boolean; RasterSave_: TRasterSave); overload;
     procedure SaveToFile(fileName: SystemString); overload;
     procedure LoadFromFile(fileName: SystemString);
 
@@ -222,6 +227,7 @@ const
   // ext define
   C_ImageMatrix_Ext: SystemString = '.imgMat';
   C_ImageList_Ext: SystemString = '.imgDataset';
+  C_Image_Ext: SystemString = '.img';
   C_OD_Ext: SystemString = '.svm_od';
   C_OD_Marshal_Ext: SystemString = '.svm_od_marshal';
   C_SP_Ext: SystemString = '.shape';
@@ -560,7 +566,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TAI_DetectorDefine.SaveToStream(stream: TMemoryStream64; Yv12: Boolean);
+procedure TAI_DetectorDefine.SaveToStream(stream: TMemoryStream64; RasterSave_: TRasterSave);
 var
   de: TDataFrameEngine;
   m64: TMemoryStream64;
@@ -576,12 +582,7 @@ begin
 
   m64 := TMemoryStream64.CustomCreate(8192);
   if not PrepareRaster.Empty then
-    begin
-      if Yv12 then
-          PrepareRaster.SaveToYV12Stream(m64)
-      else
-          PrepareRaster.SaveToBmp24Stream(m64);
-    end;
+      PrepareRaster.SaveToStream(m64, RasterSave_);
   de.WriteStream(m64);
   disposeObject(m64);
 
@@ -592,7 +593,7 @@ end;
 
 procedure TAI_DetectorDefine.SaveToStream(stream: TMemoryStream64);
 begin
-  SaveToStream(stream, False);
+  SaveToStream(stream, TRasterSave.rsRGB);
 end;
 
 procedure TAI_DetectorDefine.LoadFromStream(stream: TMemoryStream64);
@@ -746,7 +747,7 @@ begin
     end;
 end;
 
-procedure TAI_Image.SaveToStream(stream: TMemoryStream64; SaveImg, Yv12: Boolean);
+procedure TAI_Image.SaveToStream(stream: TMemoryStream64; SaveImg: Boolean; RasterSave_: TRasterSave);
 var
   de: TDataFrameEngine;
   m64: TMemoryStream64;
@@ -758,10 +759,7 @@ begin
   m64 := TMemoryStream64.Create;
   if SaveImg then
     begin
-      if Yv12 then
-          Raster.SaveToYV12Stream(m64)
-      else
-          Raster.SaveToBmp24Stream(m64);
+      Raster.SaveToStream(m64, RasterSave_);
     end;
   de.WriteStream(m64);
   disposeObject(m64);
@@ -772,7 +770,7 @@ begin
     begin
       m64 := TMemoryStream64.Create;
       DetDef := DetectorDefineList[i];
-      DetDef.SaveToStream(m64, Yv12);
+      DetDef.SaveToStream(m64, RasterSave_);
       de.WriteStream(m64);
       disposeObject(m64);
     end;
@@ -780,6 +778,11 @@ begin
   de.EncodeTo(stream, True);
 
   disposeObject(de);
+end;
+
+procedure TAI_Image.SaveToStream(stream: TMemoryStream64);
+begin
+  SaveToStream(stream, True, TRasterSave.rsRGB);
 end;
 
 procedure TAI_Image.LoadFromStream(stream: TMemoryStream64; LoadImg: Boolean);
@@ -820,6 +823,11 @@ begin
     end;
 
   disposeObject(de);
+end;
+
+procedure TAI_Image.LoadFromStream(stream: TMemoryStream64);
+begin
+  LoadFromStream(stream, True);
 end;
 
 procedure TAI_Image.LoadPicture(fileName: SystemString);
@@ -1169,10 +1177,10 @@ end;
 
 procedure TAI_ImageList.SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean);
 begin
-  SaveToStream(stream, SaveImg, Compressed, False);
+  SaveToStream(stream, SaveImg, Compressed, TRasterSave.rsRGB);
 end;
 
-procedure TAI_ImageList.SaveToStream(stream: TCoreClassStream; SaveImg, Compressed, Yv12: Boolean);
+procedure TAI_ImageList.SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean; RasterSave_: TRasterSave);
 var
   de: TDataFrameEngine;
   m64: TMemoryStream64;
@@ -1187,7 +1195,7 @@ begin
     begin
       m64 := TMemoryStream64.Create;
       imgData := Items[i];
-      imgData.SaveToStream(m64, SaveImg, Yv12);
+      imgData.SaveToStream(m64, SaveImg, RasterSave_);
       de.WriteStream(m64);
       disposeObject(m64);
     end;
@@ -1241,6 +1249,15 @@ begin
   disposeObject(fs);
 end;
 
+procedure TAI_ImageList.SaveToFile(fileName: SystemString; SaveImg, Compressed: Boolean; RasterSave_: TRasterSave);
+var
+  fs: TReliableFileStream;
+begin
+  fs := TReliableFileStream.Create(fileName, True, True);
+  SaveToStream(fs, SaveImg, Compressed, RasterSave_);
+  disposeObject(fs);
+end;
+
 procedure TAI_ImageList.LoadFromFile(fileName: SystemString; LoadImg: Boolean);
 var
   fs: TReliableFileStream;
@@ -1264,7 +1281,7 @@ begin
   for i := 0 to imgList.Count - 1 do
     begin
       m64 := TMemoryStream64.Create;
-      imgList[i].SaveToStream(m64, True, False);
+      imgList[i].SaveToStream(m64, True, TRasterSave.rsRGB);
 
       imgData := TAI_Image.Create(Self);
       m64.Position := 0;
@@ -1745,7 +1762,7 @@ begin
   Result := nil;
 end;
 
-procedure TAI_ImageMatrix.SaveToStream(stream: TCoreClassStream; SaveImg, Yv12: Boolean);
+procedure TAI_ImageMatrix.SaveToStream(stream: TCoreClassStream; SaveImg: Boolean; RasterSave_: TRasterSave);
 type
   PSaveRec = ^TSaveRec;
 
@@ -1768,7 +1785,7 @@ var
   begin
     p := @PrepareSave[pass];
     p^.m64 := TMemoryStream64.CustomCreate(1024 * 1024);
-    Items[pass].SaveToStream(p^.m64, SaveImg, True, Yv12);
+    Items[pass].SaveToStream(p^.m64, SaveImg, True, RasterSave_);
     p^.fn := Items[pass].FileInfo.TrimChar(#32#9);
     if (p^.fn.Len = 0) then
         p^.fn := umlStreamMD5String(p^.m64);
@@ -1786,7 +1803,7 @@ var
       begin
         p := @PrepareSave[i];
         p^.m64 := TMemoryStream64.CustomCreate(1024 * 1024);
-        Items[i].SaveToStream(p^.m64, SaveImg, True, Yv12);
+        Items[i].SaveToStream(p^.m64, SaveImg, True, RasterSave_);
         p^.fn := Items[i].FileInfo.TrimChar(#32#9);
         if (p^.fn.Len = 0) then
             p^.fn := umlStreamMD5String(p^.m64);
@@ -1835,7 +1852,7 @@ begin
     begin
       p := @PrepareSave[pass];
       p^.m64 := TMemoryStream64.CustomCreate(1024 * 1024);
-      Items[pass].SaveToStream(p^.m64, SaveImg, True, Yv12);
+      Items[pass].SaveToStream(p^.m64, SaveImg, True, RasterSave_);
       p^.fn := Items[pass].FileInfo.TrimChar(#32#9);
       if (p^.fn.Len = 0) then
           p^.fn := umlStreamMD5String(p^.m64);
@@ -1854,7 +1871,7 @@ end;
 
 procedure TAI_ImageMatrix.SaveToStream(stream: TCoreClassStream);
 begin
-  SaveToStream(stream, True, False);
+  SaveToStream(stream, True, TRasterSave.rsRGB);
 end;
 
 procedure TAI_ImageMatrix.LoadFromStream(stream: TCoreClassStream);
@@ -1964,19 +1981,19 @@ begin
   DoStatus('Load Image Matrix done.');
 end;
 
-procedure TAI_ImageMatrix.SaveToFile(fileName: SystemString; SaveImg, Yv12: Boolean);
+procedure TAI_ImageMatrix.SaveToFile(fileName: SystemString; SaveImg: Boolean; RasterSave_: TRasterSave);
 var
   fs: TCoreClassFileStream;
 begin
   DoStatus('save Image Matrix: %s', [fileName]);
   fs := TCoreClassFileStream.Create(fileName, fmCreate);
-  SaveToStream(fs, SaveImg, Yv12);
+  SaveToStream(fs, SaveImg, RasterSave_);
   disposeObject(fs);
 end;
 
 procedure TAI_ImageMatrix.SaveToFile(fileName: SystemString);
 begin
-  SaveToFile(fileName, True, False);
+  SaveToFile(fileName, True, TRasterSave.rsRGB);
 end;
 
 procedure TAI_ImageMatrix.LoadFromFile(fileName: SystemString);

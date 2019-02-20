@@ -83,6 +83,7 @@ type
     procedure Sort(Compare: TCompareFunc);
     property Items[index: Integer]: t read Get write Put; default;
     property List: PTypeList read GetList;
+    property ListData: PTypeList read GetList;
   end;
 
 {$ENDIF FPC}

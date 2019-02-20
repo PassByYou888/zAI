@@ -60,10 +60,22 @@
         <Projects Include="VideoTracker_CPU\VideoTrackerAndSoftDecode_CPU.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="RasterizationFormat\RasterizationFormatDemo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="zDrawEngine_HelloWorld\zDrawEngine_HelloWorld.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="Reponse_FaceServer\Rep_FaceRecServ.dproj">
             <Dependencies/>
         </Projects>
         <Projects Include="Reponse_FaceServer\Rep_FaceRecCli.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="OD_VideoServer\realtime_OD_videoserv.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="OD_VideoServer\realtime_OD_Video_FMXClient.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -245,6 +257,24 @@
     <Target Name="VideoTrackerAndSoftDecode_CPU:Make">
         <MSBuild Projects="VideoTracker_CPU\VideoTrackerAndSoftDecode_CPU.dproj" Targets="Make"/>
     </Target>
+    <Target Name="RasterizationFormatDemo">
+        <MSBuild Projects="RasterizationFormat\RasterizationFormatDemo.dproj"/>
+    </Target>
+    <Target Name="RasterizationFormatDemo:Clean">
+        <MSBuild Projects="RasterizationFormat\RasterizationFormatDemo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="RasterizationFormatDemo:Make">
+        <MSBuild Projects="RasterizationFormat\RasterizationFormatDemo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="zDrawEngine_HelloWorld">
+        <MSBuild Projects="zDrawEngine_HelloWorld\zDrawEngine_HelloWorld.dproj"/>
+    </Target>
+    <Target Name="zDrawEngine_HelloWorld:Clean">
+        <MSBuild Projects="zDrawEngine_HelloWorld\zDrawEngine_HelloWorld.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="zDrawEngine_HelloWorld:Make">
+        <MSBuild Projects="zDrawEngine_HelloWorld\zDrawEngine_HelloWorld.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Rep_FaceRecServ">
         <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecServ.dproj"/>
     </Target>
@@ -263,14 +293,32 @@
     <Target Name="Rep_FaceRecCli:Make">
         <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecCli.dproj" Targets="Make"/>
     </Target>
+    <Target Name="realtime_OD_videoserv">
+        <MSBuild Projects="OD_VideoServer\realtime_OD_videoserv.dproj"/>
+    </Target>
+    <Target Name="realtime_OD_videoserv:Clean">
+        <MSBuild Projects="OD_VideoServer\realtime_OD_videoserv.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="realtime_OD_videoserv:Make">
+        <MSBuild Projects="OD_VideoServer\realtime_OD_videoserv.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="realtime_OD_Video_FMXClient">
+        <MSBuild Projects="OD_VideoServer\realtime_OD_Video_FMXClient.dproj"/>
+    </Target>
+    <Target Name="realtime_OD_Video_FMXClient:Clean">
+        <MSBuild Projects="OD_VideoServer\realtime_OD_Video_FMXClient.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="realtime_OD_Video_FMXClient:Make">
+        <MSBuild Projects="OD_VideoServer\realtime_OD_Video_FMXClient.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_CPU_Parallel;Face_Det_GPU;Face_Alignment;Face_Alignment_Parallel;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;ResNetImgClassifier;FastSurfDemo;VideoTrackerAndSoftDecode_GPU;VideoTrackerAndSoftDecode_CPU;Rep_FaceRecServ;Rep_FaceRecCli"/>
+        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_CPU_Parallel;Face_Det_GPU;Face_Alignment;Face_Alignment_Parallel;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;ResNetImgClassifier;FastSurfDemo;VideoTrackerAndSoftDecode_GPU;VideoTrackerAndSoftDecode_CPU;RasterizationFormatDemo;zDrawEngine_HelloWorld;Rep_FaceRecServ;Rep_FaceRecCli;realtime_OD_videoserv;realtime_OD_Video_FMXClient"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_CPU_Parallel:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Alignment_Parallel:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;ResNetImgClassifier:Clean;FastSurfDemo:Clean;VideoTrackerAndSoftDecode_GPU:Clean;VideoTrackerAndSoftDecode_CPU:Clean;Rep_FaceRecServ:Clean;Rep_FaceRecCli:Clean"/>
+        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_CPU_Parallel:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Alignment_Parallel:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;ResNetImgClassifier:Clean;FastSurfDemo:Clean;VideoTrackerAndSoftDecode_GPU:Clean;VideoTrackerAndSoftDecode_CPU:Clean;RasterizationFormatDemo:Clean;zDrawEngine_HelloWorld:Clean;Rep_FaceRecServ:Clean;Rep_FaceRecCli:Clean;realtime_OD_videoserv:Clean;realtime_OD_Video_FMXClient:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_CPU_Parallel:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Alignment_Parallel:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;ResNetImgClassifier:Make;FastSurfDemo:Make;VideoTrackerAndSoftDecode_GPU:Make;VideoTrackerAndSoftDecode_CPU:Make;Rep_FaceRecServ:Make;Rep_FaceRecCli:Make"/>
+        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_CPU_Parallel:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Alignment_Parallel:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;ResNetImgClassifier:Make;FastSurfDemo:Make;VideoTrackerAndSoftDecode_GPU:Make;VideoTrackerAndSoftDecode_CPU:Make;RasterizationFormatDemo:Make;zDrawEngine_HelloWorld:Make;Rep_FaceRecServ:Make;Rep_FaceRecCli:Make;realtime_OD_videoserv:Make;realtime_OD_Video_FMXClient:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

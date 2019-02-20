@@ -377,15 +377,13 @@ procedure TagHeapPopI(var a: TLVec; var b: TLIVec; var n: TLInt);
   during  calculation  of  (A,B)  and  errors  introduced by
   rounding of A and B to fit in TLFloat (about 1 ulp).
   ************************************************************************ *)
-procedure XDot(const a: TLVec; const b: TLVec; n: TLInt;
-  var Temp: TLVec; var r: TLFloat; var RErr: TLFloat);
+procedure XDot(const a: TLVec; const b: TLVec; n: TLInt; var Temp: TLVec; var r: TLFloat; var RErr: TLFloat);
 
 (* ************************************************************************
   Internal subroutine for extra-precise calculation of SUM(w[i]).
 
   INPUT PARAMETERS:
-  W   -   array[0..N-1], values to be added
-  W is modified during calculations.
+  W   -   array[0..N-1], values to be added W is modified during calculations.
   MX  -   max(W[i])
   N   -   array size
 
@@ -393,8 +391,7 @@ procedure XDot(const a: TLVec; const b: TLVec; n: TLInt;
   R   -   SUM(w[i])
   RErr-   error estimate for R
   ************************************************************************ *)
-procedure XSum(var w: TLVec; mx: TLFloat; n: TLInt;
-  var r: TLFloat; var RErr: TLFloat);
+procedure XSum(var w: TLVec; mx: TLFloat; n: TLInt; var r: TLFloat; var RErr: TLFloat);
 
 (* ************************************************************************
   Fast Pow

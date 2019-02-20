@@ -461,7 +461,8 @@ type
     destructor Destroy; override;
 
     // structor draw
-    procedure DrawOD(od_hnd: TOD_Handle; Raster: TMemoryRaster; color: TDEColor);
+    procedure DrawOD(od_hnd: TOD_Handle; Raster: TMemoryRaster; color: TDEColor); overload;
+    procedure DrawOD(od_desc: TOD_Desc; Raster: TMemoryRaster; color: TDEColor); overload;
     procedure DrawODM(odm_hnd: TOD_Marshal_Handle; Raster: TMemoryRaster; color: TDEColor);
     procedure DrawSP(od_hnd: TOD_Handle; sp_hnd: TSP_Handle; Raster: TMemoryRaster);
     function DrawMMOD(MMOD_hnd: TMMOD_Handle; Raster: TMemoryRaster; color: TDEColor): TMMOD_Desc;
@@ -653,6 +654,7 @@ type
     procedure Prepare_SP(stream: TMemoryStream64);
     function GetAndLockAI: TAI;
     procedure UnLockAI(AI: TAI);
+    function Busy: Integer;
   end;
 
 const
@@ -2178,8 +2180,26 @@ begin
       d.DrawText(PFormat('%f', [od_desc[i].confidence]), 16, RectV2(od_desc[i]), color, False);
       d.EndCaptureShadow;
     end;
-  d.BeginCaptureShadow(Vec2(1, 1), 0.9);
-  d.EndCaptureShadow;
+  d.Flush;
+  DisposeObject(d);
+end;
+
+procedure TAI.DrawOD(od_desc: TOD_Desc; Raster: TMemoryRaster; color: TDEColor);
+var
+  i: Integer;
+  d: TDrawEngine;
+begin
+  d := TDrawEngine.Create;
+  d.ViewOptions := [];
+  d.Rasterization.SetWorkMemory(Raster);
+  for i := 0 to length(od_desc) - 1 do
+    begin
+      d.DrawBox(RectV2(od_desc[i]), color, 2);
+
+      d.BeginCaptureShadow(Vec2(1, 1), 0.9);
+      d.DrawText(PFormat('%f', [od_desc[i].confidence]), 16, RectV2(od_desc[i]), color, False);
+      d.EndCaptureShadow;
+    end;
   d.Flush;
   DisposeObject(d);
 end;
@@ -2204,8 +2224,6 @@ begin
       d.DrawText(PFormat('%s-%f', [odm_desc[i].Token.Text, odm_desc[i].confidence]), 16, odm_desc[i].R, DEColor(1, 1, 1, 1), False);
       d.EndCaptureShadow;
     end;
-  d.BeginCaptureShadow(Vec2(1, 1), 0.9);
-  d.EndCaptureShadow;
   d.Flush;
   DisposeObject(d);
 end;
@@ -2252,8 +2270,6 @@ begin
       d.DrawText(PFormat('%s-%f', [mmod_desc[i].Token.Text, mmod_desc[i].confidence]), 16, mmod_desc[i].R, DEColor(1, 1, 1, 1), False);
       d.EndCaptureShadow;
     end;
-  d.BeginCaptureShadow(Vec2(1, 1), 0.9);
-  d.EndCaptureShadow;
   d.Flush;
   DisposeObject(d);
   Result := mmod_desc;
@@ -5010,6 +5026,18 @@ end;
 procedure TAI_Parallel.UnLockAI(AI: TAI);
 begin
   AI.Unlock;
+end;
+
+function TAI_Parallel.Busy: Integer;
+var
+  i: Integer;
+begin
+  Critical.Acquire;
+  Result := 0;
+  for i := 0 to Count - 1 do
+    if Items[i].Critical.Busy then
+        inc(Result);
+  Critical.Release;
 end;
 
 initialization

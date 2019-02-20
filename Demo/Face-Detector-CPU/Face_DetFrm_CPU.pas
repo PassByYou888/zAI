@@ -9,7 +9,8 @@ uses
 
   System.IOUtils,
 
-  CoreClasses, zAI, zAI_Common, zDrawEngineInterface_SlowFMX, zDrawEngine, MemoryRaster, MemoryStream64,
+  CoreClasses, DoStatusIO,
+  zAI, zAI_Common, zDrawEngineInterface_SlowFMX, zDrawEngine, MemoryRaster, MemoryStream64,
   PascalStrings, UnicodeMixedLib, Geometry2DUnit, Geometry3DUnit;
 
 type
@@ -35,6 +36,7 @@ type
     { Private declarations }
     lbc_Down: Boolean;
     lbc_pt: TVec2;
+    procedure DoStatusMethod(AText: SystemString; const ID: Integer);
   public
     { Public declarations }
     drawIntf: TDrawEngineInterface_FMX;
@@ -103,8 +105,15 @@ begin
     end;
 end;
 
+procedure TFace_DetForm.DoStatusMethod(AText: SystemString; const ID: Integer);
+begin
+  Memo1.Lines.Add(AText);
+  Memo1.GoToTextEnd;
+end;
+
 procedure TFace_DetForm.FormCreate(Sender: TObject);
 begin
+  AddDoStatusHook(Self, DoStatusMethod);
   // 读取zAI的配置
   ReadAIConfig;
   // 这一步会连接Key服务器，验证ZAI的Key

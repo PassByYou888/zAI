@@ -93,6 +93,7 @@ procedure TForm1.PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
     d: TDrawEngine;
     mmod_desc: TMMOD_Desc;
     tracker_r: TRectV2;
+    k: Double;
   begin
     // 使用dnn-od来检测小狗
     mmod_desc := ai.MMOD_DNN_Process(mmod_hnd, mr);
@@ -113,9 +114,13 @@ procedure TForm1.PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
           if tracker_hnd <> nil then
             begin
               // 如果od没有检测到小狗，并且我们确定追踪器是开启的，开始追踪上一个od成功的框体
-              ai.Tracker_Update(tracker_hnd, mr, tracker_r);
+              k := ai.Tracker_Update(tracker_hnd, mr, tracker_r);
               // 把tracker追踪器的框体以粉红色画出来
               d.DrawCorner(TV2Rect4.Init(tracker_r, 45), DEColor(1, 0.5, 0.5, 1), 20, 3);
+
+              d.BeginCaptureShadow(vec2(1, 1), 0.9);
+              d.DrawText(Format('%f', [k]), 12, tracker_r, DEColor(1, 0.5, 0.5, 1), False);
+              d.EndCaptureShadow;
             end;
       end
     else

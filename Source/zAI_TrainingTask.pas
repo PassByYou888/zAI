@@ -225,7 +225,7 @@ var
   m64: TMemoryStream64;
 begin
   m64 := TMemoryStream64.Create;
-  data.SaveToStream(m64, SaveImg, True);
+  data.SaveToStream(m64, SaveImg, TRasterSave.rsJPEG_RGB_Qualily90);
   Write(Name, m64);
   DisposeObject(m64);
 end;

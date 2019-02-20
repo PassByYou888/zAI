@@ -1812,76 +1812,6 @@ begin
   RawStream.Position := 0;
 end;
 
-procedure jls_RasterAlphaToRaw1(ARaster: TMemoryRaster; RawStream: TCoreClassStream);
-var
-  i, j: Integer;
-  Buf: array of Byte;
-begin
-  SetLength(Buf, ARaster.width);
-
-  for i := 0 to ARaster.height - 1 do
-    begin
-      for j := 0 to ARaster.width - 1 do
-          Buf[j] := ARaster.PixelAlpha[j, i];
-      RawStream.write(Buf[0], ARaster.width)
-    end;
-  RawStream.Position := 0;
-  SetLength(Buf, 0);
-end;
-
-function EncodeJpegLSRasterAlphaToStream(ARaster: TMemoryRaster; const stream: TCoreClassStream): Boolean;
-var
-  rgbStream, alphaStream: TMemoryStream64;
-  hflag: Word;
-  rgbSiz, alphaSiz: Integer;
-  LInput: TMemoryStream64;
-  Info: TJlsParameters;
-begin
-  Result := False;
-  rgbStream := TMemoryStream64.Create;
-  alphaStream := TMemoryStream64.Create;
-
-  if EncodeJpegLSRasterToStream3(ARaster, rgbStream) then
-    begin
-      LInput := TMemoryStream64.Create;
-      FillPtrByte(@Info, SizeOf(Info), 0);
-
-      try
-        jls_RasterAlphaToRaw1(ARaster, LInput);
-        Info.width := ARaster.width;
-        Info.height := ARaster.height;
-        Info.BitsPerSample := 8;
-        Info.Components := 1;
-        Info.Custom.t1 := 3;
-        Info.Custom.t2 := 7;
-        Info.Custom.t3 := 21;
-        Info.Custom.Reset := 64;
-        Info.AllowedLossyError := 0;
-
-        Result := jpegls_compress(LInput, alphaStream, @Info);
-      finally
-          LInput.Free;
-      end;
-    end;
-
-  if Result then
-    begin
-      rgbStream.Position := 0;
-      alphaStream.Position := 0;
-
-      hflag := $8D45;
-      rgbSiz := rgbStream.Size;
-      alphaSiz := alphaStream.Size;
-      stream.write(hflag, 2);
-      stream.write(rgbSiz, 4);
-      stream.write(alphaSiz, 4);
-      stream.write(rgbStream.Memory^, rgbStream.Size);
-      stream.write(alphaStream.Memory^, alphaStream.Size);
-    end;
-
-  DisposeObject([rgbStream, alphaStream]);
-end;
-
 function EncodeJpegLSRasterToStream3(ARaster: TMemoryRaster; const stream: TCoreClassStream): Boolean;
 var
   LInput: TMemoryStream64;
@@ -2025,63 +1955,6 @@ begin
   finally
       LOutput.Free;
   end;
-end;
-
-function DecodeJpegLSRasterAlphaFromStream(const stream: TCoreClassStream; ARaster: TMemoryRaster): Boolean;
-var
-  hflag: Word;
-  rgbSiz, alphaSiz: Integer;
-  rgbStream, alphaStream: TMemoryStream64;
-  LOutput: TMemoryStream64;
-  Info: TJlsParameters;
-  i, j: Integer;
-  Src: PByte;
-begin
-  Result := False;
-  hflag := 0;
-  stream.read(hflag, 2);
-  if hflag <> $8D45 then
-      Exit;
-
-  stream.read(rgbSiz, 4);
-  stream.read(alphaSiz, 4);
-
-  rgbStream := TMemoryStream64.Create;
-  alphaStream := TMemoryStream64.Create;
-
-  try
-    rgbStream.CopyFrom(stream, rgbSiz);
-    if alphaSiz > 0 then
-        alphaStream.CopyFrom(stream, alphaSiz);
-
-    rgbStream.Position := 0;
-    alphaStream.Position := 0;
-
-    if DecodeJpegLSRasterFromStream(rgbStream, ARaster) and (alphaSiz > 0) then
-      begin
-        LOutput := TMemoryStream64.Create;
-        FillPtrByte(@Info, SizeOf(Info), 0);
-        try
-          if jpegls_decompress(alphaStream, LOutput, @Info) and (Info.Components = 1) and (Info.BitsPerSample = 8) then
-            begin
-              Src := LOutput.Memory;
-              for j := 0 to ARaster.height - 1 do
-                begin
-                  for i := 0 to ARaster.width - 1 do
-                    begin
-                      ARaster.PixelAlpha[i, j] := Src^;
-                      inc(Src);
-                    end;
-                end;
-            end;
-        except
-        end;
-        LOutput.Free;
-      end;
-  except
-  end;
-
-  DisposeObject([rgbStream, alphaStream]);
 end;
 
 function EncodeJpegLSGrayRasterToStream(const ARaster: PByteRaster; const stream: TCoreClassStream): Boolean;
@@ -2379,4 +2252,62 @@ begin
       dest.write(luma_ptr^, memsiz);
     end;
   FreeMemory(luma_ptr);
+end;
+
+type
+  TOriginSize = packed record
+    width, height: Integer;
+  end;
+
+procedure HalfYUVToRasterization(sour: TCoreClassStream; dest: TMemoryRaster);
+var
+  oriSiz: TOriginSize;
+begin
+  if sour.read(oriSiz, SizeOf(oriSiz)) <> SizeOf(oriSiz) then
+      Exit;
+  YV12ToRasterization(sour, dest);
+  dest.Zoom(oriSiz.width, oriSiz.height);
+end;
+
+procedure RasterizationToHalfYUV(Compressed: Boolean; sour: TMemoryRaster; dest: TCoreClassStream);
+var
+  oriSiz: TOriginSize;
+  n: TMemoryRaster;
+begin
+  oriSiz.width := sour.width;
+  oriSiz.height := sour.height;
+  dest.write(oriSiz, SizeOf(oriSiz));
+
+  n := TMemoryRaster.Create;
+  n.ZoomFrom(sour, sour.width shr 1, sour.height shr 1);
+  RasterizationToYV12(Compressed, n, dest);
+  DisposeObject(n);
+end;
+
+procedure QuartYUVToRasterization(sour: TCoreClassStream; dest: TMemoryRaster);
+var
+  oriSiz: TOriginSize;
+begin
+  if sour.read(oriSiz, SizeOf(oriSiz)) <> SizeOf(oriSiz) then
+      Exit;
+  YV12ToRasterization(sour, dest);
+  dest.Zoom(oriSiz.width, oriSiz.height);
+end;
+
+procedure RasterizationToQuartYUV(Compressed: Boolean; sour: TMemoryRaster; dest: TCoreClassStream);
+var
+  oriSiz: TOriginSize;
+  n: TMemoryRaster;
+begin
+  oriSiz.width := sour.width;
+  oriSiz.height := sour.height;
+  dest.write(oriSiz, SizeOf(oriSiz));
+
+  n := TMemoryRaster.Create;
+  // smooth level 1 on parallel style
+  n.ZoomFrom(sour, sour.width shr 1, sour.height shr 1);
+  // smooth level 2 on parallel style
+  n.Zoom(n.width shr 1, n.height shr 1);
+  RasterizationToYV12(Compressed, n, dest);
+  DisposeObject(n);
 end;

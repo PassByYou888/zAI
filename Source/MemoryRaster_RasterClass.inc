@@ -1120,7 +1120,7 @@ begin
       SwapBR(FBits^[pass]);
 end;
 
-function TMemoryRaster.BuildRGB(cSwapBR: Boolean): PByte;
+function TMemoryRaster.BuildRGB(cSwapBR: Boolean): PRGBArray;
 begin
   Result := System.GetMemory(width * height * 3);
   OutputRGB(Result^, cSwapBR);
@@ -1134,7 +1134,7 @@ begin
   if (width <> w) or (height <> h) then
       SetSize(w, h);
   p := @buff;
-  for pass := (width * height) - 1 downto 0 do
+  for pass := 0 to (width * height) - 1 do
     begin
       FBits^[pass] := RGB2RGBA(PRGB(p)^);
       if cSwapBR then
@@ -1149,7 +1149,7 @@ var
   pass: Integer;
 begin
   p := @buff;
-  for pass := (width * height) - 1 downto 0 do
+  for pass := 0 to (width * height) - 1 do
     begin
       PRGB(p)^ := PRGB(@FBits^[pass])^;
       if cSwapBR then
@@ -2027,18 +2027,18 @@ var
   bakPos: Int64;
   hflag, hflag2: Word;
   Header: TBmpHeader;
+  j: TMemoryJpegRaster;
 begin
   Result := False;
   try
     bakPos := stream.Position;
 
     stream.read(hflag, 2);
-    if (hflag = $8D42) or (hflag = $8D43) or (hflag = $8D44) or (hflag = $8D45) or (hflag = $8D46) then
+    if (hflag = $8D42) or (hflag = $8D43) or (hflag = $8D44) or (hflag = $8D46) or (hflag = $8D47) or (hflag = $8D48) then
         Result := True
     else if (hflag = $D8FF) or (hflag = $8DFF) then
       begin
-        stream.read(hflag2, 2);
-        Result := (hflag2 = $F7FF);
+        Result := True;
       end
     else
       begin
@@ -2134,6 +2134,7 @@ var
 
   hflag, hflag2: Word;
   m64: TMemoryStream64;
+  j: TMemoryJpegRaster;
 begin
   Reset;
 
@@ -2178,13 +2179,36 @@ begin
       stream.read(hflag2, 2);
       stream.Position := bakPos;
       if (hflag2 = $F7FF) then
-          DecodeJpegLSRasterFromStream(stream, Self);
-    end
-    // jls alpha
-  else if hflag = $8D45 then
-    begin
-      stream.Position := bakPos;
-      DecodeJpegLSRasterAlphaFromStream(stream, Self);
+          DecodeJpegLSRasterFromStream(stream, Self)
+      else
+        begin
+          stream.Position := bakPos;
+
+          m64 := TMemoryStream64.Create;
+          if stream is TMemoryStream64 then
+              m64.SetPointerWithProtectedMode(TMemoryStream64(stream).Memory, stream.Size - stream.Position)
+          else if stream is TCoreClassMemoryStream then
+              m64.SetPointerWithProtectedMode(TCoreClassMemoryStream(stream).Memory, stream.Size - stream.Position)
+          else
+              m64.CopyFrom(stream, stream.Size - stream.Position);
+
+          m64.Position := 0;
+
+          j := TMemoryJpegRaster.Create;
+          j.Image.BitmapCS := TJpegColorSpace.jcRGBA;
+          j.Image.StoredCS := TJpegColorSpace.jcAutoDetect;
+          j.Scale := TJpegScale.jsFull;
+          j.Performance := jpBestSpeed;
+          try
+            j.LoadFromStream(m64);
+            j.GetRaster(Self);
+            stream.Position := bakPos + m64.Position;
+          except
+          end;
+
+          DisposeObject(m64);
+          DisposeObject(j);
+        end;
     end
     // yv12 format
   else if hflag = $8D46 then
@@ -2192,8 +2216,59 @@ begin
       YV12ToRasterization(stream, Self);
       Exit;
     end
+    // half yuv format
+  else if hflag = $8D47 then
+    begin
+      HalfYUVToRasterization(stream, Self);
+      Exit;
+    end
+    // quart yuv format
+  else if hflag = $8D48 then
+    begin
+      QuartYUVToRasterization(stream, Self);
+      Exit;
+    end
   else
       stream.Position := bakPos;
+end;
+
+procedure TMemoryRaster.SaveToStream(stream: TCoreClassStream; RasterSave_: TRasterSave);
+begin
+  case RasterSave_ of
+    rsRGBA: SaveToBmp32Stream(stream);
+    rsRGB: SaveToBmp24Stream(stream);
+    rsYV12: SaveToYV12Stream(stream);
+    rsHalfYUV: SaveToHalfYUVStream(stream);
+    rsQuartYUV: SaveToQuartYUVStream(stream);
+    rsFastYV12: SaveToFastYV12Stream(stream);
+    rsFastHalfYUV: SaveToFastHalfYUVStream(stream);
+    rsFastQuartYUV: SaveToFastQuartYUVStream(stream);
+    rsJpeg_RGBA_Qualily90: SaveToJPEGRGBAStream(stream, 90);
+    rsJPEG_RGB_Qualily90: SaveToJPEGRGBStream(stream, 90);
+    rsJPEG_Gray_Qualily90: SaveToJPEGGrayStream(stream, 90);
+    rsJPEG_GrayA_Qualily90: SaveToJPEGGrayAStream(stream, 90);
+    rsJpeg_RGBA_Qualily80: SaveToJPEGRGBAStream(stream, 80);
+    rsJPEG_RGB_Qualily80: SaveToJPEGRGBStream(stream, 80);
+    rsJPEG_Gray_Qualily80: SaveToJPEGGrayStream(stream, 80);
+    rsJPEG_GrayA_Qualily80: SaveToJPEGGrayAStream(stream, 80);
+    rsJpeg_RGBA_Qualily70: SaveToJPEGRGBAStream(stream, 70);
+    rsJPEG_RGB_Qualily70: SaveToJPEGRGBStream(stream, 70);
+    rsJPEG_Gray_Qualily70: SaveToJPEGGrayStream(stream, 70);
+    rsJPEG_GrayA_Qualily70: SaveToJPEGGrayAStream(stream, 70);
+    rsJpeg_RGBA_Qualily60: SaveToJPEGRGBAStream(stream, 60);
+    rsJPEG_RGB_Qualily60: SaveToJPEGRGBStream(stream, 60);
+    rsJPEG_Gray_Qualily60: SaveToJPEGGrayStream(stream, 60);
+    rsJPEG_GrayA_Qualily60: SaveToJPEGGrayAStream(stream, 60);
+    rsJpeg_RGBA_Qualily50: SaveToJPEGRGBAStream(stream, 50);
+    rsJPEG_RGB_Qualily50: SaveToJPEGRGBStream(stream, 50);
+    rsJPEG_Gray_Qualily50: SaveToJPEGGrayStream(stream, 50);
+    rsJPEG_GrayA_Qualily50: SaveToJPEGGrayAStream(stream, 50);
+  end;
+end;
+
+procedure TMemoryRaster.SaveToStream(stream: TCoreClassStream);
+begin
+  SaveToBmp32Stream(stream);
 end;
 
 procedure TMemoryRaster.SaveToBmp32Stream(stream: TCoreClassStream);
@@ -2283,11 +2358,6 @@ begin
   SetLength(tempBuff, 0);
 end;
 
-procedure TMemoryRaster.SaveToStream(stream: TCoreClassStream);
-begin
-  SaveToBmp32Stream(stream);
-end;
-
 procedure TMemoryRaster.SaveToZLibCompressStream(stream: TCoreClassStream);
 var
   hflag: Word;
@@ -2343,16 +2413,11 @@ begin
   EncodeJpegLSRasterToStream3(Self, stream);
 end;
 
-procedure TMemoryRaster.SaveToJpegAlphaStream(stream: TCoreClassStream);
-begin
-  EncodeJpegLSRasterAlphaToStream(Self, stream);
-end;
-
 procedure TMemoryRaster.SaveToYV12Stream(stream: TCoreClassStream);
 var
   hflag: Word;
 begin
-  hflag := $8D46; // yu12 format
+  hflag := $8D46; // yv12 format
   stream.write(hflag, 2);
   RasterizationToYV12(True, Self, stream);
 end;
@@ -2361,9 +2426,145 @@ procedure TMemoryRaster.SaveToFastYV12Stream(stream: TCoreClassStream);
 var
   hflag: Word;
 begin
-  hflag := $8D46; // yu12 format
+  hflag := $8D46; // yv12 format
   stream.write(hflag, 2);
   RasterizationToYV12(False, Self, stream);
+end;
+
+procedure TMemoryRaster.SaveToHalfYUVStream(stream: TCoreClassStream);
+var
+  hflag: Word;
+begin
+  hflag := $8D47; // half yuv format
+  stream.write(hflag, 2);
+  RasterizationToHalfYUV(True, Self, stream);
+end;
+
+procedure TMemoryRaster.SaveToFastHalfYUVStream(stream: TCoreClassStream);
+var
+  hflag: Word;
+begin
+  hflag := $8D47; // yu12 format
+  stream.write(hflag, 2);
+  RasterizationToHalfYUV(False, Self, stream);
+end;
+
+procedure TMemoryRaster.SaveToQuartYUVStream(stream: TCoreClassStream);
+var
+  hflag: Word;
+begin
+  hflag := $8D48; // quart yuv format
+  stream.write(hflag, 2);
+  RasterizationToQuartYUV(True, Self, stream);
+end;
+
+procedure TMemoryRaster.SaveToFastQuartYUVStream(stream: TCoreClassStream);
+var
+  hflag: Word;
+begin
+  hflag := $8D48; // quart yuv format
+  stream.write(hflag, 2);
+  RasterizationToQuartYUV(False, Self, stream);
+end;
+
+procedure TMemoryRaster.SaveToJPEGRGBAStream(stream: TCoreClassStream; Quality: TJpegQuality);
+var
+  j: TMemoryJpegRaster;
+  m64: TMemoryStream64;
+begin
+  j := TMemoryJpegRaster.Create;
+  j.Image.BitmapCS := TJpegColorSpace.jcRGBA;
+  j.Image.StoredCS := TJpegColorSpace.jcYCbCrA;
+  j.CompressionQuality := Quality;
+  j.Performance := jpBestSpeed;
+  j.SetRaster(Self);
+
+  m64 := TMemoryStream64.Create;
+  j.SaveToStream(m64);
+  stream.write(m64.Memory^, m64.Size);
+  DisposeObject(m64);
+
+  DisposeObject(j);
+end;
+
+procedure TMemoryRaster.SaveToJPEGRGBStream(stream: TCoreClassStream; Quality: TJpegQuality);
+var
+  j: TMemoryJpegRaster;
+  m64: TMemoryStream64;
+begin
+  j := TMemoryJpegRaster.Create;
+  j.Image.BitmapCS := TJpegColorSpace.jcRGBA;
+  j.Image.StoredCS := TJpegColorSpace.jcYCbCr;
+  j.CompressionQuality := Quality;
+  j.Performance := jpBestSpeed;
+  j.SetRaster(Self);
+
+  m64 := TMemoryStream64.Create;
+  j.SaveToStream(m64);
+  stream.write(m64.Memory^, m64.Size);
+  DisposeObject(m64);
+
+  DisposeObject(j);
+end;
+
+procedure TMemoryRaster.SaveToJpegCMYKRGBStream(stream: TCoreClassStream; Quality: TJpegQuality);
+var
+  j: TMemoryJpegRaster;
+  m64: TMemoryStream64;
+begin
+  j := TMemoryJpegRaster.Create;
+  j.Image.BitmapCS := TJpegColorSpace.jcRGBA;
+  j.Image.StoredCS := TJpegColorSpace.jcCMYK;
+  j.CompressionQuality := Quality;
+  j.Performance := jpBestSpeed;
+  j.SetRaster(Self);
+
+  m64 := TMemoryStream64.Create;
+  j.SaveToStream(m64);
+  stream.write(m64.Memory^, m64.Size);
+  DisposeObject(m64);
+
+  DisposeObject(j);
+end;
+
+procedure TMemoryRaster.SaveToJPEGGrayStream(stream: TCoreClassStream; Quality: TJpegQuality);
+var
+  j: TMemoryJpegRaster;
+  m64: TMemoryStream64;
+begin
+  j := TMemoryJpegRaster.Create;
+  j.Image.BitmapCS := TJpegColorSpace.jcRGBA;
+  j.Image.StoredCS := TJpegColorSpace.jcGray;
+  j.CompressionQuality := Quality;
+  j.Performance := jpBestSpeed;
+  j.SetRaster(Self);
+
+  m64 := TMemoryStream64.Create;
+  j.SaveToStream(m64);
+  stream.write(m64.Memory^, m64.Size);
+  DisposeObject(m64);
+
+  DisposeObject(j);
+end;
+
+procedure TMemoryRaster.SaveToJPEGGrayAStream(stream: TCoreClassStream; Quality: TJpegQuality);
+var
+  j: TMemoryJpegRaster;
+  m64: TMemoryStream64;
+begin
+  j := TMemoryJpegRaster.Create;
+  j.Image.BitmapCS := TJpegColorSpace.jcRGBA;
+  j.Image.StoredCS := TJpegColorSpace.jcGrayA;
+  j.CompressionQuality := Quality;
+  j.Performance := jpBestSpeed;
+  j.SetRaster(Self);
+
+  m64 := TMemoryStream64.Create;
+  j.SaveToStream(m64);
+  stream.write(m64.Memory^, m64.Size);
+  DisposeObject(m64);
+
+  DisposeObject(j);
 end;
 
 class function TMemoryRaster.CanLoadFile(fn: SystemString): Boolean;
@@ -2381,11 +2582,13 @@ end;
 
 procedure TMemoryRaster.LoadFromFile(fn: SystemString);
 var
-  m64: TCoreClassFileStream;
+  m64: TMemoryStream64;
 begin
-  m64 := TCoreClassFileStream.Create(fn, fmOpenRead or fmShareDenyWrite);
+  m64 := TMemoryStream64.Create;
   try
-      LoadFromStream(m64);
+    m64.LoadFromFile(fn);
+    m64.Position := 0;
+    LoadFromStream(m64);
   except
   end;
   DisposeObject(m64);
@@ -2495,19 +2698,6 @@ begin
   DisposeObject(m64);
 end;
 
-procedure TMemoryRaster.SaveToJpegAlphaFile(fn: SystemString);
-var
-  m64: TMemoryStream64;
-begin
-  m64 := TMemoryStream64.Create;
-  try
-      SaveToJpegAlphaStream(m64);
-  except
-  end;
-  m64.SaveToFile(fn);
-  DisposeObject(m64);
-end;
-
 procedure TMemoryRaster.SaveToYV12File(fn: SystemString);
 var
   m64: TMemoryStream64;
@@ -2528,6 +2718,123 @@ begin
   m64 := TMemoryStream64.Create;
   try
       SaveToFastYV12Stream(m64);
+  except
+  end;
+  m64.SaveToFile(fn);
+  DisposeObject(m64);
+end;
+
+procedure TMemoryRaster.SaveToHalfYUVFile(fn: SystemString);
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  try
+      SaveToHalfYUVStream(m64);
+  except
+  end;
+  m64.SaveToFile(fn);
+  DisposeObject(m64);
+end;
+
+procedure TMemoryRaster.SaveToFastHalfYUVFile(fn: SystemString);
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  try
+      SaveToFastHalfYUVStream(m64);
+  except
+  end;
+  m64.SaveToFile(fn);
+  DisposeObject(m64);
+end;
+
+procedure TMemoryRaster.SaveToQuartYUVFile(fn: SystemString);
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  try
+      SaveToQuartYUVStream(m64);
+  except
+  end;
+  m64.SaveToFile(fn);
+  DisposeObject(m64);
+end;
+
+procedure TMemoryRaster.SaveToFastQuartYUVFile(fn: SystemString);
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  try
+      SaveToFastQuartYUVStream(m64);
+  except
+  end;
+  m64.SaveToFile(fn);
+  DisposeObject(m64);
+end;
+
+procedure TMemoryRaster.SaveToJpegRGBAFile(fn: SystemString; Quality: TJpegQuality);
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  try
+      SaveToJPEGRGBAStream(m64, Quality);
+  except
+  end;
+  m64.SaveToFile(fn);
+  DisposeObject(m64);
+end;
+
+procedure TMemoryRaster.SaveToJpegRGBFile(fn: SystemString; Quality: TJpegQuality);
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  try
+      SaveToJPEGRGBStream(m64, Quality);
+  except
+  end;
+  m64.SaveToFile(fn);
+  DisposeObject(m64);
+end;
+
+procedure TMemoryRaster.SaveToJpegCMYKRGBFile(fn: SystemString; Quality: TJpegQuality);
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  try
+      SaveToJpegCMYKRGBStream(m64, Quality);
+  except
+  end;
+  m64.SaveToFile(fn);
+  DisposeObject(m64);
+end;
+
+procedure TMemoryRaster.SaveToJpegGrayFile(fn: SystemString; Quality: TJpegQuality);
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  try
+      SaveToJPEGGrayStream(m64, Quality);
+  except
+  end;
+  m64.SaveToFile(fn);
+  DisposeObject(m64);
+end;
+
+procedure TMemoryRaster.SaveToJpegGrayAFile(fn: SystemString; Quality: TJpegQuality);
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  try
+      SaveToJPEGGrayAStream(m64, Quality);
   except
   end;
   m64.SaveToFile(fn);

@@ -10,13 +10,14 @@ uses
   CoreClasses,
   DoStatusIO,
   zAI_Common,
-  zAI_Reponse_FaceServer;
+  zAI_Reponse_FaceClient in 'zAI_Reponse_FaceClient.pas',
+  zAI_Reponse_FaceServer in 'zAI_Reponse_FaceServer.pas';
 
 procedure RunServ;
 var
-  fs: TFaceServer;
+  fs: TReponse_FaceServer;
 begin
-  fs := TFaceServer.Create;
+  fs := TReponse_FaceServer.Create;
   if fs.StartService('0.0.0.0', 8975) then
     begin
       DoStatus('face server listen 0.0.0.0:8975 successed.');

@@ -114,9 +114,11 @@ begin
   { Adjust scan line pointers taking into account the margins,
     and also the fact that indexing for scan lines starts from 1
   }
-  PTR := pscanl0; inc(PTR, comp * (LEFTMARGIN - 1));
+  PTR := pscanl0;
+  inc(PTR, comp * (LEFTMARGIN - 1));
   pscanline := PTR;
-  PTR := cscanl0; inc(PTR, comp * (LEFTMARGIN - 1));
+  PTR := cscanl0;
+  inc(PTR, comp * (LEFTMARGIN - 1));
   cscanline := PTR;
 
   FBitIO.bitoinit();
@@ -253,8 +255,7 @@ begin
 
   { compute bits per sample for input symbols }
   bpp := 1;
-  while longint(1 shl bpp) < FImageInfo.alpha
-    do
+  while longint(1 shl bpp) < FImageInfo.alpha do
       inc(bpp);
 
   { check if alpha is a power of 2: }
@@ -385,10 +386,12 @@ begin
       local_scanl0 := safecalloc(width + LEFTMARGIN + RIGHTMARGIN + NEGBUFFSIZE, SizeOf(Pixel));
       local_scanl1 := safecalloc(width + LEFTMARGIN + RIGHTMARGIN + NEGBUFFSIZE, SizeOf(Pixel));
 
-      PTR := local_scanl0; inc(PTR, LEFTMARGIN - 1);
+      PTR := local_scanl0;
+      inc(PTR, LEFTMARGIN - 1);
       local_pscanline := PTR;
 
-      PTR := local_scanl1; inc(PTR, LEFTMARGIN - 1);
+      PTR := local_scanl1;
+      inc(PTR, LEFTMARGIN - 1);
       local_cscanline := PTR;
 
     end;
@@ -856,7 +859,4 @@ begin
   alpha0 := DEF_ALPHA;
 end;
 
-end. 
- 
- 
- 
+end.

@@ -7,7 +7,8 @@ uses
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Controls.Presentation,
   FMX.StdCtrls, FMX.Objects, FMX.ScrollBox, FMX.Memo,
 
-  CoreClasses, zAI, zAI_Common, zDrawEngineInterface_SlowFMX, zDrawEngine, MemoryRaster;
+  CoreClasses, PascalStrings, DoStatusIO,
+  zAI, zAI_Common, zDrawEngineInterface_SlowFMX, zDrawEngine, MemoryRaster;
 
 type
   TForm1 = class(TForm)
@@ -23,6 +24,7 @@ type
     procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
+    procedure DoStatusMethod(AText: SystemString; const ID: Integer);
   public
     { Public declarations }
     bk1, bk2: TMemoryRaster;
@@ -66,8 +68,16 @@ begin
   OD_Dog(Image2.bitmap);
 end;
 
+procedure TForm1.DoStatusMethod(AText: SystemString; const ID: Integer);
+begin
+  Memo1.Lines.Add(AText);
+  Memo1.GoToTextEnd;
+end;
+
 procedure TForm1.FormCreate(Sender: TObject);
 begin
+  AddDoStatusHook(Self, DoStatusMethod);
+
   // 读取zAI的配置
   ReadAIConfig;
   // 这一步会连接Key服务器，验证ZAI的Key

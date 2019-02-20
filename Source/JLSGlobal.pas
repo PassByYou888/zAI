@@ -278,18 +278,18 @@ procedure error(Msg: string);
 function safealloc(Size: size_t): Pointer;
 function safecalloc(numels, Size: size_t): Pointer;
 
-function predict(rb, RA, RC: Word): Word;
+function predict(rb, RA, RC: Word): Word; inline;
 
-function IsTrue(AValue: Integer): Boolean;
-function ENDIAN8(x: Word): Byte;
-function ENDIAN16(x: Word): Word;
+function IsTrue(AValue: Integer): Boolean; inline;
+function ENDIAN8(x: Word): Byte; inline;
+function ENDIAN16(x: Word): Word; inline;
 
 function check_compatibility(head_frame: pjpeg_ls_header; head_scan: pjpeg_ls_header; n_s: Int): Int;
 
-function shr_c(Value: Int64; ShiftBits: Integer): Int64; overload;
-function shr_c(Value: Integer; ShiftBits: Integer): Integer; overload;
+function shr_c(Value: Int64; ShiftBits: Integer): Int64; overload; inline;
+function shr_c(Value: Integer; ShiftBits: Integer): Integer; overload; inline;
 
-function Bool_c(AValue: Boolean): Integer;
+function Bool_c(AValue: Boolean): Integer; inline;
 
 implementation
 

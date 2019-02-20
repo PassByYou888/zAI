@@ -4383,6 +4383,8 @@ end;
 
 procedure TPeerIO.InternalSaveReceiveBuffer(const buff: Pointer; siz: Int64);
 begin
+  if not Connected then
+    exit;
   AtomInc(FOwnerFramework.Statistics[TStatisticsType.stReceiveSize], siz);
 
   LockIO;

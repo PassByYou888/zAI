@@ -50,8 +50,8 @@ object DNN_OD_Form: TDNN_OD_Form
     Size.Height = 737.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 3
-    Viewport.Width = 697.000000000000000000
-    Viewport.Height = 737.000000000000000000
+    Viewport.Width = 693.000000000000000000
+    Viewport.Height = 733.000000000000000000
   end
   object Timer1: TTimer
     Interval = 100
@@ -67,8 +67,8 @@ object DNN_OD_Form: TDNN_OD_Form
     Size.Height = 697.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 6
-    Viewport.Width = 745.000000000000000000
-    Viewport.Height = 697.000000000000000000
+    Viewport.Width = 741.000000000000000000
+    Viewport.Height = 693.000000000000000000
   end
   object ResetButton: TButton
     Position.X = 240.000000000000000000

@@ -2,7 +2,7 @@
     <PropertyGroup>
         <ProjectGuid>{153FCA05-BAC2-4832-B786-540FB1FB5357}</ProjectGuid>
         <ProjectVersion>18.3</ProjectVersion>
-        <FrameworkType>None</FrameworkType>
+        <FrameworkType>FMX</FrameworkType>
         <MainSource>Rep_FaceRecServ.dpr</MainSource>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Release</Config>
@@ -163,6 +163,8 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
+        <DCCReference Include="zAI_Reponse_FaceClient.pas"/>
+        <DCCReference Include="zAI_Reponse_FaceServer.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -200,6 +202,12 @@
                 <DeployFile LocalName="..\Binary\Rep_FaceRecServ.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win64">
                         <RemoteName>Rep_FaceRecServ.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\Binary\Rep_FaceRecServ.rsm" Configuration="Debug" Class="DebugSymbols">
+                    <Platform Name="Win64">
+                        <RemoteName>Rep_FaceRecServ.rsm</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

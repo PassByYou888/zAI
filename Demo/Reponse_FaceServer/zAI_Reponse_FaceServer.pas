@@ -9,7 +9,7 @@ uses Types, Classes, SysUtils, IOUtils, Threading, Windows,
   CommunicationFramework;
 
 type
-  TFaceServer = class;
+  TReponse_FaceServer = class;
 
   TTrainingProcessThread = class(TCoreClassThread)
   protected
@@ -21,7 +21,7 @@ type
     procedure Execute; override;
   public
     cmd, workPath: U_String;
-    serv: TFaceServer;
+    serv: TReponse_FaceServer;
     train_out: SystemString;
     constructor Create;
     destructor Destroy; override;
@@ -39,15 +39,7 @@ type
     function GetFaceRaster: TMemoryRaster;
   end;
 
-  TFaceSaveData = record
-    face_label: U_String;
-    Scale4x: Boolean;
-    mr: TMemoryRaster;
-  end;
-
-  PFaceSaveData = ^TFaceSaveData;
-
-  TFaceServer = class(TPhysicsServer)
+  TReponse_FaceServer = class(TPhysicsServer)
   private
     Metric: TAI;
     Metric_Resnet_Hnd: TMDNN_Handle;
@@ -301,7 +293,7 @@ begin
   inherited Progress;
 end;
 
-procedure TFaceServer.cmd_FaceBuffer(Sender: TPeerIO; InData: PByte; DataSize: NativeInt);
+procedure TReponse_FaceServer.cmd_FaceBuffer(Sender: TPeerIO; InData: PByte; DataSize: NativeInt);
 var
   f_io: TFaceIOSpecial;
 begin
@@ -311,13 +303,22 @@ begin
   f_io.Face_Stream.Position := 0;
 end;
 
-procedure TFaceServer.DoFaceChanged;
+procedure TReponse_FaceServer.DoFaceChanged;
 begin
   FaceChanged := True;
   FaceChangedTimeTick := GetTimeTick();
 end;
 
-procedure TFaceServer.cmd_SaveFaceTh(ThSender: TComputeThread);
+type
+  TFaceSaveData = record
+    face_label: U_String;
+    Scale4x: Boolean;
+    mr: TMemoryRaster;
+  end;
+
+  PFaceSaveData = ^TFaceSaveData;
+
+procedure TReponse_FaceServer.cmd_SaveFaceTh(ThSender: TComputeThread);
 var
   p: PFaceSaveData;
 begin
@@ -336,7 +337,7 @@ begin
   dispose(p);
 end;
 
-procedure TFaceServer.cmd_SaveFace(Sender: TPeerIO; InData: TDataFrameEngine);
+procedure TReponse_FaceServer.cmd_SaveFace(Sender: TPeerIO; InData: TDataFrameEngine);
 var
   p: PFaceSaveData;
 begin
@@ -355,7 +356,7 @@ begin
   TComputeThread.RunM(p, nil, cmd_SaveFaceTh);
 end;
 
-function TFaceServer.CanRunFaceTraining: Boolean;
+function TReponse_FaceServer.CanRunFaceTraining: Boolean;
 var
   tokens: TArrayPascalString;
 begin
@@ -378,7 +379,7 @@ begin
   Result := True;
 end;
 
-function TFaceServer.RunFaceTraining(var report: SystemString): Boolean;
+function TReponse_FaceServer.RunFaceTraining(var report: SystemString): Boolean;
 var
   tokens: TArrayPascalString;
   tt: TTrainingTask;
@@ -489,7 +490,7 @@ begin
   Result := True;
 end;
 
-procedure TFaceServer.FaceTrainingRunDone(th: TTrainingProcessThread);
+procedure TReponse_FaceServer.FaceTrainingRunDone(th: TTrainingProcessThread);
 var
   tt: TTrainingTask;
   report: SystemString;
@@ -553,7 +554,7 @@ begin
   FaceTrainingThread := nil;
 end;
 
-procedure TFaceServer.cmd_RecFace_ThRun(ThSender: TStreamCmdThread; ThInData, ThOutData: TDataFrameEngine);
+procedure TReponse_FaceServer.cmd_RecFace_ThRun(ThSender: TStreamCmdThread; ThInData, ThOutData: TDataFrameEngine);
 type
   TFace_Result = record
     k: TLFloat;
@@ -684,12 +685,12 @@ begin
   end;
 end;
 
-procedure TFaceServer.cmd_RecFace(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
+procedure TReponse_FaceServer.cmd_RecFace(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
 begin
   RunStreamWithDelayThreadM(Sender, nil, nil, InData, OutData, cmd_RecFace_ThRun);
 end;
 
-procedure TFaceServer.cmd_GetFaceList(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
+procedure TReponse_FaceServer.cmd_GetFaceList(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
 var
   tokens: TArrayPascalString;
   n: TPascalString;
@@ -702,7 +703,7 @@ begin
       OutData.WriteString(n);
 end;
 
-procedure TFaceServer.cmd_DownloadFace(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
+procedure TReponse_FaceServer.cmd_DownloadFace(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
 var
   token: SystemString;
   imgL: TAI_ImageList;
@@ -715,7 +716,7 @@ begin
     begin
       OutData.WriteBool(True);
       m64 := TMemoryStream64.Create;
-      imgL.SaveToStream(m64, True, True, False);
+      imgL.SaveToStream(m64, True, True, TRasterSave.rsJPEG_RGB_Qualily90);
       OutData.WriteStream(m64);
       disposeObject(m64);
     end
@@ -727,7 +728,7 @@ begin
   UnLockObject(FaceDB);
 end;
 
-procedure TFaceServer.cmd_DeleteFace(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
+procedure TReponse_FaceServer.cmd_DeleteFace(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
 var
   filter: U_String;
   i: Integer;
@@ -752,7 +753,7 @@ begin
   OutData.WriteInteger(c);
 end;
 
-procedure TFaceServer.cmd_UploadFace(Sender: TPeerIO; InData: TDataFrameEngine);
+procedure TReponse_FaceServer.cmd_UploadFace(Sender: TPeerIO; InData: TDataFrameEngine);
 var
   faceToken: U_String;
   m64: TMemoryStream64;
@@ -785,7 +786,7 @@ begin
   DoFaceChanged;
 end;
 
-procedure TFaceServer.LoadFaceSystem;
+procedure TReponse_FaceServer.LoadFaceSystem;
 var
   fn: U_String;
   tokens: TArrayPascalString;
@@ -818,7 +819,7 @@ begin
     end;
 end;
 
-constructor TFaceServer.Create;
+constructor TReponse_FaceServer.Create;
 var
   pic: TMemoryRaster;
   report: SystemString;
@@ -857,7 +858,7 @@ begin
   FaceChanged := False;
 end;
 
-destructor TFaceServer.Destroy;
+destructor TReponse_FaceServer.Destroy;
 begin
   StopService;
   disposeObject(Metric);
@@ -866,7 +867,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TFaceServer.Progress;
+procedure TReponse_FaceServer.Progress;
 var
   report: SystemString;
   fn: U_String;

@@ -79,6 +79,7 @@ object FaceClientForm: TFaceClientForm
     OnClick = FaceRecButtonClick
   end
   object DepthRecCheckBox: TCheckBox
+    IsChecked = True
     Position.X = 144.000000000000000000
     Position.Y = 42.000000000000000000
     Size.Width = 169.000000000000000000

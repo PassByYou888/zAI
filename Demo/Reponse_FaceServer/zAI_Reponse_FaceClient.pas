@@ -123,7 +123,7 @@ var
   sendDE: TDataFrameEngine;
 begin
   m64 := TMemoryStream64.Create;
-  input.SaveToBmp24Stream(m64);
+  input.SaveToJpegRGBStream(m64, 80);
   SendCompleteBuffer('FaceBuffer', m64.Memory, m64.Size, True);
   m64.DiscardMemory;
   disposeObject(m64);
@@ -142,7 +142,7 @@ var
   p: PRecFaceOnResult;
 begin
   m64 := TMemoryStream64.Create;
-  input.SaveToFastYV12Stream(m64);
+  input.SaveToJpegRGBStream(m64, 50);
   SendCompleteBuffer('FaceBuffer', m64.Memory, m64.Size, False);
   Progress;
 
@@ -169,7 +169,7 @@ var
   p: PRecFaceOnResult;
 begin
   m64 := TMemoryStream64.Create;
-  input.SaveToFastYV12Stream(m64);
+  input.SaveToJpegRGBStream(m64, 50);
   SendCompleteBuffer('FaceBuffer', m64.Memory, m64.Size, False);
   Progress;
 
@@ -263,7 +263,7 @@ begin
   sendDE := TDataFrameEngine.Create;
   sendDE.WriteString(token);
   m64 := TMemoryStream64.Create;
-  imgL.SaveToStream(m64, True, True, True);
+  imgL.SaveToStream(m64, True, True, TRasterSave.rsJPEG_RGB_Qualily90);
   sendDE.WriteStream(m64);
   disposeObject(m64);
 
