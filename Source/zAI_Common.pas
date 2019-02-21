@@ -119,6 +119,7 @@ type
     procedure SavePrepareRasterToPictureStream(stream: TCoreClassStream);
     procedure SavePrepareRasterToPictureFile(fileName: SystemString);
 
+    procedure SaveToStream(stream: TCoreClassStream); overload;
     procedure SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean); overload;
     procedure SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean; RasterSave_: TRasterSave); overload;
     procedure LoadFromStream(stream: TCoreClassStream; LoadImg: Boolean); overload;
@@ -1173,6 +1174,11 @@ begin
   fs := TCoreClassFileStream.Create(fileName, fmCreate);
   SavePrepareRasterToPictureStream(fs);
   disposeObject(fs);
+end;
+
+procedure TAI_ImageList.SaveToStream(stream: TCoreClassStream);
+begin
+  SaveToStream(stream, True, True);
 end;
 
 procedure TAI_ImageList.SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean);

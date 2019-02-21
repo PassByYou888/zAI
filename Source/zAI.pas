@@ -672,7 +672,6 @@ procedure Close_AI_Engine;
 
 function Alloc_P_Bytes(const buff: TPascalString): P_Bytes; overload;
 function Alloc_P_Bytes(const buff: TBytes): P_Bytes; overload;
-function Alloc_P_Bytes(const buff: Pointer; siz: Integer): P_Bytes; overload;
 procedure Free_P_Bytes(const buff: P_Bytes);
 function Get_P_Bytes_String(const buff: P_Bytes): TPascalString;
 
@@ -926,10 +925,12 @@ begin
       p := GetMemory(build_in_face_shape_memory_siz);
       dbEng.ItemRead(itmHnd, build_in_face_shape_memory_siz, p^);
       dbEng.ItemClose(itmHnd);
-    end;
+      build_in_face_shape_memory := p;
+    end
+  else
+      RaiseInfo('zAI build in error.');
 
   DisposeObject(dbEng);
-  build_in_face_shape_memory := p;
 end;
 
 procedure Init_AI_BuildIn;
@@ -1008,7 +1009,7 @@ end;
 
 function Alloc_P_Bytes(const buff: TPascalString): P_Bytes;
 begin
-  Result := Alloc_P_Bytes(buff.Bytes);
+  Result := Alloc_P_Bytes(buff.SysBytes);
 end;
 
 function Alloc_P_Bytes(const buff: TBytes): P_Bytes;
@@ -1019,19 +1020,6 @@ begin
     begin
       Result^.Bytes := GetMemory(Result^.Size + 1);
       CopyPtr(@buff[0], Result^.Bytes, Result^.Size);
-    end
-  else
-      Result^.Bytes := nil;
-end;
-
-function Alloc_P_Bytes(const buff: Pointer; siz: Integer): P_Bytes;
-begin
-  new(Result);
-  Result^.Size := siz;
-  if Result^.Size > 0 then
-    begin
-      Result^.Bytes := GetMemory(Result^.Size + 1);
-      CopyPtr(buff, Result^.Bytes, Result^.Size);
     end
   else
       Result^.Bytes := nil;
@@ -1053,7 +1041,7 @@ begin
   SetLength(tmp, buff^.Size);
   if buff^.Size > 0 then
       CopyPtr(buff^.Bytes, @tmp[0], buff^.Size);
-  Result.Bytes := tmp;
+  Result.SysBytes := tmp;
   SetLength(tmp, 0);
 end;
 
@@ -1907,6 +1895,7 @@ begin
       img := imgList[i];
       for j := 0 to img.DetectorDefineList.Count - 1 do
         begin
+          DetDef := img.DetectorDefineList[j];
           DetDef.R := RectScaleSpace(DetDef.R, SS_width, SS_height);
           DetDef.R := CalibrationRectInRect(DetDef.R, DetDef.Owner.Raster.BoundsRect);
 
@@ -2731,27 +2720,21 @@ end;
 
 function TAI.OD_Train(train_cfg, train_output: TPascalString; window_w, window_h, thread_num: Integer): Boolean;
 var
-  c_train_cfg, c_train_output: C_Bytes;
-  train_cfg_buff, train_output_buff: TBytes;
+  train_cfg_buff, train_output_buff: P_Bytes;
 begin
   if (AI_Ptr <> nil) and Assigned(AI_Ptr^.OD_Train) and (umlFileExists(train_cfg)) and (train_output.Len > 0) then
     begin
-      train_cfg_buff := train_cfg.Bytes;
-      c_train_cfg.Size := length(train_cfg_buff);
-      c_train_cfg.Bytes := @train_cfg_buff[0];
-
-      train_output_buff := train_output.Bytes;
-      c_train_output.Size := length(train_output_buff);
-      c_train_output.Bytes := @train_output_buff[0];
+      train_cfg_buff := Alloc_P_Bytes(train_cfg);
+      train_output_buff := Alloc_P_Bytes(train_output);
 
       try
-          Result := AI_Ptr^.OD_Train(@c_train_cfg, @c_train_output, window_w, window_h, thread_num) = 0;
+          Result := AI_Ptr^.OD_Train(train_cfg_buff, train_output_buff, window_w, window_h, thread_num) = 0;
       except
           Result := False;
       end;
 
-      SetLength(train_cfg_buff, 0);
-      SetLength(train_output_buff, 0);
+      Free_P_Bytes(train_cfg_buff);
+      Free_P_Bytes(train_output_buff);
 
       if not Result then
           DoStatus('ZAI: Object Detector Train failed.');
@@ -2844,15 +2827,16 @@ end;
 
 function TAI.OD_Open(train_file: TPascalString): TOD_Handle;
 var
-  c_train_file: C_Bytes;
-  train_file_buff: TBytes;
+  train_file_buff: P_Bytes;
 begin
   if (AI_Ptr <> nil) and Assigned(AI_Ptr^.OD_Init) then
     begin
-      train_file_buff := train_file.Bytes;
-      c_train_file.Size := length(train_file_buff);
-      c_train_file.Bytes := @train_file_buff[0];
-      Result := AI_Ptr^.OD_Init(@c_train_file);
+      train_file_buff := Alloc_P_Bytes(train_file);
+      try
+          Result := AI_Ptr^.OD_Init(train_file_buff);
+      finally
+          Free_P_Bytes(train_file_buff);
+      end;
       if Result <> nil then
           DoStatus('Object detector open: %s', [train_file.Text]);
     end
@@ -3282,27 +3266,22 @@ end;
 
 function TAI.SP_Train(train_cfg, train_output: TPascalString; oversampling_amount, tree_depth, thread_num: Integer): Boolean;
 var
-  c_train_cfg, c_train_output: C_Bytes;
-  train_cfg_buff, train_output_buff: TBytes;
+  train_cfg_buff, train_output_buff: P_Bytes;
 begin
   if (AI_Ptr <> nil) and Assigned(AI_Ptr^.SP_Train) and (umlFileExists(train_cfg)) and (train_output.Len > 0) then
     begin
-      train_cfg_buff := train_cfg.Bytes;
-      c_train_cfg.Size := length(train_cfg_buff);
-      c_train_cfg.Bytes := @train_cfg_buff[0];
-
-      train_output_buff := train_output.Bytes;
-      c_train_output.Size := length(train_output_buff);
-      c_train_output.Bytes := @train_output_buff[0];
+      train_cfg_buff := Alloc_P_Bytes(train_cfg);
+      train_output_buff := Alloc_P_Bytes(train_output);
 
       try
-          Result := AI_Ptr^.SP_Train(@c_train_cfg, @c_train_output, oversampling_amount, tree_depth, thread_num) = 0;
+          Result := AI_Ptr^.SP_Train(train_cfg_buff, train_output_buff, oversampling_amount, tree_depth, thread_num) = 0;
       except
           Result := False;
       end;
 
-      SetLength(train_cfg_buff, 0);
-      SetLength(train_output_buff, 0);
+      Free_P_Bytes(train_cfg_buff);
+      Free_P_Bytes(train_output_buff);
+
       if not Result then
           DoStatus('ZAI: Shape Predictor Train failed.');
     end
@@ -3394,15 +3373,13 @@ end;
 
 function TAI.SP_Open(train_file: TPascalString): TSP_Handle;
 var
-  c_train_file: C_Bytes;
-  train_file_buff: TBytes;
+  train_file_buff: P_Bytes;
 begin
   if (AI_Ptr <> nil) and Assigned(AI_Ptr^.SP_Init) then
     begin
-      train_file_buff := train_file.Bytes;
-      c_train_file.Size := length(train_file_buff);
-      c_train_file.Bytes := @train_file_buff[0];
-      Result := AI_Ptr^.SP_Init(@c_train_file);
+      train_file_buff := Alloc_P_Bytes(train_file);
+      Result := AI_Ptr^.SP_Init(train_file_buff);
+      Free_P_Bytes(train_file_buff);
       if Result <> nil then
           DoStatus('shape predictor open: %s', [train_file.Text]);
     end
@@ -3981,18 +3958,13 @@ end;
 
 function TAI.Metric_ResNet_Open(train_file: TPascalString): TMDNN_Handle;
 var
-  c_train_file: C_Bytes;
-  train_file_buff: TBytes;
+  train_file_buff: P_Bytes;
 begin
   if (AI_Ptr <> nil) and Assigned(AI_Ptr^.MDNN_ResNet_Init) then
     begin
-      train_file_buff := train_file.Bytes;
-      c_train_file.Size := length(train_file_buff);
-      if c_train_file.Size > 0 then
-          c_train_file.Bytes := @train_file_buff[0]
-      else
-          c_train_file.Bytes := nil;
-      Result := AI_Ptr^.MDNN_ResNet_Init(@c_train_file);
+      train_file_buff := Alloc_P_Bytes(train_file);
+      Result := AI_Ptr^.MDNN_ResNet_Init(train_file_buff);
+      Free_P_Bytes(train_file_buff);
       if Result <> nil then
           DoStatus('MDNN-ResNet(ResNet matric DNN) open: %s', [train_file.Text]);
     end
@@ -4256,15 +4228,13 @@ end;
 
 function TAI.MMOD_DNN_Open(train_file: TPascalString): TMMOD_Handle;
 var
-  c_train_file: C_Bytes;
-  train_file_buff: TBytes;
+  train_file_buff: P_Bytes;
 begin
   if (AI_Ptr <> nil) and Assigned(AI_Ptr^.MMOD_DNN_Init) then
     begin
-      train_file_buff := train_file.Bytes;
-      c_train_file.Size := length(train_file_buff);
-      c_train_file.Bytes := @train_file_buff[0];
-      Result := AI_Ptr^.MMOD_DNN_Init(@c_train_file);
+      train_file_buff := Alloc_P_Bytes(train_file);
+      Result := AI_Ptr^.MMOD_DNN_Init(train_file_buff);
+      Free_P_Bytes(train_file_buff);
       if Result <> nil then
           DoStatus('MMOD-DNN(DNN+SVM:max-margin object detector) open: %s', [train_file.Text]);
     end
@@ -4588,15 +4558,13 @@ end;
 
 function TAI.RNIC_Open(train_file: TPascalString): TRNIC_Handle;
 var
-  c_train_file: C_Bytes;
-  train_file_buff: TBytes;
+  train_file_buff: P_Bytes;
 begin
   if (AI_Ptr <> nil) and Assigned(AI_Ptr^.RNIC_Init) then
     begin
-      train_file_buff := train_file.Bytes;
-      c_train_file.Size := length(train_file_buff);
-      c_train_file.Bytes := @train_file_buff[0];
-      Result := AI_Ptr^.RNIC_Init(@c_train_file);
+      train_file_buff := Alloc_P_Bytes(train_file);
+      Result := AI_Ptr^.RNIC_Init(train_file_buff);
+      Free_P_Bytes(train_file_buff);
       if Result <> nil then
           DoStatus('ResNet-Image-Classifier open: %s', [train_file.Text]);
     end

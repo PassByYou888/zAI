@@ -732,7 +732,7 @@ resourcestring
   sNoDCTCoefficentsAvailable = 'No DCT coefficients available (compress first)';
   sOperationOnlyFor8x8 = 'Operation can only be performed with LoadScale = jsFull';
   sBitmapIsEmptyCannotSave = 'Bitmap is empty; cannot save';
-  sInvalidFormatForSelectedCS = 'Invalid bitmap format for selected color space';
+  sInvalidFormatForSelectedCS = 'Invalid bitmap PFormat for selected color space';
   sCommentCannotBeSet = 'Comment cannot be set before assigning bitmap';
   sDNLMarkerExpected = 'DNL marker expected';
   sUnsupportedColorSpace = 'Unsupported color space';
@@ -1167,10 +1167,10 @@ begin
   try
     for y := 0 to FVertBlockCount - 1 do
       begin
-        WriteS(Format('Line %d:', [y]) + #13#10);
+        WriteS(PFormat('Line %d:', [y]) + #13#10);
         for x := 0 to FHorzBlockCount - 1 do
           begin
-            WriteS(Format(' Block %d:', [x]) + #13#10);
+            WriteS(PFormat(' Block %d:', [x]) + #13#10);
             WriteS(' ');
             Block := GetCoefPointer(x, y);
             for i := 0 to 63 do
@@ -1343,7 +1343,7 @@ end;
 
 procedure TJpegMarker.LoadFromStream(S: TCoreClassStream; Size: Integer);
 begin
-  DoDebugOut(Self, wsInfo, Format('<loading marker %s, length:%d>', [MarkerName, Size]));
+  DoDebugOut(Self, wsInfo, PFormat('<loading marker %s, length:%d>', [MarkerName, Size]));
   // by default, we copy the marker data to the marker stream,
   // overriding methods may use other means
   StoreData(S, Size);
@@ -1373,7 +1373,7 @@ begin
   // updated with .WriteMarker
   if FStream.Size > 0 then
     begin
-      DoDebugOut(Self, wsInfo, Format('saving marker %s, length:%d', [MarkerName, FStream.Size]));
+      DoDebugOut(Self, wsInfo, PFormat('saving marker %s, length:%d', [MarkerName, FStream.Size]));
       FStream.Position := 0;
       S.CopyFrom(FStream, FStream.Size);
     end;
@@ -1521,14 +1521,14 @@ end;
 
 procedure TAPPnMarker.ReadMarker;
 begin
-  DoDebugOut(Self, wsInfo, Format('<%s marker, length:%d>', [MarkerName, FStream.Size]));
+  DoDebugOut(Self, wsInfo, PFormat('<%s marker, length:%d>', [MarkerName, FStream.Size]));
   // show first bytes as hex
   DebugSample(FStream, FStream.Size);
 end;
 
 function TAPPnMarker.GetMarkerName: RawByteString;
 begin
-  Result := Format('APP%d', [FMarkerTag and $0F]);
+  Result := PFormat('APP%d', [FMarkerTag and $0F]);
 end;
 
 { TICCProfileMarker }

@@ -84,7 +84,7 @@ type
 
 {$REGION 'MemoryRaster'}
 
-  TMemoryRaster = class(TCoreClassPersistent)
+  TMemoryRaster = class(TCoreClassObject)
   private
     FFreeBits: Boolean;
     FBits: PRasterColorArray;
@@ -662,15 +662,15 @@ procedure BlendBlock(Dst: TMemoryRaster; dstRect: TRect; Src: TMemoryRaster; Src
 procedure BlockTransfer(Dst: TMemoryRaster; Dstx: Integer; Dsty: Integer; DstClip: TRect; Src: TMemoryRaster; SrcRect: TRect; CombineOp: TDrawMode);
 
 function RandomRasterColor(const a: Byte = $FF): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-function RasterColor(const r, g, b: Byte; const a: Byte = $FF): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-function RasterColorInv(const c: TRasterColor): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-function RasterAlphaColor(const c: TRasterColor; const a: Byte): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-function RasterAlphaColorF(const c: TRasterColor; const a: Single): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-
-function RasterColorF(const r, g, b: TGeoFloat; const a: TGeoFloat = 1.0): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-procedure RasterColor2F(const c: TRasterColor; var r, g, b, a: TGeoFloat); {$IFDEF INLINE_ASM} inline; {$ENDIF}overload;
-procedure RasterColor2F(const c: TRasterColor; var r, g, b: TGeoFloat); {$IFDEF INLINE_ASM} inline; {$ENDIF}overload;
-
+function RasterColor(const r, g, b, a: Byte): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+function RasterColor(const r, g, b: Byte): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
+function RasterColorInv(const c: TRasterColor): TRasterColor;
+function RasterAlphaColor(const c: TRasterColor; const a: Byte): TRasterColor;
+function RasterAlphaColorF(const c: TRasterColor; const a: Single): TRasterColor;
+function RasterColorF(const r, g, b, a: TGeoFloat): TRasterColor; overload;
+function RasterColorF(const r, g, b: TGeoFloat): TRasterColor; overload;
+procedure RasterColor2F(const c: TRasterColor; var r, g, b, a: TGeoFloat); overload;
+procedure RasterColor2F(const c: TRasterColor; var r, g, b: TGeoFloat); overload;
 function RasterColor2Gray(const c: TRasterColor): Byte; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RasterColor2GrayS(const c: TRasterColor): TGeoFloat; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RasterColor2GrayD(const c: TRasterColor): Double; {$IFDEF INLINE_ASM} inline; {$ENDIF}
@@ -847,7 +847,15 @@ type
 
 const
   ZERO_RECT: TRect = (Left: 0; Top: 0; Right: 0; Bottom: 0);
+
 {$ENDREGION 'InternalDefines'}
+
+function ClampInt_(const Value, Min, Max: Integer): Integer; forward;
+function ClampByte3_(const Value, Min, Max: Byte): Byte; forward;
+function ClampByte_(const Value: Integer): Byte; forward;
+function IntersectRect_(out Dst: TRect; const r1, r2: TRect): Boolean; forward;
+procedure OffsetRect_(var r: TRect; dx, dy: Integer); forward;
+function IsRectEmpty_(const r: TRect): Boolean; forward;
 
 {$INCLUDE MemoryRaster_RasterClass.inc}
 {$INCLUDE MemoryRaster_SequenceClass.inc}

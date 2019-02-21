@@ -103,6 +103,7 @@ var
 begin
 
   i := 1; { pixel indices in a scan line go from 1 to no }
+  Delta := 0;
 
   { **********************************************
     * Do for all pixels in the row in 8-bit mode *
@@ -959,21 +960,15 @@ end;
 
 function TJLSLossy.lossy_end_of_run_e(RA, rb, ix: Pixel; RItype: Int): Pixel;
 var
-  qErrval, iqErrval, xpr,
-    MErrval,
-    q,
-    absErrval,
-    oldmap,
-    k,
-    Nt,
-    at,
-    Errval: Int;
+  qErrval, iqErrval, xpr, MErrval, q, absErrval, oldmap, k, Nt, at, Errval: Int;
   RX: Int; { reconstructed pixel }
   unary: Int;
 begin
   q := EOR_0 + RItype;
   Nt := FImageInfo^.n[q];
   at := FImageInfo^.a[q];
+
+  xpr := 0;
 
   if IsTrue(RItype) then
     begin
@@ -1226,8 +1221,7 @@ end;
 
 procedure TJLSLossy.lossy_regular_mode_e(q, Sign, Px: Int; xp: ppixel);
 var
-  at, Bt, Nt, absErrval, Errval, MErrval,
-    qErrval, iqErrval, RX, ix, nst: Int;
+  at, Bt, Nt, absErrval, Errval, MErrval, qErrval, iqErrval, RX, ix, nst: Int;
   unary: Int;
   Temp: Int;
   k: Byte;
@@ -1238,6 +1232,7 @@ begin
   at := FImageInfo^.a[q];
   { Estimate k - Golomb coding variable computation (A.5.1) }
   k := 0;
+  nst := 1;
   while (nst < at) do
     begin
       nst := nst shl 1;
@@ -1987,7 +1982,4 @@ begin
 
 end;
 
-end. 
- 
- 
- 
+end.

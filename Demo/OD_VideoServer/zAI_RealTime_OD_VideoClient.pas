@@ -156,8 +156,8 @@ end;
 procedure TRealTime_OD_VideoClient.RegisterCommand;
 begin
   inherited RegisterCommand;
-  RecvTunnel.RegisterCompleteBuffer('VideoBuffer').OnExecute := cmd_VideoBuffer;
-  RecvTunnel.RegisterDirectStream('VideoInfo').OnExecute := cmd_VideoInfo;
+  RecvTunnel.RegisterCompleteBuffer('VideoBuffer').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_VideoBuffer;
+  RecvTunnel.RegisterDirectStream('VideoInfo').OnExecute := {$IFDEF FPC}@{$ENDIF FPC}cmd_VideoInfo;
 end;
 
 procedure TRealTime_OD_VideoClient.UnRegisterCommand;

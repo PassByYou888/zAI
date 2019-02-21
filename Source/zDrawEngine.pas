@@ -4129,7 +4129,7 @@ end;
 
 procedure TDrawEngine.PrepareFlush;
 var
-  lastTime: Integer;
+  lastTime: TTimeTick;
   i: Integer;
   pt: TDEVec;
   r: TDERect;

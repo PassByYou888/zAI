@@ -45,6 +45,8 @@ type
     procedure SetChars(index: Integer; const Value: SystemChar);
     function GetBytes: TBytes;
     procedure SetBytes(const Value: TBytes);
+    function GetSysBytes: TBytes;
+    procedure SetSysBytes(const Value: TBytes);
     function GetLast: SystemChar;
     procedure SetLast(const Value: SystemChar);
     function GetFirst: SystemChar;
@@ -132,6 +134,7 @@ type
     property L: Integer read GetLen write SetLen;
     property Chars[index: Integer]: SystemChar read GetChars write SetChars; default;
     property Bytes: TBytes read GetBytes write SetBytes;
+    property SysBytes: TBytes read GetSysBytes write SetSysBytes;
     function BOMBytes: TBytes;
   end;
 
@@ -1344,6 +1347,30 @@ begin
   Result := SysUtils.TEncoding.UTF8.GetBytes(Text);
 {$ELSE}
   Result := SysUtils.TEncoding.UTF8.GetBytes(buff);
+{$ENDIF}
+end;
+
+procedure TPascalString.SetSysBytes(const Value: TBytes);
+begin
+  SetLength(buff, 0);
+  if length(Value) = 0 then
+      Exit;
+  try
+      Text := SysUtils.TEncoding.Default.GetString(Value);
+  except
+      SetLength(buff, 0);
+  end;
+end;
+
+function TPascalString.GetSysBytes: TBytes;
+begin
+  SetLength(Result, 0);
+  if length(buff) = 0 then
+      Exit;
+{$IFDEF FPC}
+  Result := SysUtils.TEncoding.Default.GetBytes(Text);
+{$ELSE}
+  Result := SysUtils.TEncoding.Default.GetBytes(buff);
 {$ENDIF}
 end;
 

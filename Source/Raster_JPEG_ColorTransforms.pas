@@ -2008,7 +2008,7 @@ var
   R, G, B, Y, Cb, Cr: PByte;
   Ri, Gi, Bi: integer;
 begin
-  // DoDebugOut(Self, wsInfo, Format('source=%d, count=%d, nulling...(test)', [integer(Source), Count]));
+  // DoDebugOut(Self, wsInfo, PFormat('source=%d, count=%d, nulling...(test)', [integer(Source), Count]));
   // RGB is layed out in memory as BGR
   B := Source;
   G := Source;

@@ -49,7 +49,7 @@ const
 
   { margins for scan lines }
   LEFTMARGIN = 2;
-  RIGHTMARGIN = 1;
+  RIGHTMARGIN = 2;
 
   { alphabet size }
   MAXA8 = 256;
@@ -106,8 +106,7 @@ const
   { The stat initialization values }
   INITNSTAT = 1;      { init value for N[] }
   MIN_INITABSTAT = 2; { min init value for A[] }
-  INITABSLACK = 6; { init value for A is roughly
-    2^(bpp-INITABSLACK) but not less than above }
+  INITABSLACK = 6; { init value for A is roughly 2^(bpp-INITABSLACK) but not less than above }
   INITBIASTAT = 0; { init value for B[] }
 
   { reset values }

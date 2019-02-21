@@ -111,7 +111,6 @@
     {$R-} { range check }
     {$I-} { Input output checking }
     {$O+} { optimization }
-    {$INLINE AUTO} { call inline automated }
     {$C+} { Assertions }
   {$ELSE}
     {$UNDEF INLINE_ASM}
@@ -134,7 +133,7 @@
 {$ENDIF FPC}
 
 {$WARNINGS ON}
-{$HINTS ON}
+{$HINTS OFF}
 {$H+} { long string }
 {$A+} { Word Align Data }
 {$Q-} { Overflow checking }

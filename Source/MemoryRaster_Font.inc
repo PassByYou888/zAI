@@ -45,8 +45,8 @@ var
   tu0, tv0: Integer;
 begin
   FR := TFontRaster.PDrawWorkData(Sender^.UserData)^.Owner;
-  tu0 := ClampInt(Trunc(TexCoordWrapRepeat(x) * (Sampler.width)), 0, Sampler.width - 1);
-  tv0 := ClampInt(Trunc(TexCoordWrapRepeat(y) * (Sampler.height)), 0, Sampler.height - 1);
+  tu0 := ClampInt_(Trunc(TexCoordWrapRepeat(x) * (Sampler.width)), 0, Sampler.width - 1);
+  tv0 := ClampInt_(Trunc(TexCoordWrapRepeat(y) * (Sampler.height)), 0, Sampler.height - 1);
 
   Result := RasterColor(0, 0, 0, FR.FBitRaster^[tu0 + tv0 * Sampler.width]);
 end;
@@ -68,8 +68,8 @@ begin
   fx := TexCoordWrapRepeat(x) * (Sampler.width);
   fy := TexCoordWrapRepeat(y) * (Sampler.height);
 
-  i_x := ClampInt(Trunc(fx), 0, Sampler.width - 1);
-  i_y := ClampInt(Trunc(fy), 0, Sampler.height - 1);
+  i_x := ClampInt_(Trunc(fx), 0, Sampler.width - 1);
+  i_y := ClampInt_(Trunc(fy), 0, Sampler.height - 1);
 
   i_x2 := i_x + 1;
   if i_x2 > Sampler.width - 1 then

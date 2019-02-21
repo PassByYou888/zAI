@@ -1,3 +1,69 @@
+function ClampInt_(const Value, Min, Max: Integer): Integer;
+begin
+  if Value > Max then
+      Result := Max
+  else if Value < Min then
+      Result := Min
+  else
+      Result := Value;
+end;
+
+function ClampByte3_(const Value, Min, Max: Byte): Byte;
+begin
+  if Value > Max then
+      Result := Max
+  else if Value < Min then
+      Result := Min
+  else
+      Result := Value;
+end;
+
+function ClampByte_(const Value: Integer): Byte;
+begin
+  if Value > 255 then
+      Result := 255
+  else if Value < 0 then
+      Result := 0
+  else
+      Result := Value;
+end;
+
+function IntersectRect_(out Dst: TRect; const r1, r2: TRect): Boolean;
+begin
+  if r1.Left >= r2.Left then
+      Dst.Left := r1.Left
+  else
+      Dst.Left := r2.Left;
+  if r1.Right <= r2.Right then
+      Dst.Right := r1.Right
+  else
+      Dst.Right := r2.Right;
+  if r1.Top >= r2.Top then
+      Dst.Top := r1.Top
+  else
+      Dst.Top := r2.Top;
+  if r1.Bottom <= r2.Bottom then
+      Dst.Bottom := r1.Bottom
+  else
+      Dst.Bottom := r2.Bottom;
+  Result := (Dst.Right >= Dst.Left) and (Dst.Bottom >= Dst.Top);
+  if not Result then
+      Dst := ZERO_RECT;
+end;
+
+procedure OffsetRect_(var r: TRect; dx, dy: Integer);
+begin
+  inc(r.Left, dx);
+  inc(r.Top, dy);
+  inc(r.Right, dx);
+  inc(r.Bottom, dy);
+end;
+
+function IsRectEmpty_(const r: TRect): Boolean;
+begin
+  Result := (r.Right <= r.Left) or (r.Bottom <= r.Top);
+end;
+
 procedure FillRasterColor(var x; Count: Cardinal; Value: TRasterColor);
 var
   i: Integer;
@@ -96,16 +162,16 @@ begin
   Srcx := SrcRect.Left;
   Srcy := SrcRect.Top;
 
-  IntersectRect(DstClip, DstClip, Dst.BoundsRect);
-  IntersectRect(SrcRect, SrcRect, Src.BoundsRect);
+  IntersectRect_(DstClip, DstClip, Dst.BoundsRect);
+  IntersectRect_(SrcRect, SrcRect, Src.BoundsRect);
 
-  OffsetRect(SrcRect, Dstx - Srcx, Dsty - Srcy);
-  IntersectRect(SrcRect, DstClip, SrcRect);
-  if IsRectEmpty(SrcRect) then
+  OffsetRect_(SrcRect, Dstx - Srcx, Dsty - Srcy);
+  IntersectRect_(SrcRect, DstClip, SrcRect);
+  if IsRectEmpty_(SrcRect) then
       Exit;
 
   DstClip := SrcRect;
-  OffsetRect(SrcRect, Srcx - Dstx, Srcy - Dsty);
+  OffsetRect_(SrcRect, Srcx - Dstx, Srcy - Dsty);
 
   BlendBlock(Dst, DstClip, Src, SrcRect.Left, SrcRect.Top, CombineOp);
 end;
@@ -115,7 +181,7 @@ begin
   Result := RasterColor(Random(255), Random(255), Random(255), a);
 end;
 
-function RasterColor(const r, g, b: Byte; const a: Byte = $FF): TRasterColor;
+function RasterColor(const r, g, b, a: Byte): TRasterColor;
 begin
   TRasterColorEntry(Result).r := r;
   TRasterColorEntry(Result).g := g;
@@ -123,12 +189,20 @@ begin
   TRasterColorEntry(Result).a := a;
 end;
 
+function RasterColor(const r, g, b: Byte): TRasterColor;
+begin
+  TRasterColorEntry(Result).r := r;
+  TRasterColorEntry(Result).g := g;
+  TRasterColorEntry(Result).b := b;
+  TRasterColorEntry(Result).a := $FF;
+end;
+
 function RasterColorInv(const c: TRasterColor): TRasterColor;
 begin
   Result := RasterColor(
-    $FF - ClampByte(TRasterColorEntry(c).r),
-    $FF - ClampByte(TRasterColorEntry(c).g),
-    $FF - ClampByte(TRasterColorEntry(c).b),
+    $FF - ClampByte_(TRasterColorEntry(c).r),
+    $FF - ClampByte_(TRasterColorEntry(c).g),
+    $FF - ClampByte_(TRasterColorEntry(c).b),
     TRasterColorEntry(c).a);
 end;
 
@@ -149,16 +223,25 @@ end;
 
 function RasterAlphaColorF(const c: TRasterColor; const a: Single): TRasterColor;
 begin
-  Result := RasterAlphaColor(c, ClampByte(Trunc(a * $FF)));
+  Result := RasterAlphaColor(c, ClampByte_(Trunc(a * $FF)));
 end;
 
-function RasterColorF(const r, g, b: Single; const a: Single = 1.0): TRasterColor;
+function RasterColorF(const r, g, b, a: TGeoFloat): TRasterColor;
 begin
   Result := RasterColor(
-    ClampByte(Round(r * $FF)),
-    ClampByte(Round(g * $FF)),
-    ClampByte(Round(b * $FF)),
-    ClampByte(Round(a * $FF)));
+    ClampByte_(Round(r * $FF)),
+    ClampByte_(Round(g * $FF)),
+    ClampByte_(Round(b * $FF)),
+    ClampByte_(Round(a * $FF)));
+end;
+
+function RasterColorF(const r, g, b: TGeoFloat): TRasterColor;
+begin
+  Result := RasterColor(
+    ClampByte_(Round(r * $FF)),
+    ClampByte_(Round(g * $FF)),
+    ClampByte_(Round(b * $FF)),
+    $FF);
 end;
 
 procedure RasterColor2F(const c: TRasterColor; var r, g, b, a: Single);
@@ -1234,10 +1317,10 @@ begin
             GG := GG div LLastMatrixNumber;
             BB := BB div LLastMatrixNumber;
 
-            a := ClampInt(AA, 0, 255);
-            r := ClampInt(RR, 0, 255);
-            g := ClampInt(GG, 0, 255);
-            b := ClampInt(BB, 0, 255);
+            a := ClampInt_(AA, 0, 255);
+            r := ClampInt_(RR, 0, 255);
+            g := ClampInt_(GG, 0, 255);
+            b := ClampInt_(BB, 0, 255);
 
             LDestRow[y]^[x] := (a shl 24) or (r shl 16) or (g shl 8) or b;
           end;
@@ -2184,6 +2267,7 @@ begin
   if head.Version <> 10 then
       Exit;
 
+      nStream:=nil;
   if Boolean(head.Compessed) then
     begin
       nStream := TMemoryStream64.Create;

@@ -87,12 +87,12 @@ begin
 
       // 构建训练参数
       param := THashVariantList.Create;
-      param.SetDefaultValue('ComputeFunc', 'TrainOD');          // 指定训练函数
-      param.SetDefaultValue('source', umlGetFileName(fn));      // 输入的数据是bear.imgDataset
-      param.SetDefaultValue('window_width', 100);               // 训练完成后，窗口滑动用，检测尺度宽，如果训练给高清图像用，这里就给100或则更大，低分辨率图像用，这里就给小
-      param.SetDefaultValue('window_height', 100);              // 训练完成后，窗口滑动用，检测尺度高，如果训练给高清图像用，这里就给100或则更大，低分辨率图像用，这里就给小
-      param.SetDefaultValue('thread', 8);                       // 并行训练的线程数量
-      param.SetDefaultValue('scale', 0.5);                      // 缩放系数，0.5可以有效提升训练速度
+      param.SetDefaultValue('ComputeFunc', 'TrainOD');      // 指定训练函数
+      param.SetDefaultValue('source', umlGetFileName(fn));  // 输入的数据是bear.imgDataset
+      param.SetDefaultValue('window_width', 100);           // 训练完成后，窗口滑动用，检测尺度宽，如果训练给高清图像用，这里就给100或则更大，低分辨率图像用，这里就给小
+      param.SetDefaultValue('window_height', 100);          // 训练完成后，窗口滑动用，检测尺度高，如果训练给高清图像用，这里就给100或则更大，低分辨率图像用，这里就给小
+      param.SetDefaultValue('thread', 8);                   // 并行训练的线程数量
+      param.SetDefaultValue('scale', 0.5);                  // 缩放系数，0.5可以有效提升训练速度
       param.SetDefaultValue('output', 'output' + C_OD_Ext); // 训练完成后的输出文件
 
       tt.Write('param.txt', param);

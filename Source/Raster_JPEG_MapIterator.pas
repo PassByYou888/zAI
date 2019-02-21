@@ -32,7 +32,7 @@ type
     imColByCol    // Move to next cell down, until last row
     );
 
-  // device-independent pixel format
+  // device-independent pixel PFormat
   TPixelFormat =
     (spf1bit, spf2bit, spf4bit, spf8bit, spf10bit, spf12bit, spf15bit, spf16bit,
     spf24bit, spf30bit, spf32bit, spf36bit, spf48bit, spf64bit);

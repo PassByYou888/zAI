@@ -362,6 +362,12 @@ var
   inputfile1, inputfile2: SystemString;
 begin
   Result := False;
+  if not Exists(paramFile) then
+    begin
+      report := PFormat('error param file: %s', [paramFile]);
+      exit;
+    end;
+
   Param := THashVariantList.Create;
 
   Read(paramFile, Param);
@@ -447,7 +453,6 @@ begin
   if not Exists(paramFile) then
     begin
       report := PFormat('error param file: %s', [paramFile]);
-      DisposeObject(Param);
       exit;
     end;
 

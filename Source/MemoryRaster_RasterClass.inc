@@ -1,69 +1,3 @@
-function ClampInt(const Value, Min, Max: Integer): Integer;
-begin
-  if Value > Max then
-      Result := Max
-  else if Value < Min then
-      Result := Min
-  else
-      Result := Value;
-end;
-
-function ClampByte(const Value, Min, Max: Byte): Byte; overload;
-begin
-  if Value > Max then
-      Result := Max
-  else if Value < Min then
-      Result := Min
-  else
-      Result := Value;
-end;
-
-function ClampByte(const Value: Integer): Byte; overload;
-begin
-  if Value > 255 then
-      Result := 255
-  else if Value < 0 then
-      Result := 0
-  else
-      Result := Value;
-end;
-
-function IntersectRect(out Dst: TRect; const r1, r2: TRect): Boolean;
-begin
-  if r1.Left >= r2.Left then
-      Dst.Left := r1.Left
-  else
-      Dst.Left := r2.Left;
-  if r1.Right <= r2.Right then
-      Dst.Right := r1.Right
-  else
-      Dst.Right := r2.Right;
-  if r1.Top >= r2.Top then
-      Dst.Top := r1.Top
-  else
-      Dst.Top := r2.Top;
-  if r1.Bottom <= r2.Bottom then
-      Dst.Bottom := r1.Bottom
-  else
-      Dst.Bottom := r2.Bottom;
-  Result := (Dst.Right >= Dst.Left) and (Dst.Bottom >= Dst.Top);
-  if not Result then
-      Dst := ZERO_RECT;
-end;
-
-procedure OffsetRect(var r: TRect; dx, dy: Integer);
-begin
-  inc(r.Left, dx);
-  inc(r.Top, dy);
-  inc(r.Right, dx);
-  inc(r.Bottom, dy);
-end;
-
-function IsRectEmpty(const r: TRect): Boolean;
-begin
-  Result := (r.Right <= r.Left) or (r.Bottom <= r.Top);
-end;
-
 procedure MakeMergeTables;
 var
   i, j: Integer;
@@ -154,7 +88,7 @@ end;
 
 function TMemoryRaster.GetPixelPtr(const x, y: Integer): PRasterColor;
 begin
-  Result := @(FBits^[ClampInt(x, 0, width - 1) + ClampInt(y, 0, height - 1) * width]);
+  Result := @(FBits^[ClampInt_(x, 0, width - 1) + ClampInt_(y, 0, height - 1) * width]);
 end;
 
 function TMemoryRaster.GetScanLine(y: Integer): PRasterColorArray;
@@ -219,7 +153,7 @@ end;
 
 procedure TMemoryRaster.SetGrayS(const x, y: Integer; const Value: Single);
 begin
-  SetGray(x, y, ClampByte(Round(Value * $FF), 0, $FF));
+  SetGray(x, y, ClampByte3_(Round(Value * $FF), 0, $FF));
 end;
 
 function TMemoryRaster.GetGrayD(const x, y: Integer): Double;
@@ -282,8 +216,8 @@ begin
   fx := CoordWrap(x) * width;
   fy := CoordWrap(y) * height;
 
-  i_x := ClampInt(Trunc(fx), 0, width - 1);
-  i_y := ClampInt(Trunc(fy), 0, height - 1);
+  i_x := ClampInt_(Trunc(fx), 0, width - 1);
+  i_y := ClampInt_(Trunc(fy), 0, height - 1);
 
   i_x2 := i_x + 1;
   if i_x2 > width - 1 then
@@ -1321,8 +1255,8 @@ procedure TMemoryRaster.Line(x1, y1, x2, y2: Integer; Value: TRasterColor; L: Bo
   begin
     if (x < 0) or (x >= width) then
         Exit;
-    y1 := ClampInt(y1, 0, height);
-    y2 := ClampInt(y2, 0, height);
+    y1 := ClampInt_(y1, 0, height);
+    y2 := ClampInt_(y2, 0, height);
 
     if y2 < y1 then
         CoreClasses.Swap(y1, y2);
@@ -1355,8 +1289,8 @@ procedure TMemoryRaster.Line(x1, y1, x2, y2: Integer; Value: TRasterColor; L: Bo
   begin
     if (y < 0) or (y >= height) then
         Exit;
-    x1 := ClampInt(x1, 0, width - 1);
-    x2 := ClampInt(x2, 0, width - 1);
+    x1 := ClampInt_(x1, 0, width - 1);
+    x2 := ClampInt_(x2, 0, width - 1);
 
     if x1 > x2 then
         CoreClasses.Swap(x1, x2);

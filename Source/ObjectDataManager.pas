@@ -1690,6 +1690,7 @@ begin
   if not umlFileExists(swapFileName) then
       Exit;
 
+  swapHnd := nil;
   try
       swapHnd := TCoreClassFileStream.Create(swapFileName, fmOpenReadWrite);
   except
@@ -1892,6 +1893,7 @@ begin
       if (FDBHandle.IOHnd.Handle is TReliableFileStream) then
         begin
           swapFileName := TReliableFileStream(FDBHandle.IOHnd.Handle).fileName + '.~flush';
+          swapHnd := nil;
           try
             swapHnd := TCoreClassFileStream.Create(swapFileName, fmCreate);
 
