@@ -179,9 +179,10 @@ type
 
     procedure Scale(f: TGeoFloat);
 
-    procedure Build_PrepareDataset(outputPath: SystemString);
-    procedure Build_XML(TokenFilter: TPascalString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
-    procedure Build_XML(TokenFilter: TPascalString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
+    procedure Export_PrepareRaster(outputPath: SystemString);
+    procedure Export_DetectorRaster(outputPath: SystemString);
+    procedure Build_XML(TokenFilter: SystemString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
+    procedure Build_XML(TokenFilter: SystemString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(includeLabel, includePart: Boolean; datasetName, comment, build_output_file: SystemString); overload;
 
@@ -232,9 +233,11 @@ type
 
     procedure Scale(f: TGeoFloat);
 
-    procedure Build_PrepareDataset(outputPath: SystemString);
-    procedure Build_XML(TokenFilter: TPascalString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
-    procedure Build_XML(TokenFilter: TPascalString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
+    procedure Export_PrepareRaster(outputPath: SystemString);
+    procedure Export_DetectorRaster(outputPath: SystemString);
+
+    procedure Build_XML(TokenFilter: SystemString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
+    procedure Build_XML(TokenFilter: SystemString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(includeLabel, includePart: Boolean; datasetName, comment, build_output_file: SystemString); overload;
 
@@ -1886,11 +1889,12 @@ begin
       Items[i].Scale(f);
 end;
 
-procedure TAI_ImageList.Build_PrepareDataset(outputPath: SystemString);
+procedure TAI_ImageList.Export_PrepareRaster(outputPath: SystemString);
 var
   i, j: Integer;
   imgData: TAI_Image;
   DetDef: TAI_DetectorDefine;
+  n: TPascalString;
   Raster: TMemoryRaster;
   hList: THashObjectList;
   mrList: TMemoryRasterList;
@@ -1905,11 +1909,16 @@ begin
       for j := 0 to imgData.DetectorDefineList.Count - 1 do
         begin
           DetDef := imgData.DetectorDefineList[j];
-          if (not DetDef.PrepareRaster.Empty) and (DetDef.Token <> '') then
+          if (not DetDef.PrepareRaster.Empty) then
             begin
-              if not hList.Exists(DetDef.Token) then
-                  hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
-              TMemoryRasterList(hList[DetDef.Token]).Add(DetDef.PrepareRaster);
+              if (DetDef.Token <> '') then
+                  n := DetDef.Token
+              else
+                  n := 'No_Define';
+
+              if not hList.Exists(n) then
+                  hList.FastAdd(n, TMemoryRasterList.Create);
+              TMemoryRasterList(hList[n]).Add(DetDef.PrepareRaster);
             end;
         end;
     end;
@@ -1925,8 +1934,8 @@ begin
         begin
           Raster := mrList[j];
           m64 := TMemoryStream64.Create;
-          Raster.SaveToBmp24Stream(m64);
-          fn := umlCombineFileName(dn, PFormat('%s.bmp', [umlStreamMD5String(m64).Text]));
+          Raster.SaveToJpegRGBStream(m64, 80);
+          fn := umlCombineFileName(dn, PFormat('%s.jpg', [umlStreamMD5String(m64).Text]));
           m64.SaveToFile(fn);
           disposeObject(m64);
         end;
@@ -1936,7 +1945,62 @@ begin
   disposeObject(hList);
 end;
 
-procedure TAI_ImageList.Build_XML(TokenFilter: TPascalString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
+procedure TAI_ImageList.Export_DetectorRaster(outputPath: SystemString);
+var
+  i, j: Integer;
+  imgData: TAI_Image;
+  DetDef: TAI_DetectorDefine;
+  n: TPascalString;
+  Raster: TMemoryRaster;
+  hList: THashObjectList;
+  mrList: TMemoryRasterList;
+  pl: TPascalStringList;
+  dn, fn: SystemString;
+  m64: TMemoryStream64;
+begin
+  hList := THashObjectList.Create(True);
+  for i := 0 to Count - 1 do
+    begin
+      imgData := Items[i];
+      for j := 0 to imgData.DetectorDefineList.Count - 1 do
+        begin
+          DetDef := imgData.DetectorDefineList[j];
+          if (DetDef.Token <> '') then
+              n := DetDef.Token
+          else
+              n := 'No_Define';
+
+          if not hList.Exists(n) then
+              hList.FastAdd(n, TMemoryRasterList.Create);
+
+          TMemoryRasterList(hList[n]).Add(DetDef.Owner.Raster.BuildAreaCopy(DetDef.R));
+        end;
+    end;
+
+  pl := TPascalStringList.Create;
+  hList.GetNameList(pl);
+  for i := 0 to pl.Count - 1 do
+    begin
+      mrList := TMemoryRasterList(hList[pl[i]]);
+      dn := umlCombinePath(outputPath, pl[i]);
+      umlCreateDirectory(dn);
+      for j := 0 to mrList.Count - 1 do
+        begin
+          Raster := mrList[j];
+          m64 := TMemoryStream64.Create;
+          Raster.SaveToJpegRGBStream(m64, 80);
+          fn := umlCombineFileName(dn, PFormat('%s.jpg', [umlStreamMD5String(m64).Text]));
+          m64.SaveToFile(fn);
+          disposeObject(m64);
+          disposeObject(Raster);
+        end;
+    end;
+
+  disposeObject(pl);
+  disposeObject(hList);
+end;
+
+procedure TAI_ImageList.Build_XML(TokenFilter: SystemString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
   function num_2(num: Integer): SystemString;
   begin
     if num < 10 then
@@ -2042,7 +2106,7 @@ begin
   disposeObject(m64);
 end;
 
-procedure TAI_ImageList.Build_XML(TokenFilter: TPascalString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
+procedure TAI_ImageList.Build_XML(TokenFilter: SystemString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
 begin
   Build_XML(TokenFilter, includeLabel, includePart, UsedJpegForXML, datasetName, comment, build_output_file, Prefix, BuildFileList);
 end;
@@ -2631,15 +2695,23 @@ begin
       Items[i].Scale(f);
 end;
 
-procedure TAI_ImageMatrix.Build_PrepareDataset(outputPath: SystemString);
+procedure TAI_ImageMatrix.Export_PrepareRaster(outputPath: SystemString);
 var
   i: Integer;
 begin
   for i := 0 to Count - 1 do
-      Items[i].Build_PrepareDataset(outputPath);
+      Items[i].Export_PrepareRaster(outputPath);
 end;
 
-procedure TAI_ImageMatrix.Build_XML(TokenFilter: TPascalString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
+procedure TAI_ImageMatrix.Export_DetectorRaster(outputPath: SystemString);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].Export_DetectorRaster(outputPath);
+end;
+
+procedure TAI_ImageMatrix.Build_XML(TokenFilter: SystemString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
   function num_2(num: Integer): SystemString;
   begin
     if num < 10 then
@@ -2755,7 +2827,7 @@ begin
   disposeObject(m64);
 end;
 
-procedure TAI_ImageMatrix.Build_XML(TokenFilter: TPascalString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
+procedure TAI_ImageMatrix.Build_XML(TokenFilter: SystemString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
 begin
   Build_XML(TokenFilter, includeLabel, includePart, UsedJpegForXML, datasetName, comment, build_output_file, Prefix, BuildFileList);
 end;

@@ -68,7 +68,6 @@ type
     class operator Add(const Lhs: SystemChar; const Rhs: TPascalString): TPascalString;
     class operator Add(const Lhs: TPascalString; const Rhs: SystemChar): TPascalString;
 
-    class operator Implicit(Value: Variant): TPascalString;
     class operator Implicit(Value: SystemString): TPascalString;
     class operator Implicit(Value: SystemChar): TPascalString;
     class operator Implicit(Value: TPascalString): SystemString;
@@ -1456,11 +1455,6 @@ end;
 class operator TPascalString.Add(const Lhs: TPascalString; const Rhs: SystemChar): TPascalString;
 begin
   CombineCharsPC(Lhs.buff, Rhs, Result.buff);
-end;
-
-class operator TPascalString.Implicit(Value: Variant): TPascalString;
-begin
-  Result.Text := VarToStr(Value);
 end;
 
 class operator TPascalString.Implicit(Value: SystemString): TPascalString;

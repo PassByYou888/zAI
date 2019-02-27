@@ -69,7 +69,6 @@ type
     class operator Add(const Lhs: TUPascalString; const Rhs: USystemChar): TUPascalString;
 
     class operator Implicit(Value: TPascalString): TUPascalString;
-    class operator Implicit(Value: Variant): TUPascalString;
     class operator Implicit(Value: USystemString): TUPascalString;
     class operator Implicit(Value: USystemChar): TUPascalString;
     class operator Implicit(Value: TUPascalString): USystemString;
@@ -1479,11 +1478,6 @@ end;
 class operator TUPascalString.Implicit(Value: TPascalString): TUPascalString;
 begin
   Result.Bytes := Value.Bytes;
-end;
-
-class operator TUPascalString.Implicit(Value: Variant): TUPascalString;
-begin
-  Result.Text := VarToStr(Value);
 end;
 
 class operator TUPascalString.Implicit(Value: USystemString): TUPascalString;
