@@ -133,8 +133,8 @@ type
     property Len: Integer read GetLen write SetLen;
     property L: Integer read GetLen write SetLen;
     property Chars[index: Integer]: SystemChar read GetChars write SetChars; default;
-    property Bytes: TBytes read GetBytes write SetBytes;
-    property SysBytes: TBytes read GetSysBytes write SetSysBytes;
+    property Bytes: TBytes read GetBytes write SetBytes;          // UTF8
+    property SysBytes: TBytes read GetSysBytes write SetSysBytes; // system default
     function BOMBytes: TBytes;
   end;
 

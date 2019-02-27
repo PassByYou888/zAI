@@ -59,7 +59,7 @@ type
 
 procedure BuildFormat(proc: TSaveProc1; dest: TBitmap; fInfo: SystemString); overload;
 const
-  test_count = 10;
+  test_count = 20;
 var
   m64: TMemoryStream64;
   nMR: TMemoryRaster;
@@ -116,7 +116,7 @@ end;
 
 procedure BuildFormat(proc: TSaveProc2; Quality: TJpegQuality; dest: TBitmap; fInfo: SystemString); overload;
 const
-  test_count = 10;
+  test_count = 20;
 var
   m64: TMemoryStream64;
   nMR: TMemoryRaster;

@@ -199,11 +199,10 @@ end;
 
 function RasterColorInv(const c: TRasterColor): TRasterColor;
 begin
-  Result := RasterColor(
-    $FF - ClampByte_(TRasterColorEntry(c).r),
-    $FF - ClampByte_(TRasterColorEntry(c).g),
-    $FF - ClampByte_(TRasterColorEntry(c).b),
-    TRasterColorEntry(c).a);
+  TRasterColorEntry(Result).r := $FF - TRasterColorEntry(c).r;
+  TRasterColorEntry(Result).g := $FF - TRasterColorEntry(c).g;
+  TRasterColorEntry(Result).b := $FF - TRasterColorEntry(c).b;
+  TRasterColorEntry(Result).a := TRasterColorEntry(c).a;
 end;
 
 function RasterAlphaColor(const c: TRasterColor; const a: Byte): TRasterColor;
@@ -228,20 +227,15 @@ end;
 
 function RasterColorF(const r, g, b, a: TGeoFloat): TRasterColor;
 begin
-  Result := RasterColor(
-    ClampByte_(Round(r * $FF)),
-    ClampByte_(Round(g * $FF)),
-    ClampByte_(Round(b * $FF)),
-    ClampByte_(Round(a * $FF)));
+  TRasterColorEntry(Result).r := ClampByte_(Round(r * $FF));
+  TRasterColorEntry(Result).g := ClampByte_(Round(g * $FF));
+  TRasterColorEntry(Result).b := ClampByte_(Round(b * $FF));
+  TRasterColorEntry(Result).a := ClampByte_(Round(a * $FF));
 end;
 
 function RasterColorF(const r, g, b: TGeoFloat): TRasterColor;
 begin
-  Result := RasterColor(
-    ClampByte_(Round(r * $FF)),
-    ClampByte_(Round(g * $FF)),
-    ClampByte_(Round(b * $FF)),
-    $FF);
+  Result := RasterColorF(r, g, b, 1.0);
 end;
 
 procedure RasterColor2F(const c: TRasterColor; var r, g, b, a: Single);
@@ -2267,7 +2261,7 @@ begin
   if head.Version <> 10 then
       Exit;
 
-      nStream:=nil;
+  nStream := nil;
   if Boolean(head.Compessed) then
     begin
       nStream := TMemoryStream64.Create;
@@ -2388,9 +2382,9 @@ begin
   dest.write(oriSiz, SizeOf(oriSiz));
 
   n := TMemoryRaster.Create;
-  // smooth level 1 on parallel style
+  // smooth level 1 on parallel process
   n.ZoomFrom(sour, sour.width shr 1, sour.height shr 1);
-  // smooth level 2 on parallel style
+  // smooth level 2 on parallel process
   n.Zoom(n.width shr 1, n.height shr 1);
   RasterizationToYV12(Compressed, n, dest);
   DisposeObject(n);

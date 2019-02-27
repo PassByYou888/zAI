@@ -52,6 +52,13 @@ type
   TRNIC_Handle = Pointer;
   TTracker_Handle = Pointer;
 
+  TBGRA_Image_Buffer_ = packed record
+    bits: Pointer;
+    width, height: Integer;
+  end;
+
+  TBGRA_Buffer_Handle = ^TBGRA_Image_Buffer_;
+
   TSurf_Desc = packed record
     x, y, dx, dy: Integer;
     desc: array [0 .. 63] of Single;
@@ -340,6 +347,13 @@ type
     Close_RGB_Image: procedure(img: TRGB_Image_Handle); stdcall;
     Close_Matrix_Image: procedure(img: TMatrix_Image_Handle); stdcall;
 
+    // image buffer
+    OpenImageBuffer_RGB: function(hnd: TRGB_Image_Handle): TBGRA_Buffer_Handle; stdcall;
+    OpenImageBuffer_MatrixRGB: function(hnd: TMatrix_Image_Handle): TBGRA_Buffer_Handle; stdcall;
+    OpenImageBuffer_Hot: function(const raster_ptr: PRasterColorArray; const width, height: Integer): TBGRA_Buffer_Handle; stdcall;
+    OpenImageBuffer_Jet: function(const raster_ptr: PRasterColorArray; const width, height: Integer): TBGRA_Buffer_Handle; stdcall;
+    CloseImageBuffer: procedure(hnd: TBGRA_Buffer_Handle); stdcall;
+
     // surf detector
     fast_surf: function(const raster_ptr: PRasterColorArray; const width, height: Integer;
       const max_points: Integer; const detection_threshold: Double; const output: PSurf_Desc): Integer; stdcall;
@@ -486,6 +500,12 @@ type
     function Prepare_Matrix_Image(Raster: TMemoryRaster): TMatrix_Image_Handle;
     procedure Close_Matrix_Image(hnd: TMatrix_Image_Handle);
 
+    // Medical graphic support
+    procedure HotMap(Raster: TMemoryRaster);
+    procedure JetMap(Raster: TMemoryRaster);
+    function BuildHotMap(Raster: TMemoryRaster): TMemoryRaster;
+    function BuildJetMap(Raster: TMemoryRaster): TMemoryRaster;
+
     // fast surf(cpu)
     function fast_surf(Raster: TMemoryRaster; const max_points: Integer; const detection_threshold: Double): TSurf_DescBuffer;
     function surf_sqr(const sour, dest: PSurf_Desc): Single; inline;
@@ -538,7 +558,7 @@ type
     function SP_Process_Vec2(hnd: TSP_Handle; Raster: TMemoryRaster; const R: TAI_Rect): TArrayVec2; overload;
     function SP_Process_Vec2(hnd: TSP_Handle; Raster: TMemoryRaster; const R: TOD_Rect): TArrayVec2; overload;
 
-    // face shape(cpu)
+    // face shape predictor(cpu)
     procedure PrepareFaceDataSource;
     function Face_Detector(Raster: TMemoryRaster; R: TRect; extract_face_size: Integer): TFACE_Handle; overload;
     function Face_Detector(Raster: TMemoryRaster; desc: TAI_Rect_Desc; extract_face_size: Integer): TFACE_Handle; overload;
@@ -703,6 +723,9 @@ procedure DrawFaceSP(sp_desc: TSP_Desc; color: TDEColor; d: TDrawEngine); overlo
 // training task
 function RunTrainingTask(Task: TTrainingTask; const AI: TAI; const paramFile: SystemString): Boolean;
 
+var
+  KeepPerformanceOnTraining: TTimeTick = 0;
+
 implementation
 
 uses
@@ -729,9 +752,18 @@ var
   found_build_in: Boolean;
 
 procedure AI_OnOneStep(Sender: PAI_Entry; one_step_calls: UInt64; average_loss, learning_rate: Double); stdcall;
+var
+  tk: TTimeTick;
 begin
   try
-      Sender^.OneStepList.AddStep(one_step_calls, average_loss, learning_rate);
+    Sender^.OneStepList.AddStep(one_step_calls, average_loss, learning_rate);
+
+    if KeepPerformanceOnTraining > 0 then
+      begin
+        tk := GetTimeTick() + KeepPerformanceOnTraining;
+        while GetTimeTick() < tk do
+            nop;
+      end;
   except
   end;
 end;
@@ -846,7 +878,7 @@ begin
             try
               proc_init_ai_(AI_Ptr^);
 
-              if (AI_Ptr^.MajorVer = 1) or (AI_Ptr^.MinorVer = 14) then
+              if (AI_Ptr^.MajorVer = 1) and (AI_Ptr^.MinorVer = 15) then
                 begin
                   AI_Ptr^.Key := AIKey(AI_Ptr^.Key);
                   if AI_Ptr^.CheckKey() > 0 then
@@ -867,7 +899,7 @@ begin
                 end
               else
                 begin
-                  DoStatus('nonsupport AI engine %d.%d ', [AI_Ptr^.MajorVer, AI_Ptr^.MinorVer]);
+                  DoStatus('nonsupport AI engine edition: %d.%d ', [AI_Ptr^.MajorVer, AI_Ptr^.MinorVer]);
                   AI_Ptr^.LibraryFile := '';
                   DisposeObject(AI_Ptr^.OneStepList);
                   DisposeObject(AI_Ptr^.Log);
@@ -928,7 +960,7 @@ begin
       build_in_face_shape_memory := p;
     end
   else
-      RaiseInfo('zAI build in error.');
+      RaiseInfo('zAI buildIn DB error.');
 
   DisposeObject(dbEng);
 end;
@@ -1278,8 +1310,8 @@ begin
   inputfile2 := '';
   inputstream1 := TMemoryStream64.Create;
   inputstream2 := TMemoryStream64.Create;
-  inputraster1 := TMemoryRaster.Create;
-  inputraster2 := TMemoryRaster.Create;
+  inputraster1 := NewRaster();
+  inputraster2 := NewRaster();
   inputImgList := TAI_ImageList.Create;
   inputImgMatrix := TAI_ImageMatrix.Create;
   ResultValues := THashVariantList.Create;
@@ -2029,7 +2061,7 @@ begin
             begin
               DetDef.Part.Clear;
               SPToVec(sp_desc, DetDef.Part);
-              DisposeObject(DetDef.PrepareRaster);
+              DetDef.PrepareRaster.Reset;
               SetLength(sp_desc, 0);
             end;
         end;
@@ -2383,7 +2415,7 @@ function TAI.Prepare_RGB_Image(Raster: TMemoryRaster): TRGB_Image_Handle;
 begin
   Result := nil;
   if (AI_Ptr <> nil) and Assigned(AI_Ptr^.Prepare_RGB_Image) then
-      Result := AI_Ptr^.Prepare_RGB_Image(Raster.Bits, Raster.width, Raster.height);
+      Result := AI_Ptr^.Prepare_RGB_Image(Raster.bits, Raster.width, Raster.height);
 end;
 
 procedure TAI.Close_RGB_Image(hnd: TRGB_Image_Handle);
@@ -2396,7 +2428,7 @@ function TAI.Prepare_Matrix_Image(Raster: TMemoryRaster): TMatrix_Image_Handle;
 begin
   Result := nil;
   if (AI_Ptr <> nil) and Assigned(AI_Ptr^.Prepare_Matrix_Image) then
-      Result := AI_Ptr^.Prepare_Matrix_Image(Raster.Bits, Raster.width, Raster.height);
+      Result := AI_Ptr^.Prepare_Matrix_Image(Raster.bits, Raster.width, Raster.height);
 end;
 
 procedure TAI.Close_Matrix_Image(hnd: TMatrix_Image_Handle);
@@ -2405,12 +2437,80 @@ begin
       AI_Ptr^.Close_Matrix_Image(hnd);
 end;
 
+procedure TAI.HotMap(Raster: TMemoryRaster);
+var
+  hnd: TBGRA_Buffer_Handle;
+begin
+  if (AI_Ptr <> nil) and Assigned(AI_Ptr^.OpenImageBuffer_Hot) then
+    begin
+      hnd := AI_Ptr^.OpenImageBuffer_Hot(Raster.bits, Raster.width, Raster.height);
+      if hnd <> nil then
+        begin
+          CopyPtr(hnd^.bits, Raster.bits, (hnd^.width * hnd^.height) shl 2);
+          AI_Ptr^.CloseImageBuffer(hnd);
+        end;
+    end;
+end;
+
+procedure TAI.JetMap(Raster: TMemoryRaster);
+var
+  hnd: TBGRA_Buffer_Handle;
+begin
+  if (AI_Ptr <> nil) and Assigned(AI_Ptr^.OpenImageBuffer_Jet) then
+    begin
+      hnd := AI_Ptr^.OpenImageBuffer_Jet(Raster.bits, Raster.width, Raster.height);
+      if hnd <> nil then
+        begin
+          CopyPtr(hnd^.bits, Raster.bits, (hnd^.width * hnd^.height) shl 2);
+          AI_Ptr^.CloseImageBuffer(hnd);
+        end;
+    end;
+end;
+
+function TAI.BuildHotMap(Raster: TMemoryRaster): TMemoryRaster;
+var
+  hnd: TBGRA_Buffer_Handle;
+begin
+  Result := nil;
+
+  if (AI_Ptr <> nil) and Assigned(AI_Ptr^.OpenImageBuffer_Hot) then
+    begin
+      hnd := AI_Ptr^.OpenImageBuffer_Hot(Raster.bits, Raster.width, Raster.height);
+      if hnd <> nil then
+        begin
+          Result := NewRaster();
+          Result.SetSize(hnd^.width, hnd^.height);
+          CopyPtr(hnd^.bits, Result.bits, (hnd^.width * hnd^.height) shl 2);
+          AI_Ptr^.CloseImageBuffer(hnd);
+        end;
+    end;
+end;
+
+function TAI.BuildJetMap(Raster: TMemoryRaster): TMemoryRaster;
+var
+  hnd: TBGRA_Buffer_Handle;
+begin
+  Result := nil;
+
+  if (AI_Ptr <> nil) and Assigned(AI_Ptr^.OpenImageBuffer_Jet) then
+    begin
+      hnd := AI_Ptr^.OpenImageBuffer_Jet(Raster.bits, Raster.width, Raster.height);
+      if hnd <> nil then
+        begin
+          Result := NewRaster();
+          Result.SetSize(hnd^.width, hnd^.height);
+          CopyPtr(hnd^.bits, Result.bits, (hnd^.width * hnd^.height) shl 2);
+          AI_Ptr^.CloseImageBuffer(hnd);
+        end;
+    end;
+end;
+
 function TAI.fast_surf(Raster: TMemoryRaster; const max_points: Integer; const detection_threshold: Double): TSurf_DescBuffer;
 begin
   if (AI_Ptr <> nil) and Assigned(AI_Ptr^.fast_surf) then
     begin
       SetLength(Result, max_points);
-      SetLength(Result, AI_Ptr^.fast_surf(Raster.Bits, Raster.width, Raster.height, max_points, detection_threshold, @Result[0]));
+      SetLength(Result, AI_Ptr^.fast_surf(Raster.bits, Raster.width, Raster.height, max_points, detection_threshold, @Result[0]));
     end
   else
       SetLength(Result, 0);
@@ -2895,7 +2995,7 @@ begin
   SetLength(Result, max_AI_Rect);
 
   try
-    if AI_Ptr^.OD_Process(hnd, Raster.Bits, Raster.width, Raster.height,
+    if AI_Ptr^.OD_Process(hnd, Raster.bits, Raster.width, Raster.height,
       @Result[0], max_AI_Rect, rect_num) > 0 then
         SetLength(Result, rect_num)
     else
@@ -2955,7 +3055,7 @@ var
   buff: TOD_Desc;
   i: Integer;
 begin
-  nr := TMemoryRaster.Create;
+  nr := NewRaster();
   nr.ZoomFrom(Raster, scale);
 
   buff := OD_Process(hnd, nr, 1024);
@@ -3204,7 +3304,7 @@ begin
   lst := TCoreClassList.Create;
   hnd.GetListData(lst);
 
-  rgb_img := AI_Ptr^.Prepare_RGB_Image(Raster.Bits, Raster.width, Raster.height);
+  rgb_img := AI_Ptr^.Prepare_RGB_Image(Raster.bits, Raster.width, Raster.height);
 
 {$IFDEF parallel}
 {$IFDEF FPC}
@@ -3247,7 +3347,7 @@ var
   buff: TOD_Marshal_Desc;
   i: Integer;
 begin
-  nr := TMemoryRaster.Create;
+  nr := NewRaster();
   nr.ZoomFrom(Raster, scale);
 
   buff := OD_Marshal_Process(hnd, nr);
@@ -3438,7 +3538,7 @@ begin
   SetLength(Result, max_AI_Point);
 
   try
-    if AI_Ptr^.SP_Process(hnd, Raster.Bits, Raster.width, Raster.height,
+    if AI_Ptr^.SP_Process(hnd, Raster.bits, Raster.width, Raster.height,
       @AI_Rect, @Result[0], max_AI_Point, point_num) > 0 then
         SetLength(Result, point_num)
     else
@@ -3540,7 +3640,7 @@ begin
       fixed_desc[i] := AIRect(RectScaleSpace(RectV2(desc[i]), extract_face_size, extract_face_size));
 
   try
-      Result := AI_Ptr^.SP_extract_face_rect_desc_chips(face_sp_hnd, Raster.Bits, Raster.width, Raster.height, extract_face_size, @fixed_desc[0], length(desc));
+      Result := AI_Ptr^.SP_extract_face_rect_desc_chips(face_sp_hnd, Raster.bits, Raster.width, Raster.height, extract_face_size, @fixed_desc[0], length(desc));
   except
       Result := nil;
   end;
@@ -3600,7 +3700,7 @@ begin
       exit;
   PrepareFaceDataSource;
   try
-      Result := AI_Ptr^.SP_extract_face_rect_chips(face_sp_hnd, Raster.Bits, Raster.width, Raster.height, extract_face_size);
+      Result := AI_Ptr^.SP_extract_face_rect_chips(face_sp_hnd, Raster.bits, Raster.width, Raster.height, extract_face_size);
   except
       Result := nil;
   end;
@@ -3615,7 +3715,7 @@ begin
       exit;
 
   try
-      Result := AI_Ptr^.SP_extract_face_rect(Raster.Bits, Raster.width, Raster.height);
+      Result := AI_Ptr^.SP_extract_face_rect(Raster.bits, Raster.width, Raster.height);
   except
       Result := nil;
   end;
@@ -3666,7 +3766,7 @@ begin
   Result := NewRaster();
   AI_Ptr^.SP_get_face_chips_size(hnd, index, w, h);
   Result.SetSize(w, h);
-  AI_Ptr^.SP_get_face_chips_bits(hnd, index, Result.Bits);
+  AI_Ptr^.SP_get_face_chips_bits(hnd, index, Result.bits);
 end;
 
 function TAI.Face_Rect_Num(hnd: TFACE_Handle): Integer;
@@ -3838,7 +3938,7 @@ begin
       imgArry := imgList[i];
       for j := 0 to length(imgArry) - 1 do
         begin
-          rArry[ri].raster_ptr := imgArry[j].Bits;
+          rArry[ri].raster_ptr := imgArry[j].bits;
           rArry[ri].width := imgArry[j].width;
           rArry[ri].height := imgArry[j].height;
           rArry[ri].index := i;
@@ -4019,7 +4119,7 @@ begin
       SetLength(rArry, length(RasterArray));
       for i := 0 to length(RasterArray) - 1 do
         begin
-          rArry[i].raster_ptr := RasterArray[i].Bits;
+          rArry[i].raster_ptr := RasterArray[i].bits;
           rArry[i].width := RasterArray[i].width;
           rArry[i].height := RasterArray[i].height;
           rArry[i].index := i;
@@ -4294,7 +4394,7 @@ begin
       exit;
   SetLength(buff, 1024);
 
-  rect_num := AI_Ptr^.MMOD_DNN_Process(hnd, Raster.Bits, Raster.width, Raster.height, @buff[0], 1024);
+  rect_num := AI_Ptr^.MMOD_DNN_Process(hnd, Raster.bits, Raster.width, Raster.height, @buff[0], 1024);
 
   if rect_num >= 0 then
     begin
@@ -4411,7 +4511,7 @@ begin
       imgArry := imgList[i];
       for j := 0 to length(imgArry) - 1 do
         begin
-          imgInfo_arry[ri].raster_ptr := imgArry[j].Bits;
+          imgInfo_arry[ri].raster_ptr := imgArry[j].bits;
           imgInfo_arry[ri].width := imgArry[j].width;
           imgInfo_arry[ri].height := imgArry[j].height;
           imgInfo_arry[ri].index := i;
@@ -4621,7 +4721,7 @@ begin
       exit;
   SetLength(Result, C_ResNet_Image_Classifier_Dim);
 
-  R := AI_Ptr^.RNIC_Process(hnd, num_crops, Raster.Bits, Raster.width, Raster.height, @Result[0]);
+  R := AI_Ptr^.RNIC_Process(hnd, num_crops, Raster.bits, Raster.width, Raster.height, @Result[0]);
 
   if R <> C_ResNet_Image_Classifier_Dim then
       SetLength(Result, 0);
@@ -5011,6 +5111,7 @@ end;
 initialization
 
 Init_AI_BuildIn;
+KeepPerformanceOnTraining := 0;
 
 finalization
 

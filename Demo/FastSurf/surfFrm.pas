@@ -72,11 +72,11 @@ begin
 
   // 使用surf比对图片，并且输出到surf_out
   tk := GetTimeTick();
-  d1 := ai.fast_surf(r1, 20000, 1.0);
+  d1 := ai.fast_surf(r1, 20000, 10.0);
   DoStatus('分析 surf_1.bmp 耗时:%dms', [GetTimeTick() - tk]);
 
   tk := GetTimeTick();
-  d2 := ai.fast_surf(r2, 20000, 1.0);
+  d2 := ai.fast_surf(r2, 20000, 10.0);
   DoStatus('分析 surf_1.bmp 耗时:%dms', [GetTimeTick() - tk]);
 
   tk := GetTimeTick();
