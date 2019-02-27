@@ -664,7 +664,7 @@ procedure BlockTransfer(Dst: TMemoryRaster; Dstx: Integer; Dsty: Integer; DstCli
 function RandomRasterColor(const a: Byte = $FF): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RasterColor(const r, g, b, a: Byte): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RasterColor(const r, g, b: Byte): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
-function RasterColorInv(const c: TRasterColor): TRasterColor;
+function RasterColorInv(const c: TRasterColor): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RasterAlphaColor(const c: TRasterColor; const a: Byte): TRasterColor;
 function RasterAlphaColorF(const c: TRasterColor; const a: Single): TRasterColor;
 function RasterColorF(const r, g, b, a: TGeoFloat): TRasterColor; overload;

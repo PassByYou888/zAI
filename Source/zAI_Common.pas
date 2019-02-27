@@ -1,5 +1,5 @@
 { ****************************************************************************** }
-{ * AI Common data define(platform compatible)                                 * }
+{ * AI Common (platform compatible)                                            * }
 { * by QQ 600585@qq.com                                                        * }
 { ****************************************************************************** }
 { * https://github.com/PassByYou888/CoreCipher                                 * }
@@ -26,7 +26,7 @@ uses Types,
 {$ENDIF FPC}
   PascalStrings, MemoryStream64, UnicodeMixedLib, DataFrameEngine, ListEngine, TextDataEngine,
   ZDBEngine, ZDBLocalManager, ObjectDataManager, ObjectData, ItemStream,
-  zDrawEngine, Geometry2DUnit, MemoryRaster;
+  zDrawEngine, Geometry2DUnit, MemoryRaster, TextParsing, zExpression, OpCode;
 
 type
   TAI_DetectorDefine = class;
@@ -42,6 +42,8 @@ type
 {$ENDIF FPC}
 
   TAI_DetectorDefine = class(TCoreClassObject)
+  private
+    FOP_RT_RunDeleted: Boolean;
   public
     Owner: TAI_Image;
     R: TRect;
@@ -57,7 +59,34 @@ type
     procedure LoadFromStream(stream: TMemoryStream64);
   end;
 
+  TAI_Image_Script_RegisterProc = procedure(Sender: TAI_Image; opRT: TOpCustomRunTime) of object;
+
   TAI_Image = class(TCoreClassObject)
+  private
+    FOP_RT: TOpCustomRunTime;
+    FOP_RT_RunDeleted: Boolean;
+    // register op
+    procedure CheckAndRegOPRT;
+    // condition on image
+    function OP_Image_GetWidth(var Param: TOpParam): Variant;
+    function OP_Image_GetHeight(var Param: TOpParam): Variant;
+    function OP_Image_GetDetector(var Param: TOpParam): Variant;
+    // condition on detector
+    function OP_Detector_GetLabel(var Param: TOpParam): Variant;
+    // process on image
+    function OP_Image_Delete(var Param: TOpParam): Variant;
+    function OP_Image_Scale(var Param: TOpParam): Variant;
+    function OP_Image_SwapRB(var Param: TOpParam): Variant;
+    function OP_Image_Gray(var Param: TOpParam): Variant;
+    function OP_Image_Sharpen(var Param: TOpParam): Variant;
+    function OP_Image_HistogramEqualize(var Param: TOpParam): Variant;
+    function OP_Image_RemoveRedEyes(var Param: TOpParam): Variant;
+    function OP_Image_Sepia(var Param: TOpParam): Variant;
+    function OP_Image_CalibrateRotate(var Param: TOpParam): Variant;
+    // process on detector
+    function OP_Detector_SetLabel(var Param: TOpParam): Variant;
+    function OP_Detector_ClearDetector(var Param: TOpParam): Variant;
+    function OP_Detector_DeleteDetector(var Param: TOpParam): Variant;
   public
     Owner: TAI_ImageList;
     DetectorDefineList: TDetectorDefineList;
@@ -65,6 +94,10 @@ type
 
     constructor Create(AOwner: TAI_ImageList);
     destructor Destroy; override;
+
+    function RunExpCondition(ScriptStyle: TTextStyle; exp: SystemString): Boolean;
+    function RunExpProcess(ScriptStyle: TTextStyle; exp: SystemString): Boolean;
+    function GetExpFunctionList: TPascalStringList;
 
     procedure Clear;
     procedure ClearPrepareRaster;
@@ -80,7 +113,8 @@ type
     procedure LoadFromStream(stream: TMemoryStream64; LoadImg: Boolean); overload;
     procedure LoadFromStream(stream: TMemoryStream64); overload;
 
-    procedure LoadPicture(fileName: SystemString);
+    procedure LoadPicture(stream: TMemoryStream64); overload;
+    procedure LoadPicture(fileName: SystemString); overload;
 
     procedure Scale(f: TGeoFloat);
 
@@ -90,18 +124,25 @@ type
 
   TAI_ImageList = class(TImageList_Decl)
   public
+    UsedJpegForXML: Boolean;
     FileInfo: TPascalString;
     UserData: TCoreClassObject;
 
     constructor Create;
     destructor Destroy; override;
 
+    function Clone: TAI_ImageList;
+
     procedure Delete(index: Integer);
 
     procedure Clear;
     procedure ClearPrepareRaster;
 
-    procedure DrawTo(output: TMemoryRaster);
+    procedure RunScript(ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString); overload;
+    procedure RunScript(condition_exp, process_exp: SystemString); overload;
+
+    procedure DrawTo(output: TMemoryRaster); overload;
+    procedure DrawTo(d: TDrawEngine; Margins: TGeoFloat; destOffset: TDEVec; alpha: TDEFloat); overload;
 
     procedure AddPicture(stream: TCoreClassStream); overload;
     procedure AddPicture(fileName: SystemString); overload;
@@ -139,6 +180,7 @@ type
     procedure Scale(f: TGeoFloat);
 
     procedure Build_PrepareDataset(outputPath: SystemString);
+    procedure Build_XML(TokenFilter: TPascalString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(TokenFilter: TPascalString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(includeLabel, includePart: Boolean; datasetName, comment, build_output_file: SystemString); overload;
@@ -167,8 +209,12 @@ type
 
   TAI_ImageMatrix = class(TAI_ImageMatrix_Decl)
   public
+    UsedJpegForXML: Boolean;
     constructor Create;
     destructor Destroy; override;
+
+    procedure RunScript(ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString); overload;
+    procedure RunScript(condition_exp, process_exp: SystemString); overload;
 
     function FindImageList(FileInfo: TPascalString): TAI_ImageList;
 
@@ -187,6 +233,7 @@ type
     procedure Scale(f: TGeoFloat);
 
     procedure Build_PrepareDataset(outputPath: SystemString);
+    procedure Build_XML(TokenFilter: TPascalString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(TokenFilter: TPascalString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(includeLabel, includePart: Boolean; datasetName, comment, build_output_file: SystemString); overload;
@@ -223,6 +270,8 @@ var
   AI_PackageTool: U_String;
   AI_ModelTool: U_String;
   AI_TrainingServer: U_String;
+
+  On_Script_RegisterProc: TAI_Image_Script_RegisterProc;
 
 const
   // ext define
@@ -283,6 +332,8 @@ begin
   AI_PackageTool := '';
   AI_ModelTool := '';
   AI_TrainingServer := 'localhost';
+
+  On_Script_RegisterProc := nil;
 end;
 
 procedure ReadAIConfig;
@@ -557,7 +608,7 @@ begin
   R.Bottom := 0;
   Token := '';
   Part := TVec2List.Create;
-  PrepareRaster := TMemoryRaster.Create;
+  PrepareRaster := NewRaster();
 end;
 
 destructor TAI_DetectorDefine.Destroy;
@@ -625,12 +676,360 @@ begin
   disposeObject(de);
 end;
 
+procedure TAI_Image.CheckAndRegOPRT;
+begin
+  if FOP_RT <> nil then
+      exit;
+  FOP_RT := TOpCustomRunTime.Create;
+  FOP_RT.UserObject := Self;
+
+  // condition on image
+  FOP_RT.RegOpM('Width', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetWidth);
+  FOP_RT.RegOpM('Height', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetHeight);
+  FOP_RT.RegOpM('Det', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetDetector);
+  FOP_RT.RegOpM('Detector', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetDetector);
+  FOP_RT.RegOpM('DetNum', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_GetDetector);
+
+  // condition on detector
+  FOP_RT.RegOpM('Label', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_GetLabel);
+  FOP_RT.RegOpM('GetLabel', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_GetLabel);
+
+  // process on image
+  FOP_RT.RegOpM('Delete', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Delete);
+
+  FOP_RT.RegOpM('Scale', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Scale);
+  FOP_RT.RegOpM('ReductMemory', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Scale);
+
+  FOP_RT.RegOpM('SwapRB', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_SwapRB);
+  FOP_RT.RegOpM('SwapBR', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_SwapRB);
+
+  FOP_RT.RegOpM('Gray', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Gray);
+  FOP_RT.RegOpM('Grayscale', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Gray);
+
+  FOP_RT.RegOpM('Sharpen', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Sharpen);
+
+  FOP_RT.RegOpM('HistogramEqualize', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_HistogramEqualize);
+  FOP_RT.RegOpM('he', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_HistogramEqualize);
+  FOP_RT.RegOpM('NiceColor', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_HistogramEqualize);
+
+  FOP_RT.RegOpM('RemoveRedEye', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes);
+  FOP_RT.RegOpM('RemoveRedEyes', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes);
+  FOP_RT.RegOpM('RedEyes', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes);
+  FOP_RT.RegOpM('RedEye', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes);
+
+  FOP_RT.RegOpM('Sepia', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Sepia);
+
+  FOP_RT.RegOpM('CalibrateRotate', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate);
+  FOP_RT.RegOpM('DocumentAlignment', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate);
+  FOP_RT.RegOpM('DocumentAlign', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate);
+  FOP_RT.RegOpM('DocAlign', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate);
+  FOP_RT.RegOpM('AlignDoc', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate);
+
+  // process on detector
+  FOP_RT.RegOpM('SetLab', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel);
+  FOP_RT.RegOpM('SetLabel', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel);
+  FOP_RT.RegOpM('DefLab', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel);
+  FOP_RT.RegOpM('DefLabel', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel);
+  FOP_RT.RegOpM('DefineLabel', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_SetLabel);
+  FOP_RT.RegOpM('ClearDetector', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_ClearDetector);
+  FOP_RT.RegOpM('ClearDet', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_ClearDetector);
+  FOP_RT.RegOpM('KillDetector', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_ClearDetector);
+  FOP_RT.RegOpM('KillDet', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_ClearDetector);
+  FOP_RT.RegOpM('DeleteDetector', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_DeleteDetector);
+  FOP_RT.RegOpM('DeleteRect', {$IFDEF FPC}@{$ENDIF FPC}OP_Detector_DeleteDetector);
+
+  // external image processor
+  if Assigned(On_Script_RegisterProc) then
+      On_Script_RegisterProc(Self, FOP_RT);
+end;
+
+function TAI_Image.OP_Image_GetWidth(var Param: TOpParam): Variant;
+begin
+  Result := Raster.width;
+end;
+
+function TAI_Image.OP_Image_GetHeight(var Param: TOpParam): Variant;
+begin
+  Result := Raster.height;
+end;
+
+function TAI_Image.OP_Image_GetDetector(var Param: TOpParam): Variant;
+begin
+  Result := DetectorDefineList.Count;
+end;
+
+function TAI_Image.OP_Detector_GetLabel(var Param: TOpParam): Variant;
+begin
+  Result := GetTokenCount(Param[0]);
+end;
+
+function TAI_Image.OP_Image_Delete(var Param: TOpParam): Variant;
+begin
+  FOP_RT_RunDeleted := True;
+  Result := True;
+end;
+
+function TAI_Image.OP_Image_Scale(var Param: TOpParam): Variant;
+begin
+  DoStatus('image script on scale %f', [TGeoFloat(Param[0])]);
+  if not Raster.Empty then
+    begin
+      Scale(Param[0]);
+      if Raster is TDETexture then
+          TDETexture(Raster).ReleaseFMXResource;
+    end;
+  Result := True;
+end;
+
+function TAI_Image.OP_Image_SwapRB(var Param: TOpParam): Variant;
+var
+  i: Integer;
+begin
+  DoStatus('image script on SwapRed-Blue');
+
+  if not Raster.Empty then
+    begin
+      Raster.FormatBGRA;
+      if Raster is TDETexture then
+          TDETexture(Raster).ReleaseFMXResource;
+    end;
+
+  for i := 0 to DetectorDefineList.Count - 1 do
+    if not DetectorDefineList[i].PrepareRaster.Empty then
+        DetectorDefineList[i].PrepareRaster.FormatBGRA;
+  Result := True;
+end;
+
+function TAI_Image.OP_Image_Gray(var Param: TOpParam): Variant;
+var
+  i: Integer;
+begin
+  DoStatus('image script on Grayscale');
+
+  if not Raster.Empty then
+    begin
+      Raster.Grayscale;
+      if Raster is TDETexture then
+          TDETexture(Raster).ReleaseFMXResource;
+    end;
+
+  for i := 0 to DetectorDefineList.Count - 1 do
+    if not DetectorDefineList[i].PrepareRaster.Empty then
+        DetectorDefineList[i].PrepareRaster.Grayscale;
+  Result := True;
+end;
+
+function TAI_Image.OP_Image_Sharpen(var Param: TOpParam): Variant;
+var
+  i: Integer;
+begin
+  DoStatus('image script on Sharpen');
+
+  if not Raster.Empty then
+    begin
+      Sharpen(Raster, True);
+      if Raster is TDETexture then
+          TDETexture(Raster).ReleaseFMXResource;
+    end;
+
+  for i := 0 to DetectorDefineList.Count - 1 do
+    if not DetectorDefineList[i].PrepareRaster.Empty then
+        Sharpen(DetectorDefineList[i].PrepareRaster, True);
+  Result := True;
+end;
+
+function TAI_Image.OP_Image_HistogramEqualize(var Param: TOpParam): Variant;
+var
+  i: Integer;
+begin
+  DoStatus('image script on HistogramEqualize');
+
+  if not Raster.Empty then
+    begin
+      HistogramEqualize(Raster);
+      if Raster is TDETexture then
+          TDETexture(Raster).ReleaseFMXResource;
+    end;
+
+  for i := 0 to DetectorDefineList.Count - 1 do
+    if not DetectorDefineList[i].PrepareRaster.Empty then
+        HistogramEqualize(DetectorDefineList[i].PrepareRaster);
+  Result := True;
+end;
+
+function TAI_Image.OP_Image_RemoveRedEyes(var Param: TOpParam): Variant;
+var
+  i: Integer;
+begin
+  DoStatus('image script on RemoveRedEyes');
+
+  if not Raster.Empty then
+    begin
+      RemoveRedEyes(Raster);
+      if Raster is TDETexture then
+          TDETexture(Raster).ReleaseFMXResource;
+    end;
+
+  for i := 0 to DetectorDefineList.Count - 1 do
+    if not DetectorDefineList[i].PrepareRaster.Empty then
+        RemoveRedEyes(DetectorDefineList[i].PrepareRaster);
+  Result := True;
+end;
+
+function TAI_Image.OP_Image_Sepia(var Param: TOpParam): Variant;
+var
+  i: Integer;
+begin
+  DoStatus('image script on Sepia');
+
+  if not Raster.Empty then
+    begin
+      Sepia32(Raster, Param[0]);
+      if Raster is TDETexture then
+          TDETexture(Raster).ReleaseFMXResource;
+    end;
+
+  for i := 0 to DetectorDefineList.Count - 1 do
+    if not DetectorDefineList[i].PrepareRaster.Empty then
+        Sepia32(DetectorDefineList[i].PrepareRaster, Param[0]);
+  Result := True;
+end;
+
+function TAI_Image.OP_Image_CalibrateRotate(var Param: TOpParam): Variant;
+var
+  i: Integer;
+begin
+  DoStatus('image script on CalibrateRotate');
+
+  if not Raster.Empty then
+    begin
+      Raster.CalibrateRotate;
+      if Raster is TDETexture then
+          TDETexture(Raster).ReleaseFMXResource;
+    end;
+
+  for i := 0 to DetectorDefineList.Count - 1 do
+    if not DetectorDefineList[i].PrepareRaster.Empty then
+        DetectorDefineList[i].PrepareRaster.CalibrateRotate;
+  Result := True;
+end;
+
+function TAI_Image.OP_Detector_SetLabel(var Param: TOpParam): Variant;
+var
+  i: Integer;
+  n: SystemString;
+begin
+  if length(Param) > 0 then
+      n := Param[0]
+  else
+      n := '';
+  DoStatus('image script on setLabel %s', [n]);
+  for i := 0 to DetectorDefineList.Count - 1 do
+      DetectorDefineList[i].Token := n;
+  Result := True;
+end;
+
+function TAI_Image.OP_Detector_ClearDetector(var Param: TOpParam): Variant;
+begin
+  Clear;
+  Result := True;
+end;
+
+function TAI_Image.OP_Detector_DeleteDetector(var Param: TOpParam): Variant;
+type
+  TDetArry = array of TAI_DetectorDefine;
+var
+  coord: TVec2;
+
+  function ListSortCompare(Item1, Item2: TAI_DetectorDefine): TValueRelationship;
+  var
+    d1, d2: TGeoFloat;
+  begin
+    d1 := Vec2Distance(RectCentre(RectV2(Item1.R)), coord);
+    d2 := Vec2Distance(RectCentre(RectV2(Item2.R)), coord);
+    Result := CompareValue(d1, d2);
+  end;
+
+  procedure QuickSortList(var SortList: TDetArry; l, R: Integer);
+  var
+    i, j: Integer;
+    p, t: TAI_DetectorDefine;
+  begin
+    repeat
+      i := l;
+      j := R;
+      p := SortList[(l + R) shr 1];
+      repeat
+        while ListSortCompare(SortList[i], p) < 0 do
+            inc(i);
+        while ListSortCompare(SortList[j], p) > 0 do
+            dec(j);
+        if i <= j then
+          begin
+            if i <> j then
+              begin
+                t := SortList[i];
+                SortList[i] := SortList[j];
+                SortList[j] := t;
+              end;
+            inc(i);
+            dec(j);
+          end;
+      until i > j;
+      if l < j then
+          QuickSortList(SortList, l, j);
+      l := i;
+    until i >= R;
+  end;
+
+var
+  pt: TVec2;
+  reversed_count: Integer;
+  detArry: TDetArry;
+  i: Integer;
+  det: TAI_DetectorDefine;
+begin
+  if DetectorDefineList.Count < 2 then
+    begin
+      Result := False;
+      exit;
+    end;
+
+  if length(Param) <> 3 then
+    begin
+      DoStatus('DeleteDetector param error. exmples: DeleteDetector(1, 0.5, 0.5)');
+      Result := False;
+      exit;
+    end;
+  reversed_count := Param[0];
+  pt[0] := Param[1];
+  pt[1] := Param[2];
+  coord := Vec2Mul(pt, Raster.Size2D);
+
+  SetLength(detArry, DetectorDefineList.Count);
+  for i := 0 to DetectorDefineList.Count - 1 do
+      detArry[i] := DetectorDefineList[i];
+
+  QuickSortList(detArry, 0, DetectorDefineList.Count - 1);
+
+  for i := reversed_count to length(detArry) - 1 do
+    begin
+      det := detArry[i];
+      DetectorDefineList.Remove(det);
+      disposeObject(det);
+    end;
+
+  SetLength(detArry, 0);
+  Result := True;
+end;
+
 constructor TAI_Image.Create(AOwner: TAI_ImageList);
 begin
   inherited Create;
   Owner := AOwner;
   DetectorDefineList := TDetectorDefineList.Create;
-  Raster := TMemoryRaster.Create;
+  Raster := NewRaster();
+  FOP_RT := nil;
 end;
 
 destructor TAI_Image.Destroy;
@@ -638,7 +1037,34 @@ begin
   Clear;
   disposeObject(DetectorDefineList);
   disposeObject(Raster);
+  if FOP_RT <> nil then
+      disposeObject(FOP_RT);
   inherited Destroy;
+end;
+
+function TAI_Image.RunExpCondition(ScriptStyle: TTextStyle; exp: SystemString): Boolean;
+begin
+  CheckAndRegOPRT;
+  DoStatusNoLn('Image (%d * %d, detector:%d) EvaluateExpression: %s', [Raster.width, Raster.height, DetectorDefineList.Count, exp]);
+  Result := EvaluateExpressionValue(ScriptStyle, exp, FOP_RT);
+  if Result then
+      DoStatusNoLn(' = yes.')
+  else
+      DoStatusNoLn(' = no.');
+  DoStatusNoLn;
+end;
+
+function TAI_Image.RunExpProcess(ScriptStyle: TTextStyle; exp: SystemString): Boolean;
+begin
+  CheckAndRegOPRT;
+  Result := EvaluateExpressionValue(ScriptStyle, exp, FOP_RT);
+end;
+
+function TAI_Image.GetExpFunctionList: TPascalStringList;
+begin
+  CheckAndRegOPRT;
+  Result := TPascalStringList.Create;
+  FOP_RT.ProcList.GetNameList(Result);
 end;
 
 procedure TAI_Image.Clear;
@@ -831,10 +1257,18 @@ begin
   LoadFromStream(stream, True);
 end;
 
+procedure TAI_Image.LoadPicture(stream: TMemoryStream64);
+begin
+  disposeObject(Raster);
+  Raster := NewRasterFromStream(stream);
+  Clear;
+end;
+
 procedure TAI_Image.LoadPicture(fileName: SystemString);
 begin
   disposeObject(Raster);
   Raster := NewRasterFromFile(fileName);
+  Clear;
 end;
 
 procedure TAI_Image.Scale(f: TGeoFloat);
@@ -873,6 +1307,7 @@ end;
 constructor TAI_ImageList.Create;
 begin
   inherited Create;
+  UsedJpegForXML := True;
   FileInfo := '';
   UserData := nil;
 end;
@@ -881,6 +1316,19 @@ destructor TAI_ImageList.Destroy;
 begin
   Clear;
   inherited Destroy;
+end;
+
+function TAI_ImageList.Clone: TAI_ImageList;
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.CustomCreate(1024 * 1024);
+  SaveToStream(m64);
+  m64.Position := 0;
+
+  Result := TAI_ImageList.Create;
+  Result.LoadFromStream(m64);
+  disposeObject(m64);
 end;
 
 procedure TAI_ImageList.Delete(index: Integer);
@@ -907,6 +1355,64 @@ var
 begin
   for i := 0 to Count - 1 do
       Items[i].ClearPrepareRaster;
+end;
+
+procedure TAI_ImageList.RunScript(ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString);
+var
+  i, j: Integer;
+  img: TAI_Image;
+  condition_img_ok, condition_det_ok: Boolean;
+begin
+  // reset state
+  for i := 0 to Count - 1 do
+    begin
+      img := Items[i];
+      img.FOP_RT_RunDeleted := False;
+      for j := 0 to img.DetectorDefineList.Count - 1 do
+          img.DetectorDefineList[j].FOP_RT_RunDeleted := False;
+    end;
+
+  for i := 0 to Count - 1 do
+    begin
+      img := Items[i];
+
+      if img.RunExpCondition(ScriptStyle, condition_exp) then
+          img.RunExpProcess(ScriptStyle, process_exp);
+    end;
+
+  // process delete state
+  i := 0;
+  while i < Count do
+    begin
+      img := Items[i];
+
+      if img.FOP_RT_RunDeleted then
+        begin
+          DoStatus('image script on delete %d', [i]);
+          Delete(i);
+        end
+      else
+        begin
+          j := 0;
+          while j < img.DetectorDefineList.Count do
+            begin
+              if img.DetectorDefineList[j].FOP_RT_RunDeleted then
+                begin
+                  disposeObject(img.DetectorDefineList[j]);
+                  img.DetectorDefineList.Delete(j);
+                end
+              else
+                  inc(j);
+            end;
+
+          inc(i);
+        end;
+    end;
+end;
+
+procedure TAI_ImageList.RunScript(condition_exp, process_exp: SystemString);
+begin
+  RunScript(tsPascal, condition_exp, process_exp);
 end;
 
 procedure TAI_ImageList.DrawTo(output: TMemoryRaster);
@@ -953,6 +1459,7 @@ var
     FillBlackGrayBackgroundTexture(output, 32);
 
     d.Rasterization.SetWorkMemory(output);
+    d.Rasterization.UsedAgg := False;
 
     for i := 0 to rp.Count - 1 do
       begin
@@ -1009,6 +1516,19 @@ begin
   BuildOutput_;
   FreeTemp_;
   disposeObject(rp);
+end;
+
+procedure TAI_ImageList.DrawTo(d: TDrawEngine; Margins: TGeoFloat; destOffset: TDEVec; alpha: TDEFloat);
+var
+  rList: TMemoryRasterList;
+  i: Integer;
+begin
+  rList := TMemoryRasterList.Create;
+  for i := 0 to Count - 1 do
+      rList.Add(Items[i].Raster);
+
+  d.DrawTexturePackingInScene(rList, Margins, destOffset, alpha);
+  disposeObject(rList);
 end;
 
 procedure TAI_ImageList.AddPicture(stream: TCoreClassStream);
@@ -1416,7 +1936,7 @@ begin
   disposeObject(hList);
 end;
 
-procedure TAI_ImageList.Build_XML(TokenFilter: TPascalString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
+procedure TAI_ImageList.Build_XML(TokenFilter: TPascalString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
   function num_2(num: Integer): SystemString;
   begin
     if num < 10 then
@@ -1455,9 +1975,19 @@ begin
           continue;
 
       m64 := TMemoryStream64.Create;
-      imgData.Raster.SaveToBmp24Stream(m64);
-      m5 := umlStreamMD5(m64);
-      n := umlCombineFileName(output_path, Prefix + umlMD5ToStr(m5) + '.bmp');
+      if usedJpeg then
+        begin
+          imgData.Raster.SaveToJpegRGBStream(m64, 80);
+          m5 := umlStreamMD5(m64);
+          n := umlCombineFileName(output_path, Prefix + umlMD5ToStr(m5) + '.jpg');
+        end
+      else
+        begin
+          imgData.Raster.SaveToBmp24Stream(m64);
+          m5 := umlStreamMD5(m64);
+          n := umlCombineFileName(output_path, Prefix + umlMD5ToStr(m5) + '.bmp');
+        end;
+
       if not umlFileExists(n) then
         begin
           m64.SaveToFile(n);
@@ -1510,6 +2040,11 @@ begin
   m64.SaveToFile(build_output_file);
   SaveFileInfo(build_output_file);
   disposeObject(m64);
+end;
+
+procedure TAI_ImageList.Build_XML(TokenFilter: TPascalString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
+begin
+  Build_XML(TokenFilter, includeLabel, includePart, UsedJpegForXML, datasetName, comment, build_output_file, Prefix, BuildFileList);
 end;
 
 procedure TAI_ImageList.Build_XML(includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
@@ -1748,11 +2283,28 @@ end;
 constructor TAI_ImageMatrix.Create;
 begin
   inherited Create;
+  UsedJpegForXML := True;
 end;
 
 destructor TAI_ImageMatrix.Destroy;
 begin
   inherited Destroy;
+end;
+
+procedure TAI_ImageMatrix.RunScript(ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].RunScript(ScriptStyle, condition_exp, process_exp);
+end;
+
+procedure TAI_ImageMatrix.RunScript(condition_exp, process_exp: SystemString);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].RunScript(condition_exp, process_exp);
 end;
 
 function TAI_ImageMatrix.FindImageList(FileInfo: TPascalString): TAI_ImageList;
@@ -2087,7 +2639,7 @@ begin
       Items[i].Build_PrepareDataset(outputPath);
 end;
 
-procedure TAI_ImageMatrix.Build_XML(TokenFilter: TPascalString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
+procedure TAI_ImageMatrix.Build_XML(TokenFilter: TPascalString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
   function num_2(num: Integer): SystemString;
   begin
     if num < 10 then
@@ -2119,9 +2671,20 @@ procedure TAI_ImageMatrix.Build_XML(TokenFilter: TPascalString; includeLabel, in
             continue;
 
         m64 := TMemoryStream64.Create;
-        imgData.Raster.SaveToBmp24Stream(m64);
-        m5 := umlStreamMD5(m64);
-        n := umlCombineFileName(output_path, Prefix + umlMD5ToStr(m5) + '.bmp');
+
+        if usedJpeg then
+          begin
+            imgData.Raster.SaveToJpegRGBStream(m64, 80);
+            m5 := umlStreamMD5(m64);
+            n := umlCombineFileName(output_path, Prefix + umlMD5ToStr(m5) + '.jpg');
+          end
+        else
+          begin
+            imgData.Raster.SaveToBmp24Stream(m64);
+            m5 := umlStreamMD5(m64);
+            n := umlCombineFileName(output_path, Prefix + umlMD5ToStr(m5) + '.bmp');
+          end;
+
         if not umlFileExists(n) then
           begin
             m64.SaveToFile(n);
@@ -2190,6 +2753,11 @@ begin
   m64.SaveToFile(build_output_file);
   SaveFileInfo(build_output_file);
   disposeObject(m64);
+end;
+
+procedure TAI_ImageMatrix.Build_XML(TokenFilter: TPascalString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);
+begin
+  Build_XML(TokenFilter, includeLabel, includePart, UsedJpegForXML, datasetName, comment, build_output_file, Prefix, BuildFileList);
 end;
 
 procedure TAI_ImageMatrix.Build_XML(includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList);

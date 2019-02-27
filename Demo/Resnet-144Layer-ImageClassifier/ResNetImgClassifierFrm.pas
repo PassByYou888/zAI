@@ -72,7 +72,7 @@ begin
       rnic_index := TPascalStringList.Create;
       rnic_index.LoadFromFile(index_fn);
 
-      rnic_vec := ai.RNIC_Process(rnic_hnd, mr);
+      rnic_vec := ai.RNIC_Process(rnic_hnd, mr, 64);
 
       for i := 0 to rnic_index.Count - 1 do
         begin
@@ -115,9 +115,8 @@ begin
             param^.timeout := C_Tick_Hour * 8;
 
             // 收敛梯度的处理条件
-            // 在收敛梯度中，只要无效迭代器进度达到高于该数值，梯度就会开始收敛
-            // 图片分类器中的最大迭代次数要給大点
-            param^.iterations_without_progress_threshold := 4000;
+            // 在收敛梯度中，只要失效步数进度达到高于该数值，梯度就会开始收敛
+            param^.iterations_without_progress_threshold := 3000;
 
             // 这个数值是在输入net时使用的，简单来解释，这是可以滑动统计的参考尺度
             // 因为在图片分类器的训练中iterations_without_progress_threshold会很大
@@ -125,10 +124,14 @@ begin
             // all_bn_running_stats_window_sizes是降低训练时间而设计的超参
             param^.all_bn_running_stats_window_sizes := 1000;
 
-            // 请参考od超参思路
+            // 请参考od思路
             // resnet每次做step时的光栅输入批次
             // 根据gpu和内存的配置来设定即可
-            param^.img_mini_batch := 10;
+            param^.img_mini_batch := 4;
+
+            // gpu每做一次批次运算会暂停的时间单位是ms
+            // 这项参数是在1.15新增的呼吸参数，它可以让我们在工作的同时，后台进行无感觉训练
+            zAI.KeepPerformanceOnTraining := 5;
 
             if ai.RNIC_Train(imgMat, param, index_fn) then
               begin

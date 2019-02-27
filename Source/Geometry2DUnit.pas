@@ -4165,7 +4165,7 @@ procedure TVec2List.SortOfNear(const pt: TVec2);
     Result := CompareValue(d1, d2);
   end;
 
-  procedure QuickSortList(var SortList: TCoreClassPointerList; L, r: Integer); {$IFDEF INLINE_ASM} inline; {$ENDIF}
+  procedure QuickSortList(var SortList: TCoreClassPointerList; L, r: Integer);
   var
     i, j: Integer;
     p, t: Pointer;
@@ -4213,7 +4213,7 @@ procedure TVec2List.SortOfFar(const pt: TVec2);
     Result := CompareValue(d2, d1);
   end;
 
-  procedure QuickSortList(var SortList: TCoreClassPointerList; L, r: Integer); {$IFDEF INLINE_ASM} inline; {$ENDIF}
+  procedure QuickSortList(var SortList: TCoreClassPointerList; L, r: Integer);
   var
     i, j: Integer;
     p, t: Pointer;

@@ -12,7 +12,7 @@
 { ****************************************************************************** }
 unit zDrawEngineInterface_SlowFMX;
 
-{$INCLUDE ..\zDefine.inc}
+{$INCLUDE ..\..\zDefine.inc}
 
 interface
 

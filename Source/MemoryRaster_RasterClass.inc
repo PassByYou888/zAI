@@ -699,6 +699,8 @@ end;
 
 procedure TMemoryRaster.CalibrateRotate(BackgroundColor: TRasterColor);
 begin
+  if Empty then
+    Exit;
   Rotate(-DocmentRotationDetected(10, 128, Self), 1, BackgroundColor);
 end;
 
