@@ -81,6 +81,18 @@
         <Projects Include="ImageScript\ImageScriptDemo.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="Analysis-Console KDTree\Analysis_EasyConsoleDemo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Analysis-Forest-Regression\Analysis_RandomForestDemo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Analysis-Classifier-Decision\Analysis_Decision.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Analysis-Train-Demo\Analysis_numberTrain.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -323,14 +335,50 @@
     <Target Name="ImageScriptDemo:Make">
         <MSBuild Projects="ImageScript\ImageScriptDemo.dproj" Targets="Make"/>
     </Target>
+    <Target Name="Analysis_EasyConsoleDemo">
+        <MSBuild Projects="Analysis-Console KDTree\Analysis_EasyConsoleDemo.dproj"/>
+    </Target>
+    <Target Name="Analysis_EasyConsoleDemo:Clean">
+        <MSBuild Projects="Analysis-Console KDTree\Analysis_EasyConsoleDemo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Analysis_EasyConsoleDemo:Make">
+        <MSBuild Projects="Analysis-Console KDTree\Analysis_EasyConsoleDemo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Analysis_RandomForestDemo">
+        <MSBuild Projects="Analysis-Forest-Regression\Analysis_RandomForestDemo.dproj"/>
+    </Target>
+    <Target Name="Analysis_RandomForestDemo:Clean">
+        <MSBuild Projects="Analysis-Forest-Regression\Analysis_RandomForestDemo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Analysis_RandomForestDemo:Make">
+        <MSBuild Projects="Analysis-Forest-Regression\Analysis_RandomForestDemo.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Analysis_Decision">
+        <MSBuild Projects="Analysis-Classifier-Decision\Analysis_Decision.dproj"/>
+    </Target>
+    <Target Name="Analysis_Decision:Clean">
+        <MSBuild Projects="Analysis-Classifier-Decision\Analysis_Decision.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Analysis_Decision:Make">
+        <MSBuild Projects="Analysis-Classifier-Decision\Analysis_Decision.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Analysis_numberTrain">
+        <MSBuild Projects="Analysis-Train-Demo\Analysis_numberTrain.dproj"/>
+    </Target>
+    <Target Name="Analysis_numberTrain:Clean">
+        <MSBuild Projects="Analysis-Train-Demo\Analysis_numberTrain.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Analysis_numberTrain:Make">
+        <MSBuild Projects="Analysis-Train-Demo\Analysis_numberTrain.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_CPU_Parallel;Face_Det_GPU;Face_Alignment;Face_Alignment_Parallel;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;ResNetImgClassifier;FastSurfDemo;VideoTrackerAndSoftDecode_GPU;VideoTrackerAndSoftDecode_CPU;RasterizationFormatDemo;zDrawEngine_HelloWorld;Rep_FaceRecServ;Rep_FaceRecCli;realtime_OD_videoserv;realtime_OD_Video_FMXClient;ImageScriptDemo"/>
+        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_CPU_Parallel;Face_Det_GPU;Face_Alignment;Face_Alignment_Parallel;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;ResNetImgClassifier;FastSurfDemo;VideoTrackerAndSoftDecode_GPU;VideoTrackerAndSoftDecode_CPU;RasterizationFormatDemo;zDrawEngine_HelloWorld;Rep_FaceRecServ;Rep_FaceRecCli;realtime_OD_videoserv;realtime_OD_Video_FMXClient;ImageScriptDemo;Analysis_EasyConsoleDemo;Analysis_RandomForestDemo;Analysis_Decision;Analysis_numberTrain"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_CPU_Parallel:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Alignment_Parallel:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;ResNetImgClassifier:Clean;FastSurfDemo:Clean;VideoTrackerAndSoftDecode_GPU:Clean;VideoTrackerAndSoftDecode_CPU:Clean;RasterizationFormatDemo:Clean;zDrawEngine_HelloWorld:Clean;Rep_FaceRecServ:Clean;Rep_FaceRecCli:Clean;realtime_OD_videoserv:Clean;realtime_OD_Video_FMXClient:Clean;ImageScriptDemo:Clean"/>
+        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_CPU_Parallel:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Alignment_Parallel:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;ResNetImgClassifier:Clean;FastSurfDemo:Clean;VideoTrackerAndSoftDecode_GPU:Clean;VideoTrackerAndSoftDecode_CPU:Clean;RasterizationFormatDemo:Clean;zDrawEngine_HelloWorld:Clean;Rep_FaceRecServ:Clean;Rep_FaceRecCli:Clean;realtime_OD_videoserv:Clean;realtime_OD_Video_FMXClient:Clean;ImageScriptDemo:Clean;Analysis_EasyConsoleDemo:Clean;Analysis_RandomForestDemo:Clean;Analysis_Decision:Clean;Analysis_numberTrain:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_CPU_Parallel:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Alignment_Parallel:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;ResNetImgClassifier:Make;FastSurfDemo:Make;VideoTrackerAndSoftDecode_GPU:Make;VideoTrackerAndSoftDecode_CPU:Make;RasterizationFormatDemo:Make;zDrawEngine_HelloWorld:Make;Rep_FaceRecServ:Make;Rep_FaceRecCli:Make;realtime_OD_videoserv:Make;realtime_OD_Video_FMXClient:Make;ImageScriptDemo:Make"/>
+        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_CPU_Parallel:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Alignment_Parallel:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;ResNetImgClassifier:Make;FastSurfDemo:Make;VideoTrackerAndSoftDecode_GPU:Make;VideoTrackerAndSoftDecode_CPU:Make;RasterizationFormatDemo:Make;zDrawEngine_HelloWorld:Make;Rep_FaceRecServ:Make;Rep_FaceRecCli:Make;realtime_OD_videoserv:Make;realtime_OD_Video_FMXClient:Make;ImageScriptDemo:Make;Analysis_EasyConsoleDemo:Make;Analysis_RandomForestDemo:Make;Analysis_Decision:Make;Analysis_numberTrain:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

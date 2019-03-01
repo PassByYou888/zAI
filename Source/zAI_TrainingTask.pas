@@ -163,6 +163,7 @@ end;
 
 procedure TTrainingTask.Write(name: SystemString; m64: TMemoryStream64);
 begin
+  DoStatus('Write to "%s"', [name]);
   if not DB_Engine.ItemWriteFromStream('/', Name, m64) then
       RaiseInfo('training task write item %s failed.', [name]);
   LastWriteMD5 := umlStreamMD5(m64);

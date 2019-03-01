@@ -482,6 +482,8 @@ type
     function DrawMMOD(MMOD_hnd: TMMOD_Handle; Raster: TMemoryRaster; color: TDEColor): TMMOD_Desc;
     procedure DrawFace(Raster: TMemoryRaster); overload;
     procedure DrawFace(face_hnd: TFACE_Handle; d: TDrawEngine); overload;
+    procedure DrawFace(Raster: TMemoryRaster; mdnn_hnd: TMDNN_Handle; Face_Learn: TLearn; faceAccuracy: TGeoFloat; lineColor, TextColor: TDEColor); overload;
+    procedure PrintFace(prefix: SystemString; Raster: TMemoryRaster; mdnn_hnd: TMDNN_Handle; Face_Learn: TLearn; faceAccuracy: TGeoFloat);
     function DrawExtractFace(Raster: TMemoryRaster): TMemoryRaster;
 
     // atomic lock ctrl
@@ -1283,6 +1285,9 @@ var
   rnic_param: PRNIC_Train_Parameter;
   tmpPSL: TPascalStringList;
   tmpM64: TMemoryStream64;
+  output_learn_file: SystemString;
+  learnEng: TLearn;
+  mdnn_hnd: TMDNN_Handle;
 begin
   Result := False;
   if Task = nil then
@@ -1527,6 +1532,29 @@ begin
                 begin
                   Task.write(param.GetDefaultValue('output', 'output' + C_Metric_ResNet_Ext), outputstream);
                   Task.WriteFile(param.GetDefaultValue('output.sync', 'output' + C_Metric_ResNet_Ext + '.sync'), sync_file);
+
+                  if param.GetDefaultValue('LearnVec', False) = True then
+                    begin
+                      learnEng := TLearn.CreateClassifier(ltKDT, zAI.C_Metric_ResNet_Dim);
+                      outputstream.Position := 0;
+                      mdnn_hnd := AI.Metric_ResNet_Open_Stream(outputstream);
+
+                      DoStatus('build metric to learn-KDTree.');
+                      if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
+                          AI.Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd, inputImgMatrix, learnEng)
+                      else
+                          AI.Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd, inputImgList, learnEng);
+                      DoStatus('process metric to learn-KDTree done.');
+                      AI.Metric_ResNet_Close(mdnn_hnd);
+
+                      tmpM64 := TMemoryStream64.Create;
+                      learnEng.SaveToStream(tmpM64);
+                      output_learn_file := umlChangeFileExt(param.GetDefaultValue('output', 'output' + C_Metric_ResNet_Ext), C_Learn_Ext);
+                      Task.write(param.GetDefaultValue('output.learn', output_learn_file), tmpM64);
+                      DisposeObject(tmpM64);
+                      DisposeObject(learnEng);
+                    end;
+
                   DisposeObject(outputstream);
                   ResultValues['Loss'] := AI.Last_training_average_loss;
                   ResultValues['Rate'] := AI.Last_training_learning_rate;
@@ -2336,6 +2364,106 @@ begin
     end;
 end;
 
+procedure TAI.DrawFace(Raster: TMemoryRaster; mdnn_hnd: TMDNN_Handle; Face_Learn: TLearn; faceAccuracy: TGeoFloat; lineColor, TextColor: TDEColor);
+var
+  face_hnd: TFACE_Handle;
+  d: TDrawEngine;
+  i: Integer;
+  sp_desc: TSP_Desc;
+  chip_img: TMemoryRaster;
+  face_vec: TLVec;
+  LIndex: TLInt;
+  p: TLearn.PLearnMemory;
+  k: TLFloat;
+  face_lab: SystemString;
+begin
+  face_hnd := Face_Detector_All(Raster);
+  if face_hnd = nil then
+      exit;
+
+  d := TDrawEngine.Create;
+  d.ViewOptions := [];
+  d.Rasterization.SetWorkMemory(Raster);
+
+  for i := 0 to Face_Shape_num(face_hnd) - 1 do
+    begin
+      sp_desc := Face_Shape(face_hnd, i);
+      d.DrawCorner(TV2Rect4.Init(GetSPBound(sp_desc, 0.01), 0), DEColor(lineColor, 0.9), 40, 4);
+
+      chip_img := Face_chips(face_hnd, i);
+      face_vec := Metric_ResNet_Process(mdnn_hnd, chip_img);
+      DisposeObject(chip_img);
+
+      LIndex := Face_Learn.ProcessMaxIndex(face_vec);
+      p := Face_Learn.MemorySource[LIndex];
+      k := LDistance(face_vec, p^.m_in);
+      face_lab := p^.Token;
+      SetLength(face_vec, 0);
+
+      if k <= faceAccuracy then
+        begin
+          DrawFaceSP(sp_desc, DEColor(lineColor, 0.5), d);
+          d.BeginCaptureShadow(Vec2(2, 2), 0.9);
+          d.DrawText(PFormat('%s-%f', [face_lab, 1.0 - k]), 16, GetSPBound(sp_desc, 0.01), DEColor(TextColor, 0.9), True);
+          d.EndCaptureShadow;
+          DoStatus(PFormat('%s-%f', [face_lab, 1.0 - k]));
+        end
+      else
+        begin
+          d.BeginCaptureShadow(Vec2(2, 2), 0.9);
+          d.DrawText('no face defined.', 16, GetSPBound(sp_desc, 0.01), DEColor(lineColor, 0.9), True);
+          d.EndCaptureShadow;
+          DoStatus('no face defined.');
+        end;
+    end;
+
+  d.Flush;
+  DisposeObject(d);
+  Face_Close(face_hnd);
+end;
+
+procedure TAI.PrintFace(prefix: SystemString; Raster: TMemoryRaster; mdnn_hnd: TMDNN_Handle; Face_Learn: TLearn; faceAccuracy: TGeoFloat);
+var
+  face_hnd: TFACE_Handle;
+  i: Integer;
+  sp_desc: TSP_Desc;
+  chip_img: TMemoryRaster;
+  face_vec: TLVec;
+  LIndex: TLInt;
+  p: TLearn.PLearnMemory;
+  k: TLFloat;
+  face_lab: SystemString;
+begin
+  face_hnd := Face_Detector_All(Raster);
+  if face_hnd = nil then
+      exit;
+
+  for i := 0 to Face_Shape_num(face_hnd) - 1 do
+    begin
+      sp_desc := Face_Shape(face_hnd, i);
+
+      chip_img := Face_chips(face_hnd, i);
+      face_vec := Metric_ResNet_Process(mdnn_hnd, chip_img);
+      DisposeObject(chip_img);
+
+      LIndex := Face_Learn.ProcessMaxIndex(face_vec);
+      p := Face_Learn.MemorySource[LIndex];
+      k := LDistance(face_vec, p^.m_in);
+      face_lab := p^.Token;
+      SetLength(face_vec, 0);
+
+      if k <= faceAccuracy then
+        begin
+          DoStatus(prefix + ' ' + PFormat('%s-%f', [face_lab, 1.0 - k]));
+        end
+      else
+        begin
+          DoStatus(prefix + ' ' + 'no face defined.');
+        end;
+    end;
+  Face_Close(face_hnd);
+end;
+
 function TAI.DrawExtractFace(Raster: TMemoryRaster): TMemoryRaster;
 var
   face_hnd: TFACE_Handle;
@@ -2845,7 +2973,7 @@ end;
 
 function TAI.OD_Train(imgList: TAI_ImageList; TokenFilter, train_output: TPascalString; window_w, window_h, thread_num: Integer): Boolean;
 var
-  ph, fn, Prefix: TPascalString;
+  ph, fn, prefix: TPascalString;
   tmpFileList: TPascalStringList;
   i: Integer;
 begin
@@ -2853,10 +2981,10 @@ begin
   tmpFileList := TPascalStringList.Create;
 
   TCoreClassThread.Sleep(1);
-  Prefix := 'temp_OD_' + umlMakeRanName + '_';
+  prefix := 'temp_OD_' + umlMakeRanName + '_';
 
-  fn := umlCombineFileName(ph, Prefix + 'temp.xml');
-  imgList.Build_XML(TokenFilter, False, False, 'ZAI dataset', 'object detector training dataset', fn, Prefix, tmpFileList);
+  fn := umlCombineFileName(ph, prefix + 'temp.xml');
+  imgList.Build_XML(TokenFilter, False, False, 'ZAI dataset', 'object detector training dataset', fn, prefix, tmpFileList);
 
   Result := OD_Train(fn, train_output, window_w, window_h, thread_num);
 
@@ -2868,7 +2996,7 @@ end;
 
 function TAI.OD_Train(imgMat: TAI_ImageMatrix; TokenFilter, train_output: TPascalString; window_w, window_h, thread_num: Integer): Boolean;
 var
-  ph, fn, Prefix: TPascalString;
+  ph, fn, prefix: TPascalString;
   tmpFileList: TPascalStringList;
   i: Integer;
 begin
@@ -2876,10 +3004,10 @@ begin
   tmpFileList := TPascalStringList.Create;
 
   TCoreClassThread.Sleep(1);
-  Prefix := 'temp_OD_' + umlMakeRanName + '_';
+  prefix := 'temp_OD_' + umlMakeRanName + '_';
 
-  fn := umlCombineFileName(ph, Prefix + 'temp.xml');
-  imgMat.Build_XML(TokenFilter, False, False, 'ZAI dataset', 'object detector training dataset', fn, Prefix, tmpFileList);
+  fn := umlCombineFileName(ph, prefix + 'temp.xml');
+  imgMat.Build_XML(TokenFilter, False, False, 'ZAI dataset', 'object detector training dataset', fn, prefix, tmpFileList);
 
   Result := OD_Train(fn, train_output, window_w, window_h, thread_num);
 
@@ -3391,7 +3519,7 @@ end;
 
 function TAI.SP_Train(imgList: TAI_ImageList; train_output: TPascalString; oversampling_amount, tree_depth, thread_num: Integer): Boolean;
 var
-  ph, fn, Prefix: TPascalString;
+  ph, fn, prefix: TPascalString;
   tmpFileList: TPascalStringList;
   i: Integer;
 begin
@@ -3399,10 +3527,10 @@ begin
   tmpFileList := TPascalStringList.Create;
 
   TCoreClassThread.Sleep(1);
-  Prefix := 'temp_SP_' + umlMakeRanName + '_';
+  prefix := 'temp_SP_' + umlMakeRanName + '_';
 
-  fn := umlCombineFileName(ph, Prefix + 'temp.xml');
-  imgList.Build_XML(True, True, 'ZAI dataset', 'Shape predictor dataset', fn, Prefix, tmpFileList);
+  fn := umlCombineFileName(ph, prefix + 'temp.xml');
+  imgList.Build_XML(True, True, 'ZAI dataset', 'Shape predictor dataset', fn, prefix, tmpFileList);
 
   Result := SP_Train(fn, train_output, oversampling_amount, tree_depth, thread_num);
 
@@ -3414,7 +3542,7 @@ end;
 
 function TAI.SP_Train(imgMat: TAI_ImageMatrix; train_output: TPascalString; oversampling_amount, tree_depth, thread_num: Integer): Boolean;
 var
-  ph, fn, Prefix: TPascalString;
+  ph, fn, prefix: TPascalString;
   tmpFileList: TPascalStringList;
   i: Integer;
 begin
@@ -3422,10 +3550,10 @@ begin
   tmpFileList := TPascalStringList.Create;
 
   TCoreClassThread.Sleep(1);
-  Prefix := 'temp_SP_' + umlMakeRanName + '_';
+  prefix := 'temp_SP_' + umlMakeRanName + '_';
 
-  fn := umlCombineFileName(ph, Prefix + 'temp.xml');
-  imgMat.Build_XML(True, True, 'ZAI dataset', 'Shape predictor dataset', fn, Prefix, tmpFileList);
+  fn := umlCombineFileName(ph, prefix + 'temp.xml');
+  imgMat.Build_XML(True, True, 'ZAI dataset', 'Shape predictor dataset', fn, prefix, tmpFileList);
 
   Result := SP_Train(fn, train_output, oversampling_amount, tree_depth, thread_num);
 
@@ -4253,16 +4381,16 @@ end;
 
 function TAI.MMOD_DNN_PrepareTrain(imgList: TAI_ImageList; train_sync_file: TPascalString): PMMOD_Train_Parameter;
 var
-  ph, fn, Prefix, train_out: TPascalString;
+  ph, fn, prefix, train_out: TPascalString;
   tmpFileList: TPascalStringList;
 begin
   ph := rootPath;
   tmpFileList := TPascalStringList.Create;
   TCoreClassThread.Sleep(1);
-  Prefix := 'MMOD_DNN_' + umlMakeRanName + '_';
-  fn := umlCombineFileName(ph, Prefix + 'temp.xml');
-  imgList.Build_XML(True, False, 'ZAI dataset', 'dnn resnet max-margin dataset', fn, Prefix, tmpFileList);
-  train_out := Prefix + 'output' + C_MMOD_Ext;
+  prefix := 'MMOD_DNN_' + umlMakeRanName + '_';
+  fn := umlCombineFileName(ph, prefix + 'temp.xml');
+  imgList.Build_XML(True, False, 'ZAI dataset', 'dnn resnet max-margin dataset', fn, prefix, tmpFileList);
+  train_out := prefix + 'output' + C_MMOD_Ext;
   Result := Init_MMOD_DNN_TrainParam(fn, train_sync_file, train_out);
   Result^.control := @TrainingControl;
   Result^.TempFiles := tmpFileList;
@@ -4270,16 +4398,16 @@ end;
 
 function TAI.MMOD_DNN_PrepareTrain(imgMat: TAI_ImageMatrix; train_sync_file: TPascalString): PMMOD_Train_Parameter;
 var
-  ph, fn, Prefix, train_out: TPascalString;
+  ph, fn, prefix, train_out: TPascalString;
   tmpFileList: TPascalStringList;
 begin
   ph := rootPath;
   tmpFileList := TPascalStringList.Create;
   TCoreClassThread.Sleep(1);
-  Prefix := 'MMOD_DNN_' + umlMakeRanName + '_';
-  fn := umlCombineFileName(ph, Prefix + 'temp.xml');
-  imgMat.Build_XML(True, False, 'ZAI dataset', 'build-in', fn, Prefix, tmpFileList);
-  train_out := Prefix + 'output' + C_MMOD_Ext;
+  prefix := 'MMOD_DNN_' + umlMakeRanName + '_';
+  fn := umlCombineFileName(ph, prefix + 'temp.xml');
+  imgMat.Build_XML(True, False, 'ZAI dataset', 'build-in', fn, prefix, tmpFileList);
+  train_out := prefix + 'output' + C_MMOD_Ext;
   Result := Init_MMOD_DNN_TrainParam(fn, train_sync_file, train_out);
   Result^.control := @TrainingControl;
   Result^.TempFiles := tmpFileList;

@@ -573,7 +573,6 @@ var
     face_hnd: TFace_handle;
     face_arry: TMemoryRasterArray;
     face_matrix: TLMatrix;
-    p: TLearn.PLearnMemory;
     face_Result: array of TFace_Result;
     i: Integer;
   begin
@@ -597,6 +596,7 @@ var
                 TParallel.for(Low(face_matrix), high(face_matrix), procedure(pass: Integer)
                   var
                     LIndex: TLInt;
+                    p: TLearn.PLearnMemory;
                   begin
                     LIndex := Face_Learn.ProcessMaxIndex(face_matrix[pass]);
                     p := Face_Learn.MemorySource[LIndex];

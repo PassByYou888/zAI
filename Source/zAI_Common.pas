@@ -285,6 +285,7 @@ const
   C_OD_Marshal_Ext: SystemString = '.svm_od_marshal';
   C_SP_Ext: SystemString = '.shape';
   C_Metric_ResNet_Ext: SystemString = '.metric';
+  C_Learn_Ext: SystemString = '.learn';
   C_MMOD_Ext: SystemString = '.svm_dnn_od';
   C_RNIC_Ext: SystemString = '.rnic';
 

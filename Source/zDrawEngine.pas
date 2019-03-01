@@ -814,6 +814,7 @@ function DEVec(pt: TPointf): TDEVec; overload;
 function DEColorInv(const COLOR: TDEColor): TDEColor; overload;
 function DEColorInv(const r, g, b, a: TDEFloat): TDEColor; overload;
 function DEColor(const r, g, b, a: TDEFloat): TDEColor; overload;
+function DEColor(const r, g, b: TDEFloat): TDEColor; overload;
 function DEColor(const c: TDEColor; const alpha: TDEFloat): TDEColor; overload;
 function DEColor2RasterColor(const c: TDEColor): TRasterColor;
 function DEAlpha(c: TDEColor): TDEFloat;
@@ -884,6 +885,14 @@ begin
   Result[1] := g;
   Result[2] := b;
   Result[3] := a;
+end;
+
+function DEColor(const r, g, b: TDEFloat): TDEColor;
+begin
+  Result[0] := r;
+  Result[1] := g;
+  Result[2] := b;
+  Result[3] := 1.0;
 end;
 
 function DEColor(const c: TDEColor; const alpha: TDEFloat): TDEColor;
