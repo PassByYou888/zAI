@@ -418,6 +418,13 @@ begin
       if not Result then
           report := PFormat('error training source: %s', [inputfile1])
     end
+  else if umlMultipleMatch(['TrainLMRN', 'TrainingLMRN', 'TrainLMetricResNet'], ComputeFunc) then
+    begin
+      inputfile1 := Param.GetDefaultValue('source', '');
+      Result := Exists(inputfile1);
+      if not Result then
+          report := PFormat('error training source: %s', [inputfile1])
+    end
   else if umlMultipleMatch(['TrainMMOD', 'TrainingMMOD', 'TrainMaxMarginDNNObjectDetector'], ComputeFunc) then
     begin
       inputfile1 := Param.GetDefaultValue('source', '');
@@ -518,6 +525,19 @@ begin
       if Exists(outputfile) then
         begin
           outputfile := Param.GetDefaultValue('output', 'output' + C_Metric_ResNet_Ext);
+          Result := Exists(outputfile);
+          if not Result then
+              report := PFormat('error training output: %s', [outputfile]);
+        end
+      else
+          report := PFormat('error training sync file: %s', [outputfile]);
+    end
+  else if umlMultipleMatch(['TrainLMRN', 'TrainingLMRN', 'TrainLMetricResNet'], ComputeFunc) then
+    begin
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_LMetric_ResNet_Ext + '.sync');
+      if Exists(outputfile) then
+        begin
+          outputfile := Param.GetDefaultValue('output', 'output' + C_LMetric_ResNet_Ext);
           Result := Exists(outputfile);
           if not Result then
               report := PFormat('error training output: %s', [outputfile]);
@@ -634,6 +654,17 @@ begin
       inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_Metric_ResNet_Ext + '.sync');
       syncfile := Param.GetDefaultValue('output.sync', 'output' + C_Metric_ResNet_Ext + '.sync');
       outputfile := Param.GetDefaultValue('output', 'output' + C_Metric_ResNet_Ext);
+      CopyTo(paramFile, dest, paramFile);
+      CopyTo(inputfile1, dest, inputfile1);
+      CopyTo(syncfile, dest, inputfile2);
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainLMRN', 'TrainingLMRN', 'TrainLMetricResNet'], ComputeFunc) then
+    begin
+      inputfile1 := Param.GetDefaultValue('source', '');
+      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_LMetric_ResNet_Ext + '.sync');
+      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_LMetric_ResNet_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output', 'output' + C_LMetric_ResNet_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(syncfile, dest, inputfile2);

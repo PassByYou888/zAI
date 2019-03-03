@@ -285,6 +285,7 @@ const
   C_OD_Marshal_Ext: SystemString = '.svm_od_marshal';
   C_SP_Ext: SystemString = '.shape';
   C_Metric_ResNet_Ext: SystemString = '.metric';
+  C_LMetric_ResNet_Ext: SystemString = '.large_metric';
   C_Learn_Ext: SystemString = '.learn';
   C_MMOD_Ext: SystemString = '.svm_dnn_od';
   C_RNIC_Ext: SystemString = '.rnic';
@@ -1311,7 +1312,7 @@ end;
 constructor TAI_ImageList.Create;
 begin
   inherited Create;
-  UsedJpegForXML := True;
+  UsedJpegForXML := False;
   FileInfo := '';
   UserData := nil;
 end;
@@ -2348,7 +2349,7 @@ end;
 constructor TAI_ImageMatrix.Create;
 begin
   inherited Create;
-  UsedJpegForXML := True;
+  UsedJpegForXML := False;
 end;
 
 destructor TAI_ImageMatrix.Destroy;

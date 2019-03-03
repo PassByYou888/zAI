@@ -150,6 +150,9 @@ begin
       if same_ImgL <> nil then
         begin
           same_ImgL.Import(imgL);
+          // clip old picture
+          while same_ImgL.Count > 10 do
+              same_ImgL.Delete(0);
           disposeObject(imgL);
         end
       else
