@@ -50,6 +50,7 @@ type
   TMDNN_Handle = Pointer;
   TMMOD_Handle = Pointer;
   TRNIC_Handle = Pointer;
+  TLRNIC_Handle = Pointer;
   TTracker_Handle = Pointer;
 
   TBGRA_Image_Buffer_ = packed record
@@ -192,6 +193,10 @@ type
     min_detector_window_overlap_iou: Double;
     iterations_without_progress_threshold: Integer;
     learning_rate, completed_learning_rate: Double;
+    // overlap non-max suppression param
+    overlap_NMS_iou_thresh, overlap_NMS_percent_covered_thresh: Double;
+    // overlap ignore param
+    overlap_ignore_iou_thresh, overlap_ignore_percent_covered_thresh: Double;
     // cropper param
     num_crops: Integer;
     chip_dims_x, chip_dims_y: Integer;
@@ -339,6 +344,7 @@ type
   TAI_Parallel = class;
 
 {$ENDREGION 'BaseDefine'}
+{$REGION 'Engine_Lower_API'}
 
   TAI_Entry = packed record
     // prepare image
@@ -428,6 +434,14 @@ type
     RNIC_Process: function(hnd: TRNIC_Handle; num_crops: Integer; const raster_ptr: PRasterColorArray; const width, height: Integer; output: PDouble): Integer; stdcall;
     RNIC_DebugInfo: procedure(hnd: TRNIC_Handle; var p: PPascalString); stdcall;
 
+    // Large-ResNet-Image-Classifier
+    LRNIC_Train: function(param: PRNIC_Train_Parameter): Integer; stdcall;
+    LRNIC_Init: function(train_data: P_Bytes): TLRNIC_Handle; stdcall;
+    LRNIC_Init_Memory: function(memory: Pointer; Size: Integer): TLRNIC_Handle; stdcall;
+    LRNIC_Free: function(hnd: TLRNIC_Handle): Integer; stdcall;
+    LRNIC_Process: function(hnd: TLRNIC_Handle; num_crops: Integer; const raster_ptr: PRasterColorArray; const width, height: Integer; output: PDouble): Integer; stdcall;
+    LRNIC_DebugInfo: procedure(hnd: TLRNIC_Handle; var p: PPascalString); stdcall;
+
     // video tracker
     Start_Tracker: function(rgb_img: TRGB_Image_Handle; AI_Rect: PAI_Rect): TTracker_Handle; stdcall;
     Update_Tracker: function(hnd: TTracker_Handle; rgb_img: TRGB_Image_Handle; var AI_Rect: TAI_Rect): Double; stdcall;
@@ -457,6 +471,7 @@ type
     OneStepList: TOneStepList;
     Log: TAI_LogList;
   end;
+{$ENDREGION 'Engine_Lower_API'}
 
   TAI = class(TCoreClassObject)
   protected
@@ -592,7 +607,7 @@ type
     function Face_Shape_rect(hnd: TFACE_Handle; index: Integer): TRectV2;
     procedure Face_Close(var hnd: TFACE_Handle);
 
-    // MDNN-ResNet(ResNet metric DNN) training(gpu), extract dim 256, input size 150*150, full resnet jitter
+    // MDNN-ResNet(ResNet metric DNN) training(gpu), extract dim 256, input size 150*150, full resnet jitter, include bias
     class function Init_Metric_ResNet_Parameter(train_sync_file, train_output: TPascalString): PMetric_ResNet_Train_Parameter;
     class procedure Free_Metric_ResNet_Parameter(param: PMetric_ResNet_Train_Parameter);
     function Metric_ResNet_Train(imgList: TMemoryRaster2DArray; param: PMetric_ResNet_Train_Parameter): Boolean; overload;
@@ -600,7 +615,7 @@ type
     function Metric_ResNet_Train_Stream(imgList: TAI_ImageList; param: PMetric_ResNet_Train_Parameter): TMemoryStream64; overload;
     function Metric_ResNet_Train(imgMat: TAI_ImageMatrix; param: PMetric_ResNet_Train_Parameter): Boolean; overload;
     function Metric_ResNet_Train_Stream(imgMat: TAI_ImageMatrix; param: PMetric_ResNet_Train_Parameter): TMemoryStream64; overload;
-    // MDNN-ResNet(ResNet metric DNN) api(gpu), extract dim 256, input size 150*150, full resnet jitter
+    // MDNN-ResNet(ResNet metric DNN) api(gpu), extract dim 256, input size 150*150, full resnet jitter, include bias
     function Metric_ResNet_Open(train_file: TPascalString): TMDNN_Handle;
     function Metric_ResNet_Open_Stream(stream: TMemoryStream64): TMDNN_Handle; overload;
     function Metric_ResNet_Open_Stream(train_file: TPascalString): TMDNN_Handle; overload;
@@ -612,7 +627,7 @@ type
     procedure Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd: TMDNN_Handle; imgMat: TAI_ImageMatrix; lr: TLearn); overload;
     function Metric_ResNet_DebugInfo(hnd: TMDNN_Handle): TPascalString;
 
-    // Large-MDNN-ResNet(ResNet LMetric DNN) training(gpu), extract dim 1024, input size 400*400, no resnet jitter
+    // Large-MDNN-ResNet(ResNet LMetric DNN) training(gpu), extract dim 1024, input size 400*400, no resnet jitter, no bias
     class function Init_LMetric_ResNet_Parameter(train_sync_file, train_output: TPascalString): PMetric_ResNet_Train_Parameter;
     class procedure Free_LMetric_ResNet_Parameter(param: PMetric_ResNet_Train_Parameter);
     function LMetric_ResNet_Train(imgList: TMemoryRaster2DArray; param: PMetric_ResNet_Train_Parameter): Boolean; overload;
@@ -620,7 +635,7 @@ type
     function LMetric_ResNet_Train_Stream(imgList: TAI_ImageList; param: PMetric_ResNet_Train_Parameter): TMemoryStream64; overload;
     function LMetric_ResNet_Train(imgMat: TAI_ImageMatrix; param: PMetric_ResNet_Train_Parameter): Boolean; overload;
     function LMetric_ResNet_Train_Stream(imgMat: TAI_ImageMatrix; param: PMetric_ResNet_Train_Parameter): TMemoryStream64; overload;
-    // Large-MDNN-ResNet(ResNet LMetric DNN) api(gpu), extract dim 1024, input size 400*400, no resnet jitter
+    // Large-MDNN-ResNet(ResNet LMetric DNN) api(gpu), extract dim 1024, input size 400*400, no resnet jitter, no bias
     function LMetric_ResNet_Open(train_file: TPascalString): TMDNN_Handle;
     function LMetric_ResNet_Open_Stream(stream: TMemoryStream64): TMDNN_Handle; overload;
     function LMetric_ResNet_Open_Stream(train_file: TPascalString): TMDNN_Handle; overload;
@@ -649,7 +664,7 @@ type
     function MMOD_DNN_Process_Matrix(hnd: TMMOD_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc; overload;
     function MMOD_DNN_DebugInfo(hnd: TMMOD_Handle): TPascalString;
 
-    // ResNet-Image-Classifier training(gpu)
+    // ResNet-Image-Classifier training(gpu), corp size 227, max classifier 1000
     class function Init_RNIC_Train_Parameter(train_sync_file, train_output: TPascalString): PRNIC_Train_Parameter;
     class procedure Free_RNIC_Train_Parameter(param: PRNIC_Train_Parameter);
     function RNIC_Train(imgList: TMemoryRaster2DArray; param: PRNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean; overload;
@@ -659,7 +674,7 @@ type
     function RNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
     function RNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; train_index_output: TPascalString): Boolean; overload;
     function RNIC_Train_Stream(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
-    // ResNet-Image-Classifier api(gpu)
+    // ResNet-Image-Classifier api(gpu), corp size 227, max classifier 1000
     function RNIC_Open(train_file: TPascalString): TRNIC_Handle;
     function RNIC_Open_Stream(stream: TMemoryStream64): TRNIC_Handle; overload;
     function RNIC_Open_Stream(train_file: TPascalString): TRNIC_Handle; overload;
@@ -667,6 +682,25 @@ type
     function RNIC_Process(hnd: TRNIC_Handle; Raster: TMemoryRaster; num_crops: Integer): TLVec; overload;
     function RNIC_Process(hnd: TRNIC_Handle; Raster: TMemoryRaster): TLVec; overload;
     function RNIC_DebugInfo(hnd: TRNIC_Handle): TPascalString;
+
+    // Large-ResNet-Image-Classifier training(gpu), corp size 197, max classifier 10000
+    class function Init_LRNIC_Train_Parameter(train_sync_file, train_output: TPascalString): PRNIC_Train_Parameter;
+    class procedure Free_LRNIC_Train_Parameter(param: PRNIC_Train_Parameter);
+    function LRNIC_Train(imgList: TMemoryRaster2DArray; param: PRNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean; overload;
+    function LRNIC_Train(imgList: TAI_ImageList; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
+    function LRNIC_Train(imgList: TAI_ImageList; param: PRNIC_Train_Parameter; train_index_output: TPascalString): Boolean; overload;
+    function LRNIC_Train_Stream(imgList: TAI_ImageList; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
+    function LRNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean; overload;
+    function LRNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; train_index_output: TPascalString): Boolean; overload;
+    function LRNIC_Train_Stream(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64; overload;
+    // Large-ResNet-Image-Classifier api(gpu), corp size 197, max classifier 10000
+    function LRNIC_Open(train_file: TPascalString): TLRNIC_Handle;
+    function LRNIC_Open_Stream(stream: TMemoryStream64): TLRNIC_Handle; overload;
+    function LRNIC_Open_Stream(train_file: TPascalString): TLRNIC_Handle; overload;
+    function LRNIC_Close(var hnd: TLRNIC_Handle): Boolean;
+    function LRNIC_Process(hnd: TLRNIC_Handle; Raster: TMemoryRaster; num_crops: Integer): TLVec; overload;
+    function LRNIC_Process(hnd: TLRNIC_Handle; Raster: TMemoryRaster): TLVec; overload;
+    function LRNIC_DebugInfo(hnd: TLRNIC_Handle): TPascalString;
 
     // video tracker(cpu)
     function Tracker_Open(Raster: TMemoryRaster; const track_rect: TRect): TTracker_Handle; overload;
@@ -716,6 +750,7 @@ const
   C_LMetric_ResNet_Image_Size: Integer = 400;
   C_LMetric_ResNet_Dim: Integer = 1024;
   C_ResNet_Image_Classifier_Dim: Integer = 1000;
+  C_LResNet_Image_Classifier_Dim: Integer = 10000;
 
 procedure Wait_AI_Init;
 
@@ -912,7 +947,7 @@ begin
             try
               proc_init_ai_(AI_Ptr^);
 
-              if (AI_Ptr^.MajorVer = 1) and (AI_Ptr^.MinorVer = 16) then
+              if (AI_Ptr^.MajorVer = 1) and (AI_Ptr^.MinorVer = 18) then
                 begin
                   AI_Ptr^.Key := AIKey(AI_Ptr^.Key);
                   if AI_Ptr^.CheckKey() > 0 then
@@ -933,7 +968,7 @@ begin
                 end
               else
                 begin
-                  DoStatus('nonsupport AI engine edition: %d.%d ', [AI_Ptr^.MajorVer, AI_Ptr^.MinorVer]);
+                  DoStatus('nonsupport AI engine edition: %d.%d', [AI_Ptr^.MajorVer, AI_Ptr^.MinorVer]);
                   AI_Ptr^.LibraryFile := '';
                   DisposeObject(AI_Ptr^.OneStepList);
                   DisposeObject(AI_Ptr^.Log);
@@ -1290,7 +1325,7 @@ end;
 
 function RunTrainingTask(Task: TTrainingTask; const AI: TAI; const paramFile: SystemString): Boolean;
 var
-  i: Integer;
+  i, j: Integer;
 
   param: THashVariantList;
   ComputeFunc: SystemString;
@@ -1301,7 +1336,8 @@ var
   inputfile1, inputfile2: SystemString;
   inputstream1, inputstream2: TMemoryStream64;
   inputraster1, inputraster2: TMemoryRaster;
-  inputImgList: TAI_ImageList;
+  detDef: TAI_DetectorDefine;
+  inputImgList, imgL: TAI_ImageList;
   inputImgMatrix: TAI_ImageMatrix;
   ResultValues: THashVariantList;
 
@@ -1725,6 +1761,12 @@ begin
               mmod_param^.iterations_without_progress_threshold := param.GetDefaultValue('iterations_without_progress_threshold', mmod_param^.iterations_without_progress_threshold);
               mmod_param^.learning_rate := param.GetDefaultValue('learning_rate', mmod_param^.learning_rate);
               mmod_param^.completed_learning_rate := param.GetDefaultValue('completed_learning_rate', mmod_param^.completed_learning_rate);
+
+              mmod_param^.overlap_NMS_iou_thresh := param.GetDefaultValue('overlap_NMS_iou_thresh', mmod_param^.overlap_NMS_iou_thresh);
+              mmod_param^.overlap_NMS_percent_covered_thresh := param.GetDefaultValue('overlap_NMS_percent_covered_thresh', mmod_param^.overlap_NMS_percent_covered_thresh);
+              mmod_param^.overlap_ignore_iou_thresh := param.GetDefaultValue('overlap_ignore_iou_thresh', mmod_param^.overlap_ignore_iou_thresh);
+              mmod_param^.overlap_ignore_percent_covered_thresh := param.GetDefaultValue('overlap_ignore_percent_covered_thresh', mmod_param^.overlap_ignore_percent_covered_thresh);
+
               mmod_param^.num_crops := param.GetDefaultValue('num_crops', mmod_param^.num_crops);
               mmod_param^.chip_dims_x := param.GetDefaultValue('chip_dims_x', mmod_param^.chip_dims_x);
               mmod_param^.chip_dims_y := param.GetDefaultValue('chip_dims_y', mmod_param^.chip_dims_y);
@@ -1806,6 +1848,73 @@ begin
                   Task.write(param.GetDefaultValue('output', 'output' + C_RNIC_Ext), outputstream);
                   Task.WriteFile(param.GetDefaultValue('output.sync', 'output' + C_RNIC_Ext + '.sync'), sync_file);
                   Task.write(param.GetDefaultValue('output.index', 'output' + C_RNIC_Ext + '.index'), outputPacalStringList);
+                  DisposeObject(outputstream);
+                  ResultValues['Loss'] := AI.Last_training_average_loss;
+                  ResultValues['Rate'] := AI.Last_training_learning_rate;
+                  Result := True;
+                end;
+              umlDeleteFile(sync_file);
+            except
+            end;
+            DisposeObject(outputPacalStringList);
+          end;
+      end
+    else if umlMultipleMatch(['TrainLRNIC', 'TrainingLRNIC', 'TrainLResNetImageClassifier'], ComputeFunc) then
+      begin
+        inputfile1 := param.GetDefaultValue('source', '');
+
+        if Task.Exists(inputfile1) then
+          begin
+            outputPacalStringList := TPascalStringList.Create;
+            try
+              if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
+                begin
+                  Task.Read(inputfile1, inputImgMatrix);
+                  inputImgMatrix.scale(param.GetDefaultValue('scale', 1.0));
+                end
+              else
+                begin
+                  Task.Read(inputfile1, inputImgList);
+                  inputImgList.scale(param.GetDefaultValue('scale', 1.0));
+                end;
+
+              local_sync := param.GetDefaultValue('syncfile', 'output' + C_LRNIC_Ext + '.sync');
+              sync_file := umlCombineFileName(AI.rootPath, local_sync + '_' + umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)));
+              if Task.Exists(local_sync) then
+                if not umlFileExists(sync_file) then
+                    Task.ReadToFile(local_sync, sync_file);
+
+              output_file := umlMD5ToStr(umlCombineMD5(param_md5, Task.LastReadMD5)) + C_Metric_ResNet_Ext;
+
+              rnic_param := TAI.Init_LRNIC_Train_Parameter(sync_file, output_file);
+
+              rnic_param^.timeout := param.GetDefaultValue('timeout', rnic_param^.timeout);
+              rnic_param^.iterations_without_progress_threshold := param.GetDefaultValue('iterations_without_progress_threshold', rnic_param^.iterations_without_progress_threshold);
+              rnic_param^.learning_rate := param.GetDefaultValue('learning_rate', rnic_param^.learning_rate);
+              rnic_param^.completed_learning_rate := param.GetDefaultValue('completed_learning_rate', rnic_param^.completed_learning_rate);
+              rnic_param^.all_bn_running_stats_window_sizes := param.GetDefaultValue('all_bn_running_stats_window_sizes', rnic_param^.all_bn_running_stats_window_sizes);
+              rnic_param^.img_mini_batch := param.GetDefaultValue('img_mini_batch', rnic_param^.img_mini_batch);
+
+              if umlMultipleMatch('*' + C_ImageMatrix_Ext, inputfile1) then
+                  outputstream := AI.LRNIC_Train_Stream(
+                  inputImgMatrix,
+                  rnic_param,
+                  outputPacalStringList
+                  )
+              else
+                  outputstream := AI.LRNIC_Train_Stream(
+                  inputImgList,
+                  rnic_param,
+                  outputPacalStringList
+                  );
+
+              TAI.Free_LRNIC_Train_Parameter(rnic_param);
+
+              if outputstream <> nil then
+                begin
+                  Task.write(param.GetDefaultValue('output', 'output' + C_LRNIC_Ext), outputstream);
+                  Task.WriteFile(param.GetDefaultValue('output.sync', 'output' + C_LRNIC_Ext + '.sync'), sync_file);
+                  Task.write(param.GetDefaultValue('output.index', 'output' + C_LRNIC_Ext + '.index'), outputPacalStringList);
                   DisposeObject(outputstream);
                   ResultValues['Loss'] := AI.Last_training_average_loss;
                   ResultValues['Rate'] := AI.Last_training_learning_rate;
@@ -1970,7 +2079,7 @@ var
   face_hnd: TFACE_Handle;
   i, j, k: Integer;
   img: TAI_Image;
-  DetDef: TAI_DetectorDefine;
+  detDef: TAI_DetectorDefine;
   sp_desc: TSP_Desc;
   r1, r2: TRectV2;
 begin
@@ -2005,13 +2114,13 @@ begin
 
                   if InRect(sp_desc, img.Raster.BoundsRectV2) then
                     begin
-                      DetDef := TAI_DetectorDefine.Create(img);
-                      img.DetectorDefineList.Add(DetDef);
-                      DisposeObject(DetDef.PrepareRaster);
-                      DetDef.PrepareRaster := AI.Face_chips(face_hnd, j);
-                      SPToVec(sp_desc, DetDef.Part);
+                      detDef := TAI_DetectorDefine.Create(img);
+                      img.DetectorDefineList.Add(detDef);
+                      DisposeObject(detDef.PrepareRaster);
+                      detDef.PrepareRaster := AI.Face_chips(face_hnd, j);
+                      SPToVec(sp_desc, detDef.Part);
 
-                      DetDef.R := MakeRect(BoundRect(r1, r2));
+                      detDef.R := MakeRect(BoundRect(r1, r2));
                     end;
                   SetLength(sp_desc, 0);
                 end;
@@ -2027,7 +2136,7 @@ var
   face_hnd: TFACE_Handle;
   i, j, k: Integer;
   img: TAI_Image;
-  DetDef: TAI_DetectorDefine;
+  detDef: TAI_DetectorDefine;
   sp_desc: TSP_Desc;
   r1, r2: TRectV2;
 begin
@@ -2051,13 +2160,13 @@ begin
 
                   if InRect(sp_desc, img.Raster.BoundsRectV2) then
                     begin
-                      DetDef := TAI_DetectorDefine.Create(img);
-                      img.DetectorDefineList.Add(DetDef);
-                      DisposeObject(DetDef.PrepareRaster);
-                      DetDef.PrepareRaster := AI.Face_chips(face_hnd, j);
-                      SPToVec(sp_desc, DetDef.Part);
+                      detDef := TAI_DetectorDefine.Create(img);
+                      img.DetectorDefineList.Add(detDef);
+                      DisposeObject(detDef.PrepareRaster);
+                      detDef.PrepareRaster := AI.Face_chips(face_hnd, j);
+                      SPToVec(sp_desc, detDef.Part);
 
-                      DetDef.R := MakeRect(BoundRect(r1, r2));
+                      detDef.R := MakeRect(BoundRect(r1, r2));
                     end;
                   SetLength(sp_desc, 0);
                 end;
@@ -2072,20 +2181,20 @@ procedure TAlignment_ScaleSpace.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
-  DetDef: TAI_DetectorDefine;
+  detDef: TAI_DetectorDefine;
 begin
   for i := 0 to imgList.Count - 1 do
     begin
       img := imgList[i];
       for j := 0 to img.DetectorDefineList.Count - 1 do
         begin
-          DetDef := img.DetectorDefineList[j];
-          DetDef.R := RectScaleSpace(DetDef.R, SS_width, SS_height);
-          DetDef.R := CalibrationRectInRect(DetDef.R, DetDef.Owner.Raster.BoundsRect);
+          detDef := img.DetectorDefineList[j];
+          detDef.R := RectScaleSpace(detDef.R, SS_width, SS_height);
+          detDef.R := CalibrationRectInRect(detDef.R, detDef.Owner.Raster.BoundsRect);
 
-          DetDef := img.DetectorDefineList[j];
-          DisposeObject(DetDef.PrepareRaster);
-          DetDef.PrepareRaster := DetDef.Owner.Raster.BuildAreaOffsetScaleSpace(DetDef.R, SS_width, SS_height);
+          detDef := img.DetectorDefineList[j];
+          DisposeObject(detDef.PrepareRaster);
+          detDef.PrepareRaster := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, SS_width, SS_height);
         end;
     end;
 end;
@@ -2094,7 +2203,7 @@ procedure TAlignment_OD.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
-  DetDef: TAI_DetectorDefine;
+  detDef: TAI_DetectorDefine;
   od_desc: TOD_Desc;
   mr: TMemoryRaster;
 begin
@@ -2110,9 +2219,9 @@ begin
       DisposeObject(mr);
       for j := 0 to length(od_desc) - 1 do
         begin
-          DetDef := TAI_DetectorDefine.Create(img);
-          DetDef.R := MakeRect(RectMul(RectV2(od_desc[j]), 0.25));
-          img.DetectorDefineList.Add(DetDef);
+          detDef := TAI_DetectorDefine.Create(img);
+          detDef.R := MakeRect(RectMul(RectV2(od_desc[j]), 0.25));
+          img.DetectorDefineList.Add(detDef);
         end;
     end;
 end;
@@ -2121,7 +2230,7 @@ procedure TAlignment_FastOD.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
-  DetDef: TAI_DetectorDefine;
+  detDef: TAI_DetectorDefine;
   od_desc: TOD_Desc;
 begin
   if od_hnd = nil then
@@ -2133,9 +2242,9 @@ begin
       od_desc := AI.OD_Process(od_hnd, img.Raster, 1024);
       for j := 0 to length(od_desc) - 1 do
         begin
-          DetDef := TAI_DetectorDefine.Create(img);
-          DetDef.R := Rect(od_desc[j]);
-          img.DetectorDefineList.Add(DetDef);
+          detDef := TAI_DetectorDefine.Create(img);
+          detDef.R := Rect(od_desc[j]);
+          img.DetectorDefineList.Add(detDef);
         end;
     end;
 end;
@@ -2144,7 +2253,7 @@ procedure TAlignment_OD_Marshal.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
-  DetDef: TAI_DetectorDefine;
+  detDef: TAI_DetectorDefine;
   od_desc: TOD_Marshal_Desc;
   mr: TMemoryRaster;
 begin
@@ -2160,10 +2269,10 @@ begin
       DisposeObject(mr);
       for j := 0 to length(od_desc) - 1 do
         begin
-          DetDef := TAI_DetectorDefine.Create(img);
-          DetDef.R := MakeRect(RectMul(od_desc[j].R, 0.25));
-          DetDef.Token := od_desc[j].Token;
-          img.DetectorDefineList.Add(DetDef);
+          detDef := TAI_DetectorDefine.Create(img);
+          detDef.R := MakeRect(RectMul(od_desc[j].R, 0.25));
+          detDef.Token := od_desc[j].Token;
+          img.DetectorDefineList.Add(detDef);
         end;
     end;
 end;
@@ -2172,7 +2281,7 @@ procedure TAlignment_FastOD_Marshal.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
-  DetDef: TAI_DetectorDefine;
+  detDef: TAI_DetectorDefine;
   od_desc: TOD_Marshal_Desc;
 begin
   if od_hnd = nil then
@@ -2184,10 +2293,10 @@ begin
       od_desc := AI.OD_Marshal_Process(od_hnd, img.Raster);
       for j := 0 to length(od_desc) - 1 do
         begin
-          DetDef := TAI_DetectorDefine.Create(img);
-          DetDef.R := MakeRect(od_desc[j].R);
-          DetDef.Token := od_desc[j].Token;
-          img.DetectorDefineList.Add(DetDef);
+          detDef := TAI_DetectorDefine.Create(img);
+          detDef.R := MakeRect(od_desc[j].R);
+          detDef.Token := od_desc[j].Token;
+          img.DetectorDefineList.Add(detDef);
         end;
     end;
 end;
@@ -2196,7 +2305,7 @@ procedure TAlignment_SP.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
-  DetDef: TAI_DetectorDefine;
+  detDef: TAI_DetectorDefine;
   sp_desc: TSP_Desc;
 begin
   if sp_hnd = nil then
@@ -2206,14 +2315,14 @@ begin
       img := imgList[i];
       for j := 0 to img.DetectorDefineList.Count - 1 do
         begin
-          DetDef := img.DetectorDefineList[j];
+          detDef := img.DetectorDefineList[j];
 
-          sp_desc := AI.SP_Process(sp_hnd, DetDef.Owner.Raster, AIRect(DetDef.R), 1024);
+          sp_desc := AI.SP_Process(sp_hnd, detDef.Owner.Raster, AIRect(detDef.R), 1024);
           if length(sp_desc) > 0 then
             begin
-              DetDef.Part.Clear;
-              SPToVec(sp_desc, DetDef.Part);
-              DetDef.PrepareRaster.Reset;
+              detDef.Part.Clear;
+              SPToVec(sp_desc, detDef.Part);
+              detDef.PrepareRaster.Reset;
               SetLength(sp_desc, 0);
             end;
         end;
@@ -2224,7 +2333,7 @@ procedure TAlignment_MMOD.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
-  DetDef: TAI_DetectorDefine;
+  detDef: TAI_DetectorDefine;
   mmod_desc: TMMOD_Desc;
   mr: TMemoryRaster;
 begin
@@ -2240,10 +2349,10 @@ begin
       DisposeObject(mr);
       for j := 0 to length(mmod_desc) - 1 do
         begin
-          DetDef := TAI_DetectorDefine.Create(img);
-          DetDef.R := MakeRect(RectMul(mmod_desc[j].R, 0.25));
-          DetDef.Token := mmod_desc[j].Token;
-          img.DetectorDefineList.Add(DetDef);
+          detDef := TAI_DetectorDefine.Create(img);
+          detDef.R := MakeRect(RectMul(mmod_desc[j].R, 0.25));
+          detDef.Token := mmod_desc[j].Token;
+          img.DetectorDefineList.Add(detDef);
         end;
     end;
 end;
@@ -2252,7 +2361,7 @@ procedure TAlignment_FastMMOD.Alignment(imgList: TAI_ImageList);
 var
   i, j: Integer;
   img: TAI_Image;
-  DetDef: TAI_DetectorDefine;
+  detDef: TAI_DetectorDefine;
   mmod_desc: TMMOD_Desc;
 begin
   if MMOD_hnd = nil then
@@ -2264,10 +2373,10 @@ begin
       mmod_desc := AI.MMOD_DNN_Process(MMOD_hnd, img.Raster);
       for j := 0 to length(mmod_desc) - 1 do
         begin
-          DetDef := TAI_DetectorDefine.Create(img);
-          DetDef.R := MakeRect(mmod_desc[j].R);
-          DetDef.Token := mmod_desc[j].Token;
-          img.DetectorDefineList.Add(DetDef);
+          detDef := TAI_DetectorDefine.Create(img);
+          detDef.R := MakeRect(mmod_desc[j].R);
+          detDef.Token := mmod_desc[j].Token;
+          img.DetectorDefineList.Add(detDef);
         end;
     end;
 end;
@@ -4418,14 +4527,17 @@ var
   i: TLInt;
 begin
   Result := LMatrix(0, 0);
-  SetLength(l, length(RasterArray) * C_Metric_ResNet_Dim);
-  if Metric_ResNet_Process(hnd, RasterArray, @l[0]) > 0 then
+  if length(RasterArray) > 0 then
     begin
-      Result := LMatrix(length(RasterArray), 0);
-      for i := Low(Result) to high(Result) do
-          Result[i] := LVecCopy(l, i * C_Metric_ResNet_Dim, C_Metric_ResNet_Dim);
+      SetLength(l, length(RasterArray) * C_Metric_ResNet_Dim);
+      if Metric_ResNet_Process(hnd, RasterArray, @l[0]) > 0 then
+        begin
+          Result := LMatrix(length(RasterArray), 0);
+          for i := Low(Result) to high(Result) do
+              Result[i] := LVecCopy(l, i * C_Metric_ResNet_Dim, C_Metric_ResNet_Dim);
+        end;
+      SetLength(l, 0);
     end;
-  SetLength(l, 0);
 end;
 
 function TAI.Metric_ResNet_Process(hnd: TMDNN_Handle; Raster: TMemoryRaster): TLVec;
@@ -4443,7 +4555,7 @@ procedure TAI.Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd: TMDNN_Hand
 var
   i, j: Integer;
   imgData: TAI_Image;
-  DetDef: TAI_DetectorDefine;
+  detDef: TAI_DetectorDefine;
   mr: TMemoryRaster;
   v: TLVec;
 begin
@@ -4454,18 +4566,18 @@ begin
       imgData := imgList[i];
       for j := 0 to imgData.DetectorDefineList.Count - 1 do
         begin
-          DetDef := imgData.DetectorDefineList[j];
-          if DetDef.Token.Len > 0 then
-            if not DetDef.PrepareRaster.Empty then
+          detDef := imgData.DetectorDefineList[j];
+          if detDef.Token.Len > 0 then
+            if not detDef.PrepareRaster.Empty then
               begin
                 mr := NewRaster();
-                mr.ZoomFrom(DetDef.PrepareRaster, C_Metric_ResNet_Image_Size, C_Metric_ResNet_Image_Size);
+                mr.ZoomFrom(detDef.PrepareRaster, C_Metric_ResNet_Image_Size, C_Metric_ResNet_Image_Size);
                 v := Metric_ResNet_Process(mdnn_hnd, mr);
                 DisposeObject(mr);
                 if length(v) <> C_Metric_ResNet_Dim then
                     DoStatus('Metric-ResNet vector error!')
                 else
-                    lr.AddMemory(v, DetDef.Token);
+                    lr.AddMemory(v, detDef.Token);
               end;
         end;
     end;
@@ -4777,7 +4889,7 @@ procedure TAI.LMetric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd: TMDNN_Han
 var
   i, j: Integer;
   imgData: TAI_Image;
-  DetDef: TAI_DetectorDefine;
+  detDef: TAI_DetectorDefine;
   mr: TMemoryRaster;
   v: TLVec;
 begin
@@ -4788,18 +4900,18 @@ begin
       imgData := imgList[i];
       for j := 0 to imgData.DetectorDefineList.Count - 1 do
         begin
-          DetDef := imgData.DetectorDefineList[j];
-          if DetDef.Token.Len > 0 then
-            if not DetDef.PrepareRaster.Empty then
+          detDef := imgData.DetectorDefineList[j];
+          if detDef.Token.Len > 0 then
+            if not detDef.PrepareRaster.Empty then
               begin
                 mr := NewRaster();
-                mr.ZoomFrom(DetDef.PrepareRaster, C_LMetric_ResNet_Image_Size, C_LMetric_ResNet_Image_Size);
+                mr.ZoomFrom(detDef.PrepareRaster, C_LMetric_ResNet_Image_Size, C_LMetric_ResNet_Image_Size);
                 v := LMetric_ResNet_Process(mdnn_hnd, mr);
                 DisposeObject(mr);
                 if length(v) <> C_LMetric_ResNet_Dim then
                     DoStatus('LMetric-ResNet vector error!')
                 else
-                    lr.AddMemory(v, DetDef.Token);
+                    lr.AddMemory(v, detDef.Token);
               end;
         end;
     end;
@@ -4842,6 +4954,10 @@ begin
   Result^.iterations_without_progress_threshold := 500;
   Result^.learning_rate := 0.1;
   Result^.completed_learning_rate := 0.0001;
+  Result^.overlap_NMS_iou_thresh := 0.4;
+  Result^.overlap_NMS_percent_covered_thresh := 1.0;
+  Result^.overlap_ignore_iou_thresh := 0.5;
+  Result^.overlap_ignore_percent_covered_thresh := 1.0;
   Result^.num_crops := 10;
   Result^.chip_dims_x := 150;
   Result^.chip_dims_y := 150;
@@ -5112,6 +5228,12 @@ begin
   if not Assigned(AI_Ptr^.RNIC_Train) then
       exit;
 
+  if length(imgList) > C_ResNet_Image_Classifier_Dim then
+    begin
+      DoStatus('RNIC classifier out the max limit. %d > %d', [length(imgList), C_ResNet_Image_Classifier_Dim]);
+      exit;
+    end;
+
   imgSum := 0;
   for i := 0 to length(imgList) - 1 do
       inc(imgSum, length(imgList[i]));
@@ -5219,12 +5341,29 @@ var
   imgBuff: TMemoryRaster2DArray;
   i, j: Integer;
   out_index: TMemoryRasterList;
+  imgL: TAI_ImageList;
+  detDef: TAI_DetectorDefine;
 begin
   Result := False;
   if AI_Ptr = nil then
       exit;
   if not Assigned(AI_Ptr^.RNIC_Train) then
       exit;
+
+  DoStatus('Calibration RNIC dataset.');
+  for i := 0 to imgMat.Count - 1 do
+    begin
+      imgL := imgMat[i];
+      imgL.CalibrationNullDetectorDefineToken(imgL.FileInfo);
+      for j := 0 to imgL.Count - 1 do
+        if imgL[j].DetectorDefineList.Count = 0 then
+          begin
+            detDef := TAI_DetectorDefine.Create(imgL[j]);
+            detDef.R := imgL[j].Raster.BoundsRect;
+            detDef.Token := imgL.FileInfo;
+            imgL[j].DetectorDefineList.Add(detDef);
+          end;
+    end;
 
   Train_OutputIndex.Clear;
   imgBuff := imgMat.ExtractDetectorDefineAsSnapshot();
@@ -5355,6 +5494,321 @@ begin
   if (AI_Ptr <> nil) and Assigned(AI_Ptr^.RNIC_DebugInfo) and (hnd <> nil) then
     begin
       AI_Ptr^.RNIC_DebugInfo(hnd, p);
+      Result := p^;
+      Dispose(p);
+    end;
+end;
+
+class function TAI.Init_LRNIC_Train_Parameter(train_sync_file, train_output: TPascalString): PRNIC_Train_Parameter;
+begin
+  new(Result);
+  FillPtrByte(Result, SizeOf(TRNIC_Train_Parameter), 0);
+
+  Result^.imgArry_ptr := nil;
+  Result^.img_num := 0;
+  Result^.train_sync_file := Alloc_P_Bytes(train_sync_file);
+  Result^.train_output := Alloc_P_Bytes(train_output);
+
+  Result^.timeout := C_Tick_Hour;
+  Result^.weight_decay := 0.0001;
+  Result^.momentum := 0.9;
+  Result^.iterations_without_progress_threshold := 500;
+  Result^.learning_rate := 0.1;
+  Result^.completed_learning_rate := 0.0001;
+  Result^.all_bn_running_stats_window_sizes := 1000;
+  Result^.img_mini_batch := 10;
+
+  Result^.control := nil;
+  Result^.training_average_loss := 0;
+  Result^.training_learning_rate := 0;
+end;
+
+class procedure TAI.Free_LRNIC_Train_Parameter(param: PRNIC_Train_Parameter);
+begin
+  Free_P_Bytes(param^.train_sync_file);
+  Free_P_Bytes(param^.train_output);
+  Dispose(param);
+end;
+
+function TAI.LRNIC_Train(imgList: TMemoryRaster2DArray; param: PRNIC_Train_Parameter; Train_OutputIndex: TMemoryRasterList): Boolean;
+var
+  i, j, imgSum, ri: Integer;
+  imgArry: TMemoryRasterArray;
+  imgInfo_arry: array of TAI_Raster_Data;
+begin
+  Result := False;
+
+  if AI_Ptr = nil then
+      exit;
+  if not Assigned(AI_Ptr^.LRNIC_Train) then
+      exit;
+
+  if length(imgList) > C_LResNet_Image_Classifier_Dim then
+    begin
+      DoStatus('LRNIC classifier out the max limit. %d > %d', [length(imgList), C_LResNet_Image_Classifier_Dim]);
+      exit;
+    end;
+
+  imgSum := 0;
+  for i := 0 to length(imgList) - 1 do
+      inc(imgSum, length(imgList[i]));
+
+  if Train_OutputIndex <> nil then
+      Train_OutputIndex.Clear;
+  SetLength(imgInfo_arry, imgSum);
+  ri := 0;
+
+  for i := 0 to length(imgList) - 1 do
+    begin
+      imgArry := imgList[i];
+      for j := 0 to length(imgArry) - 1 do
+        begin
+          imgInfo_arry[ri].raster_ptr := imgArry[j].bits;
+          imgInfo_arry[ri].width := imgArry[j].width;
+          imgInfo_arry[ri].height := imgArry[j].height;
+          imgInfo_arry[ri].index := i;
+          imgArry[j].UserVariant := i;
+
+          if Train_OutputIndex <> nil then
+              Train_OutputIndex.Add(imgArry[j]);
+          inc(ri);
+        end;
+    end;
+
+  TrainingControl.pause := 0;
+  TrainingControl.stop := 0;
+
+  param^.imgArry_ptr := @imgInfo_arry[0];
+  param^.img_num := length(imgInfo_arry);
+  param^.control := @TrainingControl;
+
+  Result := AI_Ptr^.LRNIC_Train(param) > 0;
+
+  Last_training_average_loss := param^.training_average_loss;
+  Last_training_learning_rate := param^.training_learning_rate;
+
+  param^.imgArry_ptr := nil;
+  param^.img_num := 0;
+  param^.control := nil;
+
+  SetLength(imgInfo_arry, 0);
+end;
+
+function TAI.LRNIC_Train(imgList: TAI_ImageList; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
+var
+  imgBuff: TMemoryRaster2DArray;
+  i, j: Integer;
+  out_index: TMemoryRasterList;
+begin
+  Result := False;
+  if AI_Ptr = nil then
+      exit;
+  if not Assigned(AI_Ptr^.LRNIC_Train) then
+      exit;
+
+  Train_OutputIndex.Clear;
+  imgBuff := imgList.ExtractDetectorDefineAsSnapshot();
+  out_index := TMemoryRasterList.Create;
+  Result := LRNIC_Train(imgBuff, param, out_index);
+  if Result then
+    for i := 0 to out_index.Count - 1 do
+      if Train_OutputIndex.ExistsValue(out_index[i].UserToken) < 0 then
+          Train_OutputIndex.Add(out_index[i].UserToken);
+  DisposeObject(out_index);
+
+  for i := 0 to length(imgBuff) - 1 do
+    for j := 0 to length(imgBuff[i]) - 1 do
+        DisposeObject(imgBuff[i, j]);
+  SetLength(imgBuff, 0, 0);
+end;
+
+function TAI.LRNIC_Train(imgList: TAI_ImageList; param: PRNIC_Train_Parameter; train_index_output: TPascalString): Boolean;
+var
+  TrainIndex: TPascalStringList;
+begin
+  TrainIndex := TPascalStringList.Create;
+  Result := LRNIC_Train(imgList, param, TrainIndex);
+  if Result then
+      TrainIndex.SaveToFile(train_index_output);
+  DisposeObject(TrainIndex);
+end;
+
+function TAI.LRNIC_Train_Stream(imgList: TAI_ImageList; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
+var
+  fn: TPascalString;
+begin
+  Result := nil;
+
+  if LRNIC_Train(imgList, param, Train_OutputIndex) then
+    begin
+      fn := Get_P_Bytes_String(param^.train_output);
+      if umlFileExists(fn) then
+        begin
+          Result := TMemoryStream64.Create;
+          Result.LoadFromFile(fn);
+          Result.Position := 0;
+        end;
+    end;
+end;
+
+function TAI.LRNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): Boolean;
+var
+  imgBuff: TMemoryRaster2DArray;
+  i, j: Integer;
+  out_index: TMemoryRasterList;
+  imgL: TAI_ImageList;
+  detDef: TAI_DetectorDefine;
+begin
+  Result := False;
+  if AI_Ptr = nil then
+      exit;
+  if not Assigned(AI_Ptr^.LRNIC_Train) then
+      exit;
+
+  DoStatus('Calibration LRNIC dataset.');
+  for i := 0 to imgMat.Count - 1 do
+    begin
+      imgL := imgMat[i];
+      imgL.CalibrationNullDetectorDefineToken(imgL.FileInfo);
+      for j := 0 to imgL.Count - 1 do
+        if imgL[j].DetectorDefineList.Count = 0 then
+          begin
+            detDef := TAI_DetectorDefine.Create(imgL[j]);
+            detDef.R := imgL[j].Raster.BoundsRect;
+            detDef.Token := imgL.FileInfo;
+            imgL[j].DetectorDefineList.Add(detDef);
+          end;
+    end;
+
+  Train_OutputIndex.Clear;
+  imgBuff := imgMat.ExtractDetectorDefineAsSnapshot();
+  out_index := TMemoryRasterList.Create;
+  Result := LRNIC_Train(imgBuff, param, out_index);
+  if Result then
+    for i := 0 to out_index.Count - 1 do
+      if Train_OutputIndex.ExistsValue(out_index[i].UserToken) < 0 then
+          Train_OutputIndex.Add(out_index[i].UserToken);
+  DisposeObject(out_index);
+
+  for i := 0 to length(imgBuff) - 1 do
+    for j := 0 to length(imgBuff[i]) - 1 do
+        DisposeObject(imgBuff[i, j]);
+  SetLength(imgBuff, 0, 0);
+end;
+
+function TAI.LRNIC_Train(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; train_index_output: TPascalString): Boolean;
+var
+  TrainIndex: TPascalStringList;
+begin
+  TrainIndex := TPascalStringList.Create;
+  Result := LRNIC_Train(imgMat, param, TrainIndex);
+  if Result then
+      TrainIndex.SaveToFile(train_index_output);
+  DisposeObject(TrainIndex);
+end;
+
+function TAI.LRNIC_Train_Stream(imgMat: TAI_ImageMatrix; param: PRNIC_Train_Parameter; Train_OutputIndex: TPascalStringList): TMemoryStream64;
+var
+  fn: TPascalString;
+begin
+  Result := nil;
+
+  if LRNIC_Train(imgMat, param, Train_OutputIndex) then
+    begin
+      fn := Get_P_Bytes_String(param^.train_output);
+      if umlFileExists(fn) then
+        begin
+          Result := TMemoryStream64.Create;
+          Result.LoadFromFile(fn);
+          Result.Position := 0;
+        end;
+    end;
+end;
+
+function TAI.LRNIC_Open(train_file: TPascalString): TLRNIC_Handle;
+var
+  train_file_buff: P_Bytes;
+begin
+  if (AI_Ptr <> nil) and Assigned(AI_Ptr^.LRNIC_Init) then
+    begin
+      train_file_buff := Alloc_P_Bytes(train_file);
+      Result := AI_Ptr^.LRNIC_Init(train_file_buff);
+      Free_P_Bytes(train_file_buff);
+      if Result <> nil then
+          DoStatus('ResNet-Image-Classifier open: %s', [train_file.Text]);
+    end
+  else
+      Result := nil;
+end;
+
+function TAI.LRNIC_Open_Stream(stream: TMemoryStream64): TLRNIC_Handle;
+begin
+  if (AI_Ptr <> nil) and Assigned(AI_Ptr^.LRNIC_Init_Memory) then
+    begin
+      Result := AI_Ptr^.LRNIC_Init_Memory(stream.memory, stream.Size);
+      DoStatus('ResNet-Image-Classifier open memory %s size:%s', [umlPointerToStr(stream.memory).Text, umlSizeToStr(stream.Size).Text]);
+    end
+  else
+      Result := nil;
+end;
+
+function TAI.LRNIC_Open_Stream(train_file: TPascalString): TLRNIC_Handle;
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  m64.LoadFromFile(train_file);
+  Result := LRNIC_Open_Stream(m64);
+  DisposeObject(m64);
+  if Result <> nil then
+      DoStatus('ResNet-Image-Classifier open: %s', [train_file.Text]);
+end;
+
+function TAI.LRNIC_Close(var hnd: TLRNIC_Handle): Boolean;
+begin
+  if (AI_Ptr <> nil) and Assigned(AI_Ptr^.LRNIC_Free) and (hnd <> nil) then
+    begin
+      Result := AI_Ptr^.LRNIC_Free(hnd) = 0;
+      DoStatus('ResNet-Image-Classifier close.', []);
+    end
+  else
+      Result := False;
+
+  hnd := nil;
+end;
+
+function TAI.LRNIC_Process(hnd: TLRNIC_Handle; Raster: TMemoryRaster; num_crops: Integer): TLVec;
+var
+  R: Integer;
+begin
+  SetLength(Result, 0);
+  if hnd = nil then
+      exit;
+  if AI_Ptr = nil then
+      exit;
+  if not Assigned(AI_Ptr^.LRNIC_Process) then
+      exit;
+  SetLength(Result, C_LResNet_Image_Classifier_Dim);
+
+  R := AI_Ptr^.LRNIC_Process(hnd, num_crops, Raster.bits, Raster.width, Raster.height, @Result[0]);
+
+  if R <> C_LResNet_Image_Classifier_Dim then
+      SetLength(Result, 0);
+end;
+
+function TAI.LRNIC_Process(hnd: TLRNIC_Handle; Raster: TMemoryRaster): TLVec;
+begin
+  Result := LRNIC_Process(hnd, Raster, 24);
+end;
+
+function TAI.LRNIC_DebugInfo(hnd: TLRNIC_Handle): TPascalString;
+var
+  p: PPascalString;
+begin
+  Result := '';
+  if (AI_Ptr <> nil) and Assigned(AI_Ptr^.LRNIC_DebugInfo) and (hnd <> nil) then
+    begin
+      AI_Ptr^.LRNIC_DebugInfo(hnd, p);
       Result := p^;
       Dispose(p);
     end;

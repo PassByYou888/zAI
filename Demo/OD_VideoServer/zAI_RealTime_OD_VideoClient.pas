@@ -33,14 +33,14 @@ type
 {$ENDIF FPC}
   TRealTime_OD_VideoClient = class;
 
-  TOnOD_Result = procedure(Sender: TRealTime_OD_VideoClient; video_stream: TMemoryStream64; video_info: TOD_Video_Info) of object;
+  TOn_OD_Result = procedure(Sender: TRealTime_OD_VideoClient; video_stream: TMemoryStream64; video_info: TOD_Video_Info) of object;
 
   TRealTime_OD_VideoClient = class(TCommunicationFramework_DoubleTunnelClient_NoAuth)
   private
     procedure cmd_VideoBuffer(Sender: TPeerIO; InData: PByte; DataSize: NativeInt);
     procedure cmd_VideoInfo(Sender: TPeerIO; InData: TDataFrameEngine);
   public
-    OnOD_Result: TOnOD_Result;
+    On_OD_Result: TOn_OD_Result;
     constructor Create(ARecvTunnel, ASendTunnel: TCommunicationFrameworkClient);
     destructor Destroy; override;
 
@@ -110,8 +110,8 @@ begin
       video_info.Add(OD_data);
     end;
 
-  if Assigned(OnOD_Result) then
-      OnOD_Result(Self, TOD_VideoIO_(Sender.UserSpecial).VideoFrames.Last, video_info);
+  if Assigned(On_OD_Result) then
+      On_OD_Result(Self, TOD_VideoIO_(Sender.UserSpecial).VideoFrames.Last, video_info);
 
   DisposeObject(video_info);
   TOD_VideoIO_(Sender.UserSpecial).ClearVideoFrames;
@@ -140,7 +140,7 @@ begin
 
   RegisterCommand;
 
-  OnOD_Result := nil;
+  On_OD_Result := nil;
 end;
 
 destructor TRealTime_OD_VideoClient.Destroy;

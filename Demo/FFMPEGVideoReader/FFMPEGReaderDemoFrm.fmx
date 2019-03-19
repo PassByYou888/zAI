@@ -1,0 +1,21 @@
+object FFMPEGReaderDemoForm: TFFMPEGReaderDemoForm
+  Left = 0
+  Top = 0
+  Caption = 'FFMPEG Reader.'
+  ClientHeight = 474
+  ClientWidth = 826
+  Quality = HighPerformance
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnClose = FormClose
+  OnPaint = FormPaint
+  DesignerMasterStyle = 0
+  object Timer1: TTimer
+    Interval = 1
+    OnTimer = Timer1Timer
+    Left = 56
+    Top = 48
+  end
+end

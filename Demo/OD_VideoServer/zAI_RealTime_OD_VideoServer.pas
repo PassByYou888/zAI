@@ -148,7 +148,7 @@ begin
   DisposeObject(m64);
   DisposeObject(mr);
   SetLength(OD_desc, 0);
-  TComputeThread.RunM(p_recv_id, nil, Process_OD_Video);
+  Dispose(p_recv_id);
 end;
 
 procedure TRealTime_OD_VideoServer.cmd_OD(Sender: TPeerIO; InData: TDataFrameEngine);

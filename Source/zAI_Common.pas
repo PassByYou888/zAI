@@ -59,7 +59,7 @@ type
     procedure LoadFromStream(stream: TMemoryStream64);
   end;
 
-  TAI_Image_Script_RegisterProc = procedure(Sender: TAI_Image; opRT: TOpCustomRunTime) of object;
+  TAI_Image_Script_Register = procedure(Sender: TAI_Image; opRT: TOpCustomRunTime) of object;
 
   TAI_Image = class(TCoreClassObject)
   private
@@ -82,6 +82,7 @@ type
     function OP_Image_HistogramEqualize(var Param: TOpParam): Variant;
     function OP_Image_RemoveRedEyes(var Param: TOpParam): Variant;
     function OP_Image_Sepia(var Param: TOpParam): Variant;
+    function OP_Image_Blur(var Param: TOpParam): Variant;
     function OP_Image_CalibrateRotate(var Param: TOpParam): Variant;
     // process on detector
     function OP_Detector_SetLabel(var Param: TOpParam): Variant;
@@ -274,7 +275,7 @@ var
   AI_ModelTool: U_String;
   AI_TrainingServer: U_String;
 
-  On_Script_RegisterProc: TAI_Image_Script_RegisterProc;
+  On_Script_RegisterProc: TAI_Image_Script_Register;
 
 const
   // ext define
@@ -289,6 +290,7 @@ const
   C_Learn_Ext: SystemString = '.learn';
   C_MMOD_Ext: SystemString = '.svm_dnn_od';
   C_RNIC_Ext: SystemString = '.rnic';
+  C_LRNIC_Ext: SystemString = '.LRNIC';
 
 procedure ReadAIConfig; overload;
 procedure ReadAIConfig(ini: THashTextEngine); overload;
@@ -723,6 +725,7 @@ begin
   FOP_RT.RegOpM('RedEye', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_RemoveRedEyes);
 
   FOP_RT.RegOpM('Sepia', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Sepia);
+  FOP_RT.RegOpM('Blur', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_Blur);
 
   FOP_RT.RegOpM('CalibrateRotate', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate);
   FOP_RT.RegOpM('DocumentAlignment', {$IFDEF FPC}@{$ENDIF FPC}OP_Image_CalibrateRotate);
@@ -897,6 +900,25 @@ begin
   for i := 0 to DetectorDefineList.Count - 1 do
     if not DetectorDefineList[i].PrepareRaster.Empty then
         Sepia32(DetectorDefineList[i].PrepareRaster, Param[0]);
+  Result := True;
+end;
+
+function TAI_Image.OP_Image_Blur(var Param: TOpParam): Variant;
+var
+  i: Integer;
+begin
+  DoStatus('image script on Sepia');
+
+  if not Raster.Empty then
+    begin
+      GaussianBlur(Raster, Param[0], Raster.BoundsRect);
+      if Raster is TDETexture then
+          TDETexture(Raster).ReleaseFMXResource;
+    end;
+
+  for i := 0 to DetectorDefineList.Count - 1 do
+    if not DetectorDefineList[i].PrepareRaster.Empty then
+        GaussianBlur(DetectorDefineList[i].PrepareRaster, Param[0], DetectorDefineList[i].PrepareRaster.BoundsRect);
   Result := True;
 end;
 
@@ -2882,19 +2904,25 @@ function TAI_ImageMatrix.ExtractDetectorDefineAsSnapshot: TMemoryRaster2DArray;
     for i := 0 to imgList.Count - 1 do
       begin
         imgData := imgList[i];
-        for j := 0 to imgData.DetectorDefineList.Count - 1 do
+        if imgData.DetectorDefineList.Count > 0 then
           begin
-            DetDef := imgData.DetectorDefineList[j];
-            if DetDef.Token <> '' then
+            for j := 0 to imgData.DetectorDefineList.Count - 1 do
               begin
-                mr := NewRaster();
-                mr.SetWorkMemory(DetDef.Owner.Raster);
-                mr.UserToken := DetDef.Token;
-                if not hList.Exists(DetDef.Token) then
-                    hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
-                if TMemoryRasterList(hList[DetDef.Token]).IndexOf(mr) < 0 then
-                    TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+                DetDef := imgData.DetectorDefineList[j];
+                if DetDef.Token <> '' then
+                  begin
+                    mr := NewRaster();
+                    mr.SetWorkMemory(DetDef.Owner.Raster);
+                    mr.UserToken := DetDef.Token;
+                    if not hList.Exists(DetDef.Token) then
+                        hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+                    if TMemoryRasterList(hList[DetDef.Token]).IndexOf(mr) < 0 then
+                        TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+                  end;
               end;
+          end
+        else
+          begin
           end;
       end;
   end;

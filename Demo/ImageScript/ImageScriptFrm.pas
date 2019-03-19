@@ -9,7 +9,8 @@ uses
   System.IOUtils,
 
   CoreClasses, PascalStrings, UnicodeMixedLib, DoStatusIO,
-  Geometry2DUnit, zDrawEngine, MemoryRaster, zDrawEngineInterface_SlowFMX, zAI_Common, FMX.Controls.Presentation, FMX.StdCtrls, FMX.Edit, FMX.Layouts;
+  Geometry2DUnit, zDrawEngine, MemoryRaster, zDrawEngineInterface_SlowFMX, zAI_Common, FMX.Controls.Presentation, FMX.StdCtrls, FMX.Edit, FMX.Layouts,
+  FMX.ScrollBox, FMX.Memo;
 
 type
   TForm1 = class(TForm)
@@ -21,6 +22,7 @@ type
     Label1: TLabel;
     conditionEdit: TEdit;
     RunButton: TButton;
+    Memo1: TMemo;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
@@ -46,7 +48,7 @@ implementation
 
 procedure TForm1.DoStatusMethod(AText: SystemString; const ID: Integer);
 begin
-  DrawPool(Self).PostScrollText(15, AText, 16, DEColor(1,0,0,1));
+  Memo1.Lines.Add(AText);
 end;
 
 procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);

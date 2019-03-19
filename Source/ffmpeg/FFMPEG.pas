@@ -67,11 +67,10 @@ uses
 {$ENDIF FPC}
   Classes;
 
-{$IFDEF API_Dynamic}
 procedure Load_ffmpeg();
 procedure Free_ffmpeg();
-{$ENDIF API_Dynamic}
 
+{$Region 'compiler const'}
 
 const
   // libavcodec
@@ -691,6 +690,7 @@ const
     {$DEFINE FF_API_SWS_VECTOR}
   {$IFEND}
 {$ENDIF}
+{$EndRegion 'compiler const'}
 
 const
 {$IF Defined(WIN32) or Defined(WIN64)}
@@ -30448,8 +30448,6 @@ begin
 end;
 
 
-{$IFDEF API_Dynamic}
-
 
 var
   AVUTIL_LIBNAME_HND: HMODULE = 0;
@@ -30462,11 +30460,12 @@ var
 
 function GetExtLib(LibName: string): HMODULE;
 begin
-  Result := 0;
 {$IF not(Defined(IOS) and Defined(CPUARM))}
   Result := LoadLibrary(PChar(LibName));
   if Result = 0 then
       raise Exception.Create(format('LoadLibrary failed:%s', [LibName]));
+{$ELSE}
+  Result := 0;
 {$IFEND}
 end;
 
@@ -30476,7 +30475,6 @@ begin
   Result := GetProcAddress(AVUTIL_LIBNAME_HND, PChar(ProcName));
   if Result = nil then
       raise Exception.Create(format('external libray error: AVUTIL %s', [ProcName]));
-
 {$ELSE}
   Result := nil;
 {$IFEND}
@@ -30488,7 +30486,6 @@ begin
   Result := GetProcAddress(AVCODEC_LIBNAME_HND, PChar(ProcName));
   if Result = nil then
       raise Exception.Create(format('external libray error: AVCODEC %s', [ProcName]));
-
 {$ELSE}
   Result := nil;
 {$IFEND}
@@ -30500,7 +30497,6 @@ begin
   Result := GetProcAddress(AVFORMAT_LIBNAME_HND, PChar(ProcName));
   if Result = nil then
       raise Exception.Create(format('external libray error: AVFORMAT %s', [ProcName]));
-
 {$ELSE}
   Result := nil;
 {$IFEND}
@@ -30512,7 +30508,6 @@ begin
   Result := GetProcAddress(AVFILTER_LIBNAME_HND, PChar(ProcName));
   if Result = nil then
       raise Exception.Create(format('external libray error: AVFORMAT %s', [ProcName]));
-
 {$ELSE}
   Result := nil;
 {$IFEND}
@@ -30524,7 +30519,6 @@ begin
   Result := GetProcAddress(AVDEVICE_LIBNAME_HND, PChar(ProcName));
   if Result = nil then
       raise Exception.Create(format('external libray error: AVFORMAT %s', [ProcName]));
-
 {$ELSE}
   Result := nil;
 {$IFEND}
@@ -30536,7 +30530,6 @@ begin
   Result := GetProcAddress(SWRESAMPLE_LIBNAME_HND, PChar(ProcName));
   if Result = nil then
       raise Exception.Create(format('external libray error: AVFORMAT %s', [ProcName]));
-
 {$ELSE}
   Result := nil;
 {$IFEND}
@@ -30548,7 +30541,6 @@ begin
   Result := GetProcAddress(SWSCALE_LIBNAME_HND, PChar(ProcName));
   if Result = nil then
       raise Exception.Create(format('external libray error: AVFORMAT %s', [ProcName]));
-
 {$ELSE}
   Result := nil;
 {$IFEND}
@@ -30556,6 +30548,7 @@ end;
 
 procedure Load_ffmpeg();
 begin
+{$IFDEF API_Dynamic}
   AVUTIL_LIBNAME_HND := GetExtLib(AVUTIL_LIBNAME);
   AVCODEC_LIBNAME_HND := GetExtLib(AVCODEC_LIBNAME);
   AVFORMAT_LIBNAME_HND := GetExtLib(AVFORMAT_LIBNAME);
@@ -31389,10 +31382,13 @@ begin
   sws_convertPalette8ToPacked32 := GetExtProc_SWSCALE_LIBNAME(_PU + 'sws_convertPalette8ToPacked32');
   sws_convertPalette8ToPacked24 := GetExtProc_SWSCALE_LIBNAME(_PU + 'sws_convertPalette8ToPacked24');
   sws_get_class := GetExtProc_SWSCALE_LIBNAME(_PU + 'sws_get_class');
+{$ENDIF API_Dynamic}
+  av_register_all();
 end;
 
 procedure Free_ffmpeg();
 begin
+{$IFDEF API_Dynamic}
   av_reduce := nil;
   av_nearer_q := nil;
   av_find_nearest_q_idx := nil;
@@ -32226,14 +32222,16 @@ begin
   FreeLibrary(AVDEVICE_LIBNAME_HND);
   FreeLibrary(SWRESAMPLE_LIBNAME_HND);
   FreeLibrary(SWSCALE_LIBNAME_HND);
-end;
-
 {$ENDIF API_Dynamic}
+end;
 
 
 initialization
 
+Load_ffmpeg();
 
 finalization
+
+Free_ffmpeg();
 
 end.

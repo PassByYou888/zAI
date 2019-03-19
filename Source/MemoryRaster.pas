@@ -388,12 +388,11 @@ type
 {$ENDIF FPC}
   TMemoryRasterList = TMemoryRasterList_Decl;
 
-  TRaster = class(TMemoryRaster)
-  end;
-
-  TRasterArray = array of TRaster;
-
+  TRasterArray = array of TMemoryRaster;
   TRasterMatrix = array of TRasterArray;
+
+  TRaster = TMemoryRaster;
+
 {$ENDREGION 'MemoryRaster'}
 
 {$REGION 'TSequenceMemoryRaster'}
@@ -657,6 +656,8 @@ procedure Wait_SystemFont_Init;
 
 procedure FillRasterColor(var x; Count: Cardinal; Value: TRasterColor);
 procedure CopyRasterColor(const Source; var dest; Count: Cardinal);
+
+procedure DisposeRasterArray(var arry: TMemoryRasterArray);
 
 procedure BlendBlock(Dst: TMemoryRaster; dstRect: TRect; Src: TMemoryRaster; Srcx, Srcy: Integer; CombineOp: TDrawMode);
 procedure BlockTransfer(Dst: TMemoryRaster; Dstx: Integer; Dsty: Integer; DstClip: TRect; Src: TMemoryRaster; SrcRect: TRect; CombineOp: TDrawMode);

@@ -69,18 +69,6 @@
         <Projects Include="zDrawEngine_HelloWorld\zDrawEngine_HelloWorld.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="Reponse_FaceServer\Rep_FaceRecServ.dproj">
-            <Dependencies/>
-        </Projects>
-        <Projects Include="Reponse_FaceServer\Rep_FaceRecCli.dproj">
-            <Dependencies/>
-        </Projects>
-        <Projects Include="OD_VideoServer\realtime_OD_videoserv.dproj">
-            <Dependencies/>
-        </Projects>
-        <Projects Include="OD_VideoServer\realtime_OD_Video_FMXClient.dproj">
-            <Dependencies/>
-        </Projects>
         <Projects Include="ImageScript\ImageScriptDemo.dproj">
             <Dependencies/>
         </Projects>
@@ -94,6 +82,33 @@
             <Dependencies/>
         </Projects>
         <Projects Include="Analysis-Train-Demo\Analysis_numberTrain.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Reponse_FaceServer\Rep_FaceRecServ.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Reponse_FaceServer\Rep_FaceRecCli.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="OD_VideoServer\realtime_OD_videoserv.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="OD_VideoServer\realtime_OD_Video_FMXClient.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="MMOD_VideoServer\realtime_MMOD_videoserv.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="MMOD_VideoServer\realtime_MMOD_Video_FMXClient.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Face_VideoServer\realtime_Face_videoserv.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Face_VideoServer\realtime_Face_Video_FMXClient.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="FFMPEGVideoReader\FFMPEG_ReaderDemo.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -302,42 +317,6 @@
     <Target Name="zDrawEngine_HelloWorld:Make">
         <MSBuild Projects="zDrawEngine_HelloWorld\zDrawEngine_HelloWorld.dproj" Targets="Make"/>
     </Target>
-    <Target Name="Rep_FaceRecServ">
-        <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecServ.dproj"/>
-    </Target>
-    <Target Name="Rep_FaceRecServ:Clean">
-        <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecServ.dproj" Targets="Clean"/>
-    </Target>
-    <Target Name="Rep_FaceRecServ:Make">
-        <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecServ.dproj" Targets="Make"/>
-    </Target>
-    <Target Name="Rep_FaceRecCli">
-        <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecCli.dproj"/>
-    </Target>
-    <Target Name="Rep_FaceRecCli:Clean">
-        <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecCli.dproj" Targets="Clean"/>
-    </Target>
-    <Target Name="Rep_FaceRecCli:Make">
-        <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecCli.dproj" Targets="Make"/>
-    </Target>
-    <Target Name="realtime_OD_videoserv">
-        <MSBuild Projects="OD_VideoServer\realtime_OD_videoserv.dproj"/>
-    </Target>
-    <Target Name="realtime_OD_videoserv:Clean">
-        <MSBuild Projects="OD_VideoServer\realtime_OD_videoserv.dproj" Targets="Clean"/>
-    </Target>
-    <Target Name="realtime_OD_videoserv:Make">
-        <MSBuild Projects="OD_VideoServer\realtime_OD_videoserv.dproj" Targets="Make"/>
-    </Target>
-    <Target Name="realtime_OD_Video_FMXClient">
-        <MSBuild Projects="OD_VideoServer\realtime_OD_Video_FMXClient.dproj"/>
-    </Target>
-    <Target Name="realtime_OD_Video_FMXClient:Clean">
-        <MSBuild Projects="OD_VideoServer\realtime_OD_Video_FMXClient.dproj" Targets="Clean"/>
-    </Target>
-    <Target Name="realtime_OD_Video_FMXClient:Make">
-        <MSBuild Projects="OD_VideoServer\realtime_OD_Video_FMXClient.dproj" Targets="Make"/>
-    </Target>
     <Target Name="ImageScriptDemo">
         <MSBuild Projects="ImageScript\ImageScriptDemo.dproj"/>
     </Target>
@@ -383,14 +362,95 @@
     <Target Name="Analysis_numberTrain:Make">
         <MSBuild Projects="Analysis-Train-Demo\Analysis_numberTrain.dproj" Targets="Make"/>
     </Target>
+    <Target Name="Rep_FaceRecServ">
+        <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecServ.dproj"/>
+    </Target>
+    <Target Name="Rep_FaceRecServ:Clean">
+        <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecServ.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Rep_FaceRecServ:Make">
+        <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecServ.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Rep_FaceRecCli">
+        <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecCli.dproj"/>
+    </Target>
+    <Target Name="Rep_FaceRecCli:Clean">
+        <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecCli.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Rep_FaceRecCli:Make">
+        <MSBuild Projects="Reponse_FaceServer\Rep_FaceRecCli.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="realtime_OD_videoserv">
+        <MSBuild Projects="OD_VideoServer\realtime_OD_videoserv.dproj"/>
+    </Target>
+    <Target Name="realtime_OD_videoserv:Clean">
+        <MSBuild Projects="OD_VideoServer\realtime_OD_videoserv.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="realtime_OD_videoserv:Make">
+        <MSBuild Projects="OD_VideoServer\realtime_OD_videoserv.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="realtime_OD_Video_FMXClient">
+        <MSBuild Projects="OD_VideoServer\realtime_OD_Video_FMXClient.dproj"/>
+    </Target>
+    <Target Name="realtime_OD_Video_FMXClient:Clean">
+        <MSBuild Projects="OD_VideoServer\realtime_OD_Video_FMXClient.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="realtime_OD_Video_FMXClient:Make">
+        <MSBuild Projects="OD_VideoServer\realtime_OD_Video_FMXClient.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="realtime_MMOD_videoserv">
+        <MSBuild Projects="MMOD_VideoServer\realtime_MMOD_videoserv.dproj"/>
+    </Target>
+    <Target Name="realtime_MMOD_videoserv:Clean">
+        <MSBuild Projects="MMOD_VideoServer\realtime_MMOD_videoserv.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="realtime_MMOD_videoserv:Make">
+        <MSBuild Projects="MMOD_VideoServer\realtime_MMOD_videoserv.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="realtime_MMOD_Video_FMXClient">
+        <MSBuild Projects="MMOD_VideoServer\realtime_MMOD_Video_FMXClient.dproj"/>
+    </Target>
+    <Target Name="realtime_MMOD_Video_FMXClient:Clean">
+        <MSBuild Projects="MMOD_VideoServer\realtime_MMOD_Video_FMXClient.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="realtime_MMOD_Video_FMXClient:Make">
+        <MSBuild Projects="MMOD_VideoServer\realtime_MMOD_Video_FMXClient.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="realtime_Face_videoserv">
+        <MSBuild Projects="Face_VideoServer\realtime_Face_videoserv.dproj"/>
+    </Target>
+    <Target Name="realtime_Face_videoserv:Clean">
+        <MSBuild Projects="Face_VideoServer\realtime_Face_videoserv.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="realtime_Face_videoserv:Make">
+        <MSBuild Projects="Face_VideoServer\realtime_Face_videoserv.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="realtime_Face_Video_FMXClient">
+        <MSBuild Projects="Face_VideoServer\realtime_Face_Video_FMXClient.dproj"/>
+    </Target>
+    <Target Name="realtime_Face_Video_FMXClient:Clean">
+        <MSBuild Projects="Face_VideoServer\realtime_Face_Video_FMXClient.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="realtime_Face_Video_FMXClient:Make">
+        <MSBuild Projects="Face_VideoServer\realtime_Face_Video_FMXClient.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="FFMPEG_ReaderDemo">
+        <MSBuild Projects="FFMPEGVideoReader\FFMPEG_ReaderDemo.dproj"/>
+    </Target>
+    <Target Name="FFMPEG_ReaderDemo:Clean">
+        <MSBuild Projects="FFMPEGVideoReader\FFMPEG_ReaderDemo.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FFMPEG_ReaderDemo:Make">
+        <MSBuild Projects="FFMPEGVideoReader\FFMPEG_ReaderDemo.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_CPU_Parallel;Face_Det_GPU;Face_Alignment;Face_Alignment_Parallel;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;ResNetImgClassifier;ResNetImgClassifier2;FastSurfDemo;VideoTrackerAndSoftDecode_GPU;VideoTrackerAndSoftDecode_CPU;RasterizationFormatDemo;zDrawEngine_HelloWorld;Rep_FaceRecServ;Rep_FaceRecCli;realtime_OD_videoserv;realtime_OD_Video_FMXClient;ImageScriptDemo;Analysis_EasyConsoleDemo;Analysis_RandomForestDemo;Analysis_Decision;Analysis_numberTrain"/>
+        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_CPU_Parallel;Face_Det_GPU;Face_Alignment;Face_Alignment_Parallel;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;ResNetImgClassifier;ResNetImgClassifier2;FastSurfDemo;VideoTrackerAndSoftDecode_GPU;VideoTrackerAndSoftDecode_CPU;RasterizationFormatDemo;zDrawEngine_HelloWorld;ImageScriptDemo;Analysis_EasyConsoleDemo;Analysis_RandomForestDemo;Analysis_Decision;Analysis_numberTrain;Rep_FaceRecServ;Rep_FaceRecCli;realtime_OD_videoserv;realtime_OD_Video_FMXClient;realtime_MMOD_videoserv;realtime_MMOD_Video_FMXClient;realtime_Face_videoserv;realtime_Face_Video_FMXClient;FFMPEG_ReaderDemo"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_CPU_Parallel:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Alignment_Parallel:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;ResNetImgClassifier:Clean;ResNetImgClassifier2:Clean;FastSurfDemo:Clean;VideoTrackerAndSoftDecode_GPU:Clean;VideoTrackerAndSoftDecode_CPU:Clean;RasterizationFormatDemo:Clean;zDrawEngine_HelloWorld:Clean;Rep_FaceRecServ:Clean;Rep_FaceRecCli:Clean;realtime_OD_videoserv:Clean;realtime_OD_Video_FMXClient:Clean;ImageScriptDemo:Clean;Analysis_EasyConsoleDemo:Clean;Analysis_RandomForestDemo:Clean;Analysis_Decision:Clean;Analysis_numberTrain:Clean"/>
+        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_CPU_Parallel:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Alignment_Parallel:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;ResNetImgClassifier:Clean;ResNetImgClassifier2:Clean;FastSurfDemo:Clean;VideoTrackerAndSoftDecode_GPU:Clean;VideoTrackerAndSoftDecode_CPU:Clean;RasterizationFormatDemo:Clean;zDrawEngine_HelloWorld:Clean;ImageScriptDemo:Clean;Analysis_EasyConsoleDemo:Clean;Analysis_RandomForestDemo:Clean;Analysis_Decision:Clean;Analysis_numberTrain:Clean;Rep_FaceRecServ:Clean;Rep_FaceRecCli:Clean;realtime_OD_videoserv:Clean;realtime_OD_Video_FMXClient:Clean;realtime_MMOD_videoserv:Clean;realtime_MMOD_Video_FMXClient:Clean;realtime_Face_videoserv:Clean;realtime_Face_Video_FMXClient:Clean;FFMPEG_ReaderDemo:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_CPU_Parallel:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Alignment_Parallel:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;ResNetImgClassifier:Make;ResNetImgClassifier2:Make;FastSurfDemo:Make;VideoTrackerAndSoftDecode_GPU:Make;VideoTrackerAndSoftDecode_CPU:Make;RasterizationFormatDemo:Make;zDrawEngine_HelloWorld:Make;Rep_FaceRecServ:Make;Rep_FaceRecCli:Make;realtime_OD_videoserv:Make;realtime_OD_Video_FMXClient:Make;ImageScriptDemo:Make;Analysis_EasyConsoleDemo:Make;Analysis_RandomForestDemo:Make;Analysis_Decision:Make;Analysis_numberTrain:Make"/>
+        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_CPU_Parallel:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Alignment_Parallel:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;ResNetImgClassifier:Make;ResNetImgClassifier2:Make;FastSurfDemo:Make;VideoTrackerAndSoftDecode_GPU:Make;VideoTrackerAndSoftDecode_CPU:Make;RasterizationFormatDemo:Make;zDrawEngine_HelloWorld:Make;ImageScriptDemo:Make;Analysis_EasyConsoleDemo:Make;Analysis_RandomForestDemo:Make;Analysis_Decision:Make;Analysis_numberTrain:Make;Rep_FaceRecServ:Make;Rep_FaceRecCli:Make;realtime_OD_videoserv:Make;realtime_OD_Video_FMXClient:Make;realtime_MMOD_videoserv:Make;realtime_MMOD_Video_FMXClient:Make;realtime_Face_videoserv:Make;realtime_Face_Video_FMXClient:Make;FFMPEG_ReaderDemo:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

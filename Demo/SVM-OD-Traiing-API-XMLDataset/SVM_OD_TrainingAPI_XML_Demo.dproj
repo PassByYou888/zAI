@@ -161,9 +161,9 @@
                 </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="3">
-                <DeployFile LocalName="..\Binary\SVM_OD_TrainingAPI_XML_Demo.rsm" Configuration="Debug" Class="DebugSymbols">
+                <DeployFile LocalName="..\Binary\SVM_OD_TrainingAPI_XML_Demo.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win64">
-                        <RemoteName>SVM_OD_TrainingAPI_XML_Demo.rsm</RemoteName>
+                        <RemoteName>SVM_OD_TrainingAPI_XML_Demo.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -173,9 +173,9 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\Binary\SVM_OD_TrainingAPI_XML_Demo.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\Binary\SVM_OD_TrainingAPI_XML_Demo.rsm" Configuration="Debug" Class="DebugSymbols">
                     <Platform Name="Win64">
-                        <RemoteName>SVM_OD_TrainingAPI_XML_Demo.exe</RemoteName>
+                        <RemoteName>SVM_OD_TrainingAPI_XML_Demo.rsm</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

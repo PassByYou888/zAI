@@ -90,4 +90,17 @@ object Form1: TForm1
     Text = 'Run'
     OnClick = RunButtonClick
   end
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Anchors = [akTop, akRight, akBottom]
+    Position.X = 520.000000000000000000
+    Position.Y = 136.000000000000000000
+    Size.Width = 297.000000000000000000
+    Size.Height = 329.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 6
+    Viewport.Width = 293.000000000000000000
+    Viewport.Height = 325.000000000000000000
+  end
 end

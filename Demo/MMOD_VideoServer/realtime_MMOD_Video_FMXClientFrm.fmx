@@ -1,0 +1,25 @@
+object realtime_MMOD_Video_FMXClientForm: Trealtime_MMOD_Video_FMXClientForm
+  Left = 0
+  Top = 0
+  Caption = 'Realtime MMOD video-stream'
+  ClientHeight = 410
+  ClientWidth = 736
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnPaint = FormPaint
+  DesignerMasterStyle = 0
+  object SysProgress_Timer: TTimer
+    Interval = 10
+    OnTimer = SysProgress_TimerTimer
+    Left = 352
+    Top = 192
+  end
+  object Video_RealSendTimer: TTimer
+    Interval = 10
+    OnTimer = Video_RealSendTimerTimer
+    Left = 352
+    Top = 272
+  end
+end

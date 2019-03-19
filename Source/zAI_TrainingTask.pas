@@ -48,6 +48,7 @@ type
 
     procedure Write(name: SystemString; m64: TMemoryStream64); overload;
     procedure Write(name: SystemString; data: THashVariantList); overload;
+    procedure Write(name: SystemString; data: THashStringList); overload;
     procedure Write(name: SystemString; data: TPascalStringList); overload;
     procedure Write(name: SystemString; data: TCoreClassStrings); overload;
     procedure Write(name: SystemString; data: TMemoryRaster); overload;
@@ -57,6 +58,7 @@ type
 
     procedure Read(name: SystemString; m64: TMemoryStream64); overload;
     procedure Read(name: SystemString; data: THashVariantList); overload;
+    procedure Read(name: SystemString; data: THashStringList); overload;
     procedure Read(name: SystemString; data: TPascalStringList); overload;
     procedure Read(name: SystemString; data: TCoreClassStrings); overload;
     procedure Read(name: SystemString; data: TMemoryRaster); overload;
@@ -181,6 +183,16 @@ begin
   DisposeObject(m64);
 end;
 
+procedure TTrainingTask.Write(name: SystemString; data: THashStringList);
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  data.SaveToStream(m64);
+  Write(Name, m64);
+  DisposeObject(m64);
+end;
+
 procedure TTrainingTask.Write(name: SystemString; data: TPascalStringList);
 var
   m64: TMemoryStream64;
@@ -226,7 +238,7 @@ var
   m64: TMemoryStream64;
 begin
   m64 := TMemoryStream64.Create;
-  data.SaveToStream(m64, SaveImg, TRasterSave.rsJPEG_RGB_Qualily90);
+  data.SaveToStream(m64, SaveImg, TRasterSave.rsJPEG_RGB_Qualily80);
   Write(Name, m64);
   DisposeObject(m64);
 end;
@@ -256,6 +268,17 @@ begin
 end;
 
 procedure TTrainingTask.Read(name: SystemString; data: THashVariantList);
+var
+  m64: TMemoryStream64;
+begin
+  data.Clear;
+  m64 := TMemoryStream64.Create;
+  read(name, m64);
+  data.LoadFromStream(m64);
+  DisposeObject(m64);
+end;
+
+procedure TTrainingTask.Read(name: SystemString; data: THashStringList);
 var
   m64: TMemoryStream64;
 begin
@@ -439,6 +462,13 @@ begin
       if not Result then
           report := PFormat('error training source: %s', [inputfile1])
     end
+  else if umlMultipleMatch(['TrainLRNIC', 'TrainingLRNIC', 'TrainLResNetImageClassifier'], ComputeFunc) then
+    begin
+      inputfile1 := Param.GetDefaultValue('source', '');
+      Result := Exists(inputfile1);
+      if not Result then
+          report := PFormat('error training source: %s', [inputfile1])
+    end
   else
     begin
       report := 'illegal ComputeFunc.';
@@ -571,6 +601,19 @@ begin
       else
           report := PFormat('error training sync file: %s', [outputfile]);
     end
+  else if umlMultipleMatch(['TrainLRNIC', 'TrainingLRNIC', 'TrainLResNetImageClassifier'], ComputeFunc) then
+    begin
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_LRNIC_Ext + '.sync');
+      if Exists(outputfile) then
+        begin
+          outputfile := Param.GetDefaultValue('output', 'output' + C_LRNIC_Ext);
+          Result := Exists(outputfile);
+          if not Result then
+              report := PFormat('error training output: %s', [outputfile]);
+        end
+      else
+          report := PFormat('error training sync file: %s', [outputfile]);
+    end
   else
     begin
       report := 'illegal ComputeFunc.';
@@ -687,6 +730,17 @@ begin
       inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_RNIC_Ext + '.sync');
       syncfile := Param.GetDefaultValue('output.sync', 'output' + C_RNIC_Ext + '.sync');
       outputfile := Param.GetDefaultValue('output', 'output' + C_RNIC_Ext);
+      CopyTo(paramFile, dest, paramFile);
+      CopyTo(inputfile1, dest, inputfile1);
+      CopyTo(syncfile, dest, inputfile2);
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainLRNIC', 'TrainingLRNIC', 'TrainLResNetImageClassifier'], ComputeFunc) then
+    begin
+      inputfile1 := Param.GetDefaultValue('source', '');
+      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_LRNIC_Ext + '.sync');
+      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_LRNIC_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output', 'output' + C_LRNIC_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(syncfile, dest, inputfile2);

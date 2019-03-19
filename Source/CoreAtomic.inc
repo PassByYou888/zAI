@@ -35,9 +35,8 @@ begin
 {$ELSE ANTI_DEAD_ATOMIC_LOCK}
   while L do
       NOP;
-
-  L := True;
 {$ENDIF ANTI_DEAD_ATOMIC_LOCK}
+  L := True;
 end;
 
 procedure TSoftCritical.Release;

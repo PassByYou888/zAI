@@ -115,7 +115,7 @@ begin
             param^.timeout := C_Tick_Hour * 8;
 
             // 收敛梯度的处理条件
-            // 在收敛梯度中，只要失效步数进度达到高于该数值，梯度就会开始收敛
+            // 在收敛梯度中，只要失效步数高于该数值，梯度就会开始收敛
             param^.iterations_without_progress_threshold := 3000;
 
             // 这个数值是在输入net时使用的，简单来解释，这是可以滑动统计的参考尺度

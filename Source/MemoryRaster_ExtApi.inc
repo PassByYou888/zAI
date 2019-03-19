@@ -79,6 +79,17 @@ begin
   CopyPtr(@Source, @dest, Count shl 2);
 end;
 
+procedure DisposeRasterArray(var arry: TMemoryRasterArray);
+var
+  i: Integer;
+begin
+  for i := 0 to length(arry) - 1 do
+    begin
+      DisposeObject(arry[i]);
+      arry[i] := nil;
+    end;
+end;
+
 procedure BlendBlock(Dst: TMemoryRaster; dstRect: TRect; Src: TMemoryRaster; Srcx, Srcy: Integer; CombineOp: TDrawMode);
 var
   SrcP, DstP: PRasterColor;

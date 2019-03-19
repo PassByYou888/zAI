@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{94E74515-D2CC-4143-9065-2F4158EACAFE}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="realtime_MMOD_videoserv.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="realtime_MMOD_Video_FMXClient.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="realtime_MMOD_videoserv">
+        <MSBuild Projects="realtime_MMOD_videoserv.dproj"/>
+    </Target>
+    <Target Name="realtime_MMOD_videoserv:Clean">
+        <MSBuild Projects="realtime_MMOD_videoserv.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="realtime_MMOD_videoserv:Make">
+        <MSBuild Projects="realtime_MMOD_videoserv.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="realtime_MMOD_Video_FMXClient">
+        <MSBuild Projects="realtime_MMOD_Video_FMXClient.dproj"/>
+    </Target>
+    <Target Name="realtime_MMOD_Video_FMXClient:Clean">
+        <MSBuild Projects="realtime_MMOD_Video_FMXClient.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="realtime_MMOD_Video_FMXClient:Make">
+        <MSBuild Projects="realtime_MMOD_Video_FMXClient.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="realtime_MMOD_videoserv;realtime_MMOD_Video_FMXClient"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="realtime_MMOD_videoserv:Clean;realtime_MMOD_Video_FMXClient:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="realtime_MMOD_videoserv:Make;realtime_MMOD_Video_FMXClient:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

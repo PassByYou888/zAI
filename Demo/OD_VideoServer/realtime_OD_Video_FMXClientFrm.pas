@@ -43,6 +43,7 @@ implementation
 
 {$R *.fmx}
 
+
 procedure Trealtime_OD_Video_FMXClientForm.CadencerProgress(const deltaTime, newTime: Double);
 begin
   EnginePool.Progress(deltaTime);
@@ -88,7 +89,7 @@ begin
   cadencer_eng.ProgressInterface := Self;
 
   realtime_od_cli := TRealTime_OD_VideoClient.Create(TPhysicsClient.Create, TPhysicsClient.Create);
-  realtime_od_cli.OnOD_Result := OD_Result;
+  realtime_od_cli.On_OD_Result := OD_Result;
   CheckConnect;
 end;
 
