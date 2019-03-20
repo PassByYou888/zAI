@@ -54,17 +54,23 @@ var
 begin
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
-  d.ViewOptions := [devpFPS, devpFrameEndge];
+  d.ViewOptions := [devpFrameEndge];
 
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0));
   if fr.ReadFrame(raster, False) then
     begin
       raster.FastUpdateTexture;
       d.FitDrawTexture(raster, raster.BoundsRectV2, d.ScreenRect, 1.0);
-      d.DrawText(Format('%f:%f', [fr.Current, fr.Total]), 16, d.ScreenRect, DEColor(1, 0, 0, 1), True);
+      d.BeginCaptureShadow(Vec2(1, 1), 1.0);
+      d.DrawText(Format('time:%f:%f' + #13#10 + 'frame:%d:%d', [fr.Current, fr.Total, fr.Current_Frame, fr.Total_Frame]),
+        24, d.ScreenRect, DEColor(0.2, 1, 0.2, 1), False);
+      d.EndCaptureShadow;
     end
   else
+    begin
       fr.Seek(0);
+      fr.Current_Frame := 0;
+    end;
   d.Flush;
 end;
 

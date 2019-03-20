@@ -3,9 +3,7 @@ program FFMPEG_ReaderDemo;
 uses
   System.StartUpCopy,
   FMX.Forms,
-  FFMPEGReaderDemoFrm in 'FFMPEGReaderDemoFrm.pas' {FFMPEGReaderDemoForm},
-  FFMPEG in 'C:\CoreLibrary\ffmpeg\FFMPEG.pas',
-  FFMPEG_Reader in 'C:\CoreLibrary\ffmpeg\FFMPEG_Reader.pas';
+  FFMPEGReaderDemoFrm in 'FFMPEGReaderDemoFrm.pas' {FFMPEGReaderDemoForm};
 
 {$R *.res}
 
