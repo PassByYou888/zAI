@@ -505,6 +505,7 @@ type
     procedure DrawSP(od_hnd: TOD_Handle; sp_hnd: TSP_Handle; Raster: TMemoryRaster);
     function DrawMMOD(MMOD_hnd: TMMOD_Handle; Raster: TMemoryRaster; color: TDEColor): TMMOD_Desc; overload;
     function DrawMMOD(MMOD_hnd: TMMOD_Handle; confidence: Double; Raster: TMemoryRaster; color: TDEColor): Integer; overload;
+    function DrawMMOD(MMOD_Desc: TMMOD_Desc; Raster: TMemoryRaster; color: TDEColor): Integer; overload;
     procedure DrawFace(Raster: TMemoryRaster); overload;
     procedure DrawFace(face_hnd: TFACE_Handle; d: TDrawEngine); overload;
     procedure DrawFace(Raster: TMemoryRaster; mdnn_hnd: TMDNN_Handle; Face_Learn: TLearn; faceAccuracy: TGeoFloat; lineColor, TextColor: TDEColor); overload;
@@ -589,7 +590,7 @@ type
     procedure PrepareFaceDataSource;
     function Face_Detector(Raster: TMemoryRaster; R: TRect; extract_face_size: Integer): TFACE_Handle; overload;
     function Face_Detector(Raster: TMemoryRaster; desc: TAI_Rect_Desc; extract_face_size: Integer): TFACE_Handle; overload;
-    function Face_Detector(Raster: TMemoryRaster; mmod_desc: TMMOD_Desc; extract_face_size: Integer): TFACE_Handle; overload;
+    function Face_Detector(Raster: TMemoryRaster; MMOD_Desc: TMMOD_Desc; extract_face_size: Integer): TFACE_Handle; overload;
     function Face_Detector(Raster: TMemoryRaster; od_desc: TOD_Desc; extract_face_size: Integer): TFACE_Handle; overload;
     function Face_DetectorAsChips(Raster: TMemoryRaster; desc: TAI_Rect; extract_face_size: Integer): TMemoryRaster;
     function Face_Detector_All(Raster: TMemoryRaster): TFACE_Handle; overload;
@@ -2334,7 +2335,7 @@ var
   i, j: Integer;
   img: TAI_Image;
   detDef: TAI_DetectorDefine;
-  mmod_desc: TMMOD_Desc;
+  MMOD_Desc: TMMOD_Desc;
   mr: TMemoryRaster;
 begin
   if MMOD_hnd = nil then
@@ -2345,13 +2346,13 @@ begin
       img.Clear;
       mr := NewRaster();
       mr.ZoomFrom(img.Raster, img.Raster.width * 4, img.Raster.height * 4);
-      mmod_desc := AI.MMOD_DNN_Process(MMOD_hnd, mr);
+      MMOD_Desc := AI.MMOD_DNN_Process(MMOD_hnd, mr);
       DisposeObject(mr);
-      for j := 0 to length(mmod_desc) - 1 do
+      for j := 0 to length(MMOD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
-          detDef.R := MakeRect(RectMul(mmod_desc[j].R, 0.25));
-          detDef.Token := mmod_desc[j].Token;
+          detDef.R := MakeRect(RectMul(MMOD_Desc[j].R, 0.25));
+          detDef.Token := MMOD_Desc[j].Token;
           img.DetectorDefineList.Add(detDef);
         end;
     end;
@@ -2362,7 +2363,7 @@ var
   i, j: Integer;
   img: TAI_Image;
   detDef: TAI_DetectorDefine;
-  mmod_desc: TMMOD_Desc;
+  MMOD_Desc: TMMOD_Desc;
 begin
   if MMOD_hnd = nil then
       exit;
@@ -2370,12 +2371,12 @@ begin
     begin
       img := imgList[i];
       img.Clear;
-      mmod_desc := AI.MMOD_DNN_Process(MMOD_hnd, img.Raster);
-      for j := 0 to length(mmod_desc) - 1 do
+      MMOD_Desc := AI.MMOD_DNN_Process(MMOD_hnd, img.Raster);
+      for j := 0 to length(MMOD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
-          detDef.R := MakeRect(mmod_desc[j].R);
-          detDef.Token := mmod_desc[j].Token;
+          detDef.R := MakeRect(MMOD_Desc[j].R);
+          detDef.Token := MMOD_Desc[j].Token;
           img.DetectorDefineList.Add(detDef);
         end;
     end;
@@ -2534,53 +2535,77 @@ end;
 
 function TAI.DrawMMOD(MMOD_hnd: TMMOD_Handle; Raster: TMemoryRaster; color: TDEColor): TMMOD_Desc;
 var
-  mmod_desc: TMMOD_Desc;
+  MMOD_Desc: TMMOD_Desc;
   i: Integer;
   d: TDrawEngine;
   dt: TTimeTick;
 begin
   dt := GetTimeTick();
-  mmod_desc := MMOD_DNN_Process(MMOD_hnd, Raster);
+  MMOD_Desc := MMOD_DNN_Process(MMOD_hnd, Raster);
   dt := GetTimeTick() - dt;
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
-  for i := 0 to length(mmod_desc) - 1 do
+  for i := 0 to length(MMOD_Desc) - 1 do
     begin
-      d.DrawBox(mmod_desc[i].R, color, 2);
+      d.DrawCorner(TV2Rect4.Init(MMOD_Desc[i].R, 0), color, 20, 5);
       d.BeginCaptureShadow(Vec2(1, 1), 0.9);
-      d.DrawText(PFormat('%s-%f', [mmod_desc[i].Token.Text, mmod_desc[i].confidence]), 16, mmod_desc[i].R, DEColor(1, 1, 1, 1), False);
+      if MMOD_Desc[i].Token.Len > 0 then
+          d.DrawText(PFormat('%s-%f', [MMOD_Desc[i].Token.Text, MMOD_Desc[i].confidence]), 16, MMOD_Desc[i].R, DEColor(1, 1, 1, 1), False)
+      else
+          d.DrawText(PFormat('%f', [MMOD_Desc[i].confidence]), 16, MMOD_Desc[i].R, DEColor(1, 1, 1, 1), False);
       d.EndCaptureShadow;
     end;
   d.Flush;
   DisposeObject(d);
-  Result := mmod_desc;
+  Result := MMOD_Desc;
 end;
 
 function TAI.DrawMMOD(MMOD_hnd: TMMOD_Handle; confidence: Double; Raster: TMemoryRaster; color: TDEColor): Integer;
 var
-  mmod_desc: TMMOD_Desc;
+  MMOD_Desc: TMMOD_Desc;
   i: Integer;
   d: TDrawEngine;
   dt: TTimeTick;
 begin
   dt := GetTimeTick();
-  mmod_desc := MMOD_DNN_Process(MMOD_hnd, Raster);
+  MMOD_Desc := MMOD_DNN_Process(MMOD_hnd, Raster);
   dt := GetTimeTick() - dt;
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
   Result := 0;
-  for i := 0 to length(mmod_desc) - 1 do
+  for i := 0 to length(MMOD_Desc) - 1 do
     begin
-      if confidence < abs(mmod_desc[i].confidence) then
+      if confidence < abs(MMOD_Desc[i].confidence) then
         begin
-          d.DrawBox(mmod_desc[i].R, color, 2);
+          d.DrawCorner(TV2Rect4.Init(MMOD_Desc[i].R, 0), color, 20, 5);
           d.BeginCaptureShadow(Vec2(1, 1), 0.9);
-          d.DrawText(PFormat('%s-%f', [mmod_desc[i].Token.Text, mmod_desc[i].confidence]), 16, mmod_desc[i].R, DEColor(1, 1, 1, 1), False);
+          if MMOD_Desc[i].Token.Len > 0 then
+              d.DrawText(PFormat('%s-%f', [MMOD_Desc[i].Token.Text, MMOD_Desc[i].confidence]), 16, MMOD_Desc[i].R, DEColor(1, 1, 1, 1), False)
+          else
+              d.DrawText(PFormat('%f', [MMOD_Desc[i].confidence]), 16, MMOD_Desc[i].R, DEColor(1, 1, 1, 1), False);
           d.EndCaptureShadow;
           inc(Result);
         end;
+    end;
+  d.Flush;
+  DisposeObject(d);
+end;
+
+function TAI.DrawMMOD(MMOD_Desc: TMMOD_Desc; Raster: TMemoryRaster; color: TDEColor): Integer;
+var
+  i: Integer;
+  d: TDrawEngine;
+begin
+  d := TDrawEngine.Create;
+  d.ViewOptions := [];
+  d.Rasterization.SetWorkMemory(Raster);
+  Result := 0;
+  for i := 0 to length(MMOD_Desc) - 1 do
+    begin
+      d.DrawCorner(TV2Rect4.Init(MMOD_Desc[i].R, 0), color, 20, 5);
+      inc(Result);
     end;
   d.Flush;
   DisposeObject(d);
@@ -4037,14 +4062,14 @@ begin
   SetLength(fixed_desc, 0);
 end;
 
-function TAI.Face_Detector(Raster: TMemoryRaster; mmod_desc: TMMOD_Desc; extract_face_size: Integer): TFACE_Handle;
+function TAI.Face_Detector(Raster: TMemoryRaster; MMOD_Desc: TMMOD_Desc; extract_face_size: Integer): TFACE_Handle;
 var
   i: Integer;
   ai_rect_desc: TAI_Rect_Desc;
 begin
-  SetLength(ai_rect_desc, length(mmod_desc));
-  for i := 0 to length(mmod_desc) - 1 do
-      ai_rect_desc[i] := AIRect(mmod_desc[i].R);
+  SetLength(ai_rect_desc, length(MMOD_Desc));
+  for i := 0 to length(MMOD_Desc) - 1 do
+      ai_rect_desc[i] := AIRect(MMOD_Desc[i].R);
   Result := Face_Detector(Raster, ai_rect_desc, extract_face_size);
   SetLength(ai_rect_desc, 0);
 end;

@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{94E74515-D2CC-4143-9065-2F4158EACAFE}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="realtime_Face_videoserv_GPU.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="realtime_Face_Video_FMXClient_GPU.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="realtime_Face_videoserv_GPU">
+        <MSBuild Projects="realtime_Face_videoserv_GPU.dproj"/>
+    </Target>
+    <Target Name="realtime_Face_videoserv_GPU:Clean">
+        <MSBuild Projects="realtime_Face_videoserv_GPU.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="realtime_Face_videoserv_GPU:Make">
+        <MSBuild Projects="realtime_Face_videoserv_GPU.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="realtime_Face_Video_FMXClient_GPU">
+        <MSBuild Projects="realtime_Face_Video_FMXClient_GPU.dproj"/>
+    </Target>
+    <Target Name="realtime_Face_Video_FMXClient_GPU:Clean">
+        <MSBuild Projects="realtime_Face_Video_FMXClient_GPU.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="realtime_Face_Video_FMXClient_GPU:Make">
+        <MSBuild Projects="realtime_Face_Video_FMXClient_GPU.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="realtime_Face_videoserv_GPU;realtime_Face_Video_FMXClient_GPU"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="realtime_Face_videoserv_GPU:Clean;realtime_Face_Video_FMXClient_GPU:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="realtime_Face_videoserv_GPU:Make;realtime_Face_Video_FMXClient_GPU:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
