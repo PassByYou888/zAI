@@ -191,17 +191,14 @@ type
   TDecompressionStream = ZLib.TZDecompressionStream;
   TCompressionStream = ZLib.TZCompressionStream;
 {$ENDIF}
-  //
-  // zlib
+  TSelectCompressionMethod = (scmNone, scmZLIB, scmZLIB_Fast, scmZLIB_Max, scmDeflate, scmBRRC);
+
 function MaxCompressStream(sour, dest: TCoreClassStream): Boolean;
 function FastCompressStream(sour, dest: TCoreClassStream): Boolean;
 function CompressStream(sour, dest: TCoreClassStream): Boolean; overload;
 function DecompressStream(DataPtr: Pointer; siz: NativeInt; dest: TCoreClassStream): Boolean; overload;
 function DecompressStream(sour: TCoreClassStream; dest: TCoreClassStream): Boolean; overload;
 function DecompressStreamToPtr(sour: TCoreClassStream; var dest: Pointer): Boolean; overload;
-
-type
-  TSelectCompressionMethod = (scmNone, scmZLIB, scmZLIB_Fast, scmZLIB_Max, scmDeflate, scmBRRC);
 
 function SelectCompressStream(scm: TSelectCompressionMethod; sour, dest: TCoreClassStream): Boolean;
 function SelectDecompressStream(sour, dest: TCoreClassStream): Boolean;
@@ -1051,7 +1048,7 @@ var
       begin
         if p + strip_siz < sour.Size then
           begin
-            m64 := TMemoryStream64.CustomCreate(8192);
+            m64 := TMemoryStream64.Create;
             m64.SetPointerWithProtectedMode(sour.PositionAsPtr(p), strip_siz);
             sourStrips.Add(m64);
             inc(p, strip_siz);
@@ -1060,7 +1057,7 @@ var
           begin
             if sour.Size - p > 0 then
               begin
-                m64 := TMemoryStream64.CustomCreate(8192);
+                m64 := TMemoryStream64.Create;
                 m64.SetPointerWithProtectedMode(sour.PositionAsPtr(p), sour.Size - p);
                 sourStrips.Add(m64);
               end;
@@ -1070,9 +1067,7 @@ var
 
     SetLength(StripArry, sourStrips.Count);
     for i := 0 to sourStrips.Count - 1 do
-      begin
-        StripArry[i] := TMemoryStream64.CustomCreate(8192);
-      end;
+        StripArry[i] := TMemoryStream64.CustomCreate(1024);
   end;
 
   procedure BuildOutput;
@@ -1101,6 +1096,8 @@ var
   end;
 
 begin
+  if StripNum <= 0 then
+      StripNum := 1;
   BuildBuff;
 
 {$IFDEF parallel}
@@ -1121,7 +1118,7 @@ end;
 
 procedure ParallelCompressStream(scm: TSelectCompressionMethod; sour: TMemoryStream64; dest: TCoreClassStream);
 begin
-  ParallelCompressStream(scm, umlMin($FFFF, sour.Size div (8 * 1024)), sour, dest);
+  ParallelCompressStream(scm, sour.Size div 8192, sour, dest);
 end;
 
 procedure ParallelCompressStream(sour: TMemoryStream64; dest: TCoreClassStream);
@@ -1175,7 +1172,7 @@ var
     SetLength(StripArry, strip_num);
     for i := 0 to strip_num - 1 do
       begin
-        StripArry[i].sour := TMemoryStream64.CustomCreate(8192);
+        StripArry[i].sour := TMemoryStream64.Create;
         if p + 4 > ss then
             Exit;
         siz_ := PInt64(stream.PositionAsPtr(p))^;
@@ -1185,7 +1182,7 @@ var
         StripArry[i].sour.SetPointerWithProtectedMode(stream.PositionAsPtr(p), siz_);
         inc(p, siz_);
         StripArry[i].sour.Position := 0;
-        StripArry[i].dest := TMemoryStream64.CustomCreate(8192);
+        StripArry[i].dest := TMemoryStream64.CustomCreate(1024);
       end;
     stream.Position := p;
     Result := True;
@@ -1204,8 +1201,8 @@ var
     SetLength(StripArry, strip_num);
     for i := 0 to strip_num - 1 do
       begin
-        StripArry[i].sour := TMemoryStream64.CustomCreate(8192);
-        StripArry[i].dest := TMemoryStream64.CustomCreate(8192);
+        StripArry[i].sour := TMemoryStream64.CustomCreate(1024);
+        StripArry[i].dest := TMemoryStream64.CustomCreate(1024);
       end;
 
     for i := 0 to strip_num - 1 do
@@ -1284,9 +1281,4 @@ begin
   DoStatus(IntToHex(NativeInt(v), SizeOf(Pointer)) + ':' + n);
 end;
 
-initialization
-
-finalization
-
 end.
-
