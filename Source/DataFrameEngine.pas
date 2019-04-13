@@ -4150,7 +4150,7 @@ function TDataFrameEngine.EncodeAsSelectCompress(output: TCoreClassStream; const
 var
   scm: TSelectCompressionMethod;
 begin
-  if ComputeEncodeSize > 16 * 1024 then
+  if ComputeEncodeSize > 64 * 1024 then
     begin
       if FastMode then
           scm := TSelectCompressionMethod.scmZLIB
