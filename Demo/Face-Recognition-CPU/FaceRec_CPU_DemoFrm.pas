@@ -55,7 +55,7 @@ var
   end;
 
 begin
-  fn := umlCombineFileName(TPath.GetLibraryPath, 'lady_face' + C_Metric_ResNet_Ext);
+  fn := umlCombineFileName(TPath.GetLibraryPath, 'lady_face' + C_Metric_Ext);
   d(fn);
   d(fn + '.sync');
   d(fn + '.sync_');
@@ -87,13 +87,13 @@ begin
           ResetButton.Enabled := False;
         end);
       try
-        DoStatus('检查度量化神经网络库:%s', ['lady_face' + C_Metric_ResNet_Ext]);
-        fn := umlCombineFileName(TPath.GetLibraryPath, 'lady_face' + C_Metric_ResNet_Ext);
+        DoStatus('检查度量化神经网络库:%s', ['lady_face' + C_Metric_Ext]);
+        fn := umlCombineFileName(TPath.GetLibraryPath, 'lady_face' + C_Metric_Ext);
         if not umlFileExists(fn) then
           begin
             // 这里我们用api方法来训练面部度量化的神经网络
             // 同样的训练也可以使用 TTrainingTask 方式
-            DoStatus('开始训练度量化神经网络库:%s', ['lady_face' + C_Metric_ResNet_Ext]);
+            DoStatus('开始训练度量化神经网络库:%s', ['lady_face' + C_Metric_Ext]);
             param := TAI.Init_Metric_ResNet_Parameter(fn + '.sync', fn);
 
             // 在深度学习训练中，学习率是个不固定的东西，需要收敛
@@ -104,7 +104,7 @@ begin
             param^.iterations_without_progress_threshold := 300;
             param^.step_mini_batch_target_num := 4;
             param^.step_mini_batch_raster_num := 5;
-            training_successed := AI.Metric_ResNet_Train(imgL, param);
+            training_successed := AI.Metric_ResNet_Train(False, imgL, param);
             TAI.Free_Metric_ResNet_Parameter(param);
 
             if training_successed then
@@ -134,7 +134,7 @@ begin
             DoStatus('Learn引擎正在学习Face度量', []);
             L_Engine.Clear;
             tk := GetTimeTick();
-            AI.Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd, imgL, L_Engine);
+            AI.Metric_ResNet_SaveDetectorDefineToLearnEngine(mdnn_hnd, False, imgL, L_Engine);
             L_Engine.Train;
             DoStatus('学习Face度量，Learn记忆了 %d 张面部度量，耗时:%dms', [L_Engine.Count, GetTimeTick() - tk]);
             DoStatus('保存度量化记忆库 "%s"', [L_fn.Text]);
@@ -261,8 +261,8 @@ begin
         end);
 
       DoStatus('初始化Learn引擎分类器');
-      DoStatus('Learn引擎K维：%d', [zAI.C_Metric_ResNet_Dim]);
-      L_Engine := TLearn.CreateClassifier(TLearnType.ltKDT, zAI.C_Metric_ResNet_Dim);
+      DoStatus('Learn引擎K维：%d', [zAI.C_Metric_Dim]);
+      L_Engine := TLearn.CreateClassifier(TLearnType.ltKDT, zAI.C_Metric_Dim);
     end);
 end;
 

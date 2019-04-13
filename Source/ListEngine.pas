@@ -1,13 +1,20 @@
 { ****************************************************************************** }
 { * hash Library,Writen by QQ 600585@qq.com                                    * }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 
 (*
@@ -5033,7 +5040,7 @@ end;
 
 function THashObjectList.GetIgnoreCase: Boolean;
 begin
-  Result := IgnoreCase;
+  Result := FHashList.IgnoreCase;
 end;
 
 procedure THashObjectList.SetIgnoreCase(const Value: Boolean);
@@ -5562,7 +5569,7 @@ end;
 
 function THashStringList.GetIgnoreCase: Boolean;
 begin
-  Result := IgnoreCase;
+  Result := FHashList.IgnoreCase;
 end;
 
 procedure THashStringList.SetIgnoreCase(const Value: Boolean);
@@ -6204,14 +6211,6 @@ begin
         umlDecodeLineBASE64(n, body);
         Result := body.Text;
       end
-    else if umlMultipleMatch(['e(*)', 'e[*]', 'e<*>', 'e"*"', 'e'#39'*'#39], n) then
-      begin
-        body := n;
-        body.DeleteFirst;
-        body.DeleteFirst;
-        body.DeleteLast;
-        Result := VarToStr(EvaluateExpressionValue(body));
-      end
     else if umlMultipleMatch([
       'expression(*)', 'expression[*]', 'expression<*>', 'expression"*"', 'expression'#39'*'#39,
       'exp(*)', 'exp[*]', 'exp<*>', 'exp"*"', 'exp'#39'*'#39,
@@ -6220,6 +6219,14 @@ begin
       ], n) then
       begin
         body := umlDeleteFirstStr_M(n, '([<"'#39);
+        body.DeleteLast;
+        Result := VarToStr(EvaluateExpressionValue(body));
+      end
+    else if umlMultipleMatch(['e(*)', 'e[*]', 'e<*>', 'e"*"', 'e'#39'*'#39], n) then
+      begin
+        body := n;
+        body.DeleteFirst;
+        body.DeleteFirst;
         body.DeleteLast;
         Result := VarToStr(EvaluateExpressionValue(body));
       end
@@ -6406,7 +6413,7 @@ end;
 
 function THashVariantList.GetIgnoreCase: Boolean;
 begin
-  Result := IgnoreCase;
+  Result := FHashList.IgnoreCase;
 end;
 
 procedure THashVariantList.SetIgnoreCase(const Value: Boolean);
@@ -7282,14 +7289,6 @@ begin
         umlDecodeLineBASE64(n, body);
         Result := body.Text;
       end
-    else if umlMultipleMatch(['e(*)', 'e[*]', 'e<*>', 'e"*"', 'e'#39'*'#39], n) then
-      begin
-        body := n;
-        body.DeleteFirst;
-        body.DeleteFirst;
-        body.DeleteLast;
-        Result := EvaluateExpressionValue(body);
-      end
     else if umlMultipleMatch([
       'expression(*)', 'expression[*]', 'expression<*>', 'expression"*"', 'expression'#39'*'#39,
       'exp(*)', 'exp[*]', 'exp<*>', 'exp"*"', 'exp'#39'*'#39,
@@ -7298,6 +7297,14 @@ begin
       ], n) then
       begin
         body := umlDeleteFirstStr_M(n, '([<"'#39);
+        body.DeleteLast;
+        Result := EvaluateExpressionValue(body);
+      end
+    else if umlMultipleMatch(['e(*)', 'e[*]', 'e<*>', 'e"*"', 'e'#39'*'#39], n) then
+      begin
+        body := n;
+        body.DeleteFirst;
+        body.DeleteFirst;
         body.DeleteLast;
         Result := EvaluateExpressionValue(body);
       end

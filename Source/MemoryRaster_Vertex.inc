@@ -289,6 +289,7 @@ var
   i, bitX: Integer;
   x, y: TGeoFloat;
 begin
+  Window.ReadyBits();
   x := attr_u.a * start_x + attr_u.b * j + attr_u.c;
   y := attr_v.a * start_x + attr_v.b * j + attr_v.c;
 
@@ -299,9 +300,9 @@ begin
       if (bitX >= 0) and (bitX < WindowSize) and (FNearestWriteBuffer[bitX] <> FNearestWriterID) then
         begin
           case FS of
-            fsSolid: BlendMem(sc, Window.Bits^[bitX]);
-            fsNearest: ComputeBlend(@Self, ComputeNearest(@Self, tex, x, y), tex.MasterAlpha, Window.Bits^[bitX]);
-            fsLinear: ComputeBlend(@Self, ComputeLinear(@Self, tex, x, y), tex.MasterAlpha, Window.Bits^[bitX]);
+            fsSolid: BlendMem(sc, Window.FBits^[bitX]);
+            fsNearest: ComputeBlend(@Self, ComputeNearest(@Self, tex, x, y), tex.MasterAlpha, Window.FBits^[bitX]);
+            fsLinear: ComputeBlend(@Self, ComputeLinear(@Self, tex, x, y), tex.MasterAlpha, Window.FBits^[bitX]);
           end;
           FNearestWriteBuffer[bitX] := FNearestWriterID;
         end;
@@ -641,35 +642,4 @@ end;
 procedure TVertexMap.FillPoly(const SamVec, RenVec: TVec2List; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean; const alpha: Single);
 begin
   FillPoly(SamVec, RenVec, SamVec.Centroid, RenVec.Centroid, Sampler, bilinear_sampling, alpha);
-end;
-
-procedure TestVetexMap(testBmp, outputBmp: SystemString);
-var
-  b, b2: TMemoryRaster;
-  pr: TVertexMap;
-  vl: TVec2List;
-begin
-  b := TMemoryRaster.Create;
-  b.LoadFromFile(testBmp);
-  b2 := TMemoryRaster.Create;
-  b2.SetSize(512, 512, RasterColorF(0, 0, 0, 1));
-  b2.Agg.LineWidth := 1;
-
-  pr := b2.Vertex;
-
-  pr.DrawRect(TV2Rect4.Init(b.BoundsRectV2, 0), TV2Rect4.Init(b2.BoundsRectV2, 0), b, False, 1.0);
-  pr.DrawRect(TV2Rect4.Init(b.BoundsRectV2, 0), TV2Rect4.Init(vec2(200, 300), 100, 100, 45), b, True, 1.0);
-  pr.DrawRect(TV2Rect4.Init(b.BoundsRectV2, 0), TV2Rect4.Init(vec2(200, 500), 200, 200, -15), b, False, 1.0);
-  pr.DrawRect(TV2Rect4.Init(vec2(200, 50), 200, 200, 35), RasterColorF(1, 0, 0, 0.5));
-
-  vl := TVec2List.Create;
-  vl.AddCirclePoint(50, vec2(150, 50), 150);
-  pr.FillPoly(vl, vl, b, True, 0.5);
-  vl.Transform(200, 200);
-  pr.FillPoly(vl, RasterColorF(1, 0, 0, 0.5));
-
-  b2.SaveToFile(outputBmp);
-  DisposeObject(b2);
-  DisposeObject(b);
-  DisposeObject(vl);
 end;

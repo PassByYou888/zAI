@@ -1,3 +1,21 @@
+{ ****************************************************************************** }
+{ * learn classes support, by QQ 600585@qq.com                                 * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
+{ * https://github.com/PassByYou888/ZServer4D                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
+{ * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
+{ ****************************************************************************** }
 procedure TLearn.KDInput(const IndexFor: NativeInt; var Source: TKDTree_Source; const Data: Pointer);
 var
   p: PLearnMemory;
@@ -594,6 +612,18 @@ begin
   SetLength(f_In, 0);
 end;
 
+procedure TLearn.AddKDTree(kd: TKDTreeDataList);
+var
+  i: Integer;
+  d: TKDTreeData;
+begin
+  for i := 0 to kd.Count - 1 do
+    begin
+      d := kd[i];
+      AddMemory(d.Vec, d.token);
+    end;
+end;
+
 function TLearn.Train(const TrainDepth: TLInt): Boolean;
 var
   p_k: PLearnKDT;
@@ -968,6 +998,11 @@ begin
   Result := FKDToken.SearchToken(v);
 end;
 
+function TLearn.SearchOutVecToken(const v: TLVec): SystemString;
+begin
+  Result := FKDToken.SearchToken(v);
+end;
+
 function TLearn.Process(const p_in, p_out: PLVec): Boolean;
 var
   p_kd_node: PKDTree_Node;
@@ -1007,7 +1042,7 @@ begin
                   p_kd_node := PLearnKDT(FLearnData)^.K.Search(p_in^);
                   SetLength(p_out^, FOutLen);
                   if p_kd_node <> nil then
-                      CopyPtr(@(PLearnMemory(FMemorySource[p_kd_node^.vec^.index])^.m_out[0]), @p_out^[0], FOutLen * SizeOf(TLFloat));
+                      CopyPtr(@(PLearnMemory(FMemorySource[p_kd_node^.Vec^.index])^.m_out[0]), @p_out^[0], FOutLen * SizeOf(TLFloat));
                 end;
               FInfo := 'successed';
               Result := True;
@@ -1103,7 +1138,7 @@ begin
   Result := '';
   if not Process(ProcessIn, @ProcessOut) then
       Exit;
-  Result := SearchToken(ProcessOut);
+  Result := SearchOutVecToken(ProcessOut);
   if Result = '' then
       Result := LVec(ProcessOut, True);
 end;

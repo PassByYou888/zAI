@@ -57,7 +57,16 @@
         <Projects Include="Resnet-144Layer-ImageClassifier2\ResNetImgClassifier2.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="Large-Resnet-144Layer-ImageClassifier\LargeResNetImgClassifier.dproj">
+        <Projects Include="Large-Resnet-Layer-ImageClassifier\LargeResNetImgClassifier.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="LargeMetric-ImageClassifier\LargeMetricImgClassifier.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Going-Deeper-with-Convolutions-Net-ImageClassifier\GoingDeeperWithConvolutionsNetImageClassifier.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Gradient-based-Net-ImageClassifier\GradientBasedNetImageClassifier.dproj">
             <Dependencies/>
         </Projects>
         <Projects Include="FastSurf\FastSurfDemo.dproj">
@@ -121,6 +130,9 @@
             <Dependencies/>
         </Projects>
         <Projects Include="FFMPEGVideoReader\FFMPEG_ReaderDemo.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Projection\memoryRasterProjection.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -294,13 +306,40 @@
         <MSBuild Projects="Resnet-144Layer-ImageClassifier2\ResNetImgClassifier2.dproj" Targets="Make"/>
     </Target>
     <Target Name="LargeResNetImgClassifier">
-        <MSBuild Projects="Large-Resnet-144Layer-ImageClassifier\LargeResNetImgClassifier.dproj"/>
+        <MSBuild Projects="Large-Resnet-Layer-ImageClassifier\LargeResNetImgClassifier.dproj"/>
     </Target>
     <Target Name="LargeResNetImgClassifier:Clean">
-        <MSBuild Projects="Large-Resnet-144Layer-ImageClassifier\LargeResNetImgClassifier.dproj" Targets="Clean"/>
+        <MSBuild Projects="Large-Resnet-Layer-ImageClassifier\LargeResNetImgClassifier.dproj" Targets="Clean"/>
     </Target>
     <Target Name="LargeResNetImgClassifier:Make">
-        <MSBuild Projects="Large-Resnet-144Layer-ImageClassifier\LargeResNetImgClassifier.dproj" Targets="Make"/>
+        <MSBuild Projects="Large-Resnet-Layer-ImageClassifier\LargeResNetImgClassifier.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="LargeMetricImgClassifier">
+        <MSBuild Projects="LargeMetric-ImageClassifier\LargeMetricImgClassifier.dproj"/>
+    </Target>
+    <Target Name="LargeMetricImgClassifier:Clean">
+        <MSBuild Projects="LargeMetric-ImageClassifier\LargeMetricImgClassifier.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LargeMetricImgClassifier:Make">
+        <MSBuild Projects="LargeMetric-ImageClassifier\LargeMetricImgClassifier.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="GoingDeeperWithConvolutionsNetImageClassifier">
+        <MSBuild Projects="Going-Deeper-with-Convolutions-Net-ImageClassifier\GoingDeeperWithConvolutionsNetImageClassifier.dproj"/>
+    </Target>
+    <Target Name="GoingDeeperWithConvolutionsNetImageClassifier:Clean">
+        <MSBuild Projects="Going-Deeper-with-Convolutions-Net-ImageClassifier\GoingDeeperWithConvolutionsNetImageClassifier.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="GoingDeeperWithConvolutionsNetImageClassifier:Make">
+        <MSBuild Projects="Going-Deeper-with-Convolutions-Net-ImageClassifier\GoingDeeperWithConvolutionsNetImageClassifier.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="GradientBasedNetImageClassifier">
+        <MSBuild Projects="Gradient-based-Net-ImageClassifier\GradientBasedNetImageClassifier.dproj"/>
+    </Target>
+    <Target Name="GradientBasedNetImageClassifier:Clean">
+        <MSBuild Projects="Gradient-based-Net-ImageClassifier\GradientBasedNetImageClassifier.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="GradientBasedNetImageClassifier:Make">
+        <MSBuild Projects="Gradient-based-Net-ImageClassifier\GradientBasedNetImageClassifier.dproj" Targets="Make"/>
     </Target>
     <Target Name="FastSurfDemo">
         <MSBuild Projects="FastSurf\FastSurfDemo.dproj"/>
@@ -491,14 +530,23 @@
     <Target Name="FFMPEG_ReaderDemo:Make">
         <MSBuild Projects="FFMPEGVideoReader\FFMPEG_ReaderDemo.dproj" Targets="Make"/>
     </Target>
+    <Target Name="memoryRasterProjection">
+        <MSBuild Projects="Projection\memoryRasterProjection.dproj"/>
+    </Target>
+    <Target Name="memoryRasterProjection:Clean">
+        <MSBuild Projects="Projection\memoryRasterProjection.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="memoryRasterProjection:Make">
+        <MSBuild Projects="Projection\memoryRasterProjection.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_CPU_Parallel;Face_Det_GPU;Face_Alignment;Face_Alignment_Parallel;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;DNN_OD2;ResNetImgClassifier;ResNetImgClassifier2;LargeResNetImgClassifier;FastSurfDemo;VideoTrackerAndSoftDecode_GPU;VideoTrackerAndSoftDecode_CPU;RasterizationFormatDemo;zDrawEngine_HelloWorld;ImageScriptDemo;Analysis_EasyConsoleDemo;Analysis_RandomForestDemo;Analysis_Decision;Analysis_numberTrain;Rep_FaceRecServ;Rep_FaceRecCli;realtime_OD_videoserv;realtime_OD_Video_FMXClient;realtime_MMOD_videoserv;realtime_MMOD_Video_FMXClient;realtime_Face_videoserv;realtime_Face_Video_FMXClient;realtime_Face_videoserv_GPU;realtime_Face_Video_FMXClient_GPU;FFMPEG_ReaderDemo"/>
+        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_CPU_Parallel;Face_Det_GPU;Face_Alignment;Face_Alignment_Parallel;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;DNN_OD2;ResNetImgClassifier;ResNetImgClassifier2;LargeResNetImgClassifier;LargeMetricImgClassifier;GoingDeeperWithConvolutionsNetImageClassifier;GradientBasedNetImageClassifier;FastSurfDemo;VideoTrackerAndSoftDecode_GPU;VideoTrackerAndSoftDecode_CPU;RasterizationFormatDemo;zDrawEngine_HelloWorld;ImageScriptDemo;Analysis_EasyConsoleDemo;Analysis_RandomForestDemo;Analysis_Decision;Analysis_numberTrain;Rep_FaceRecServ;Rep_FaceRecCli;realtime_OD_videoserv;realtime_OD_Video_FMXClient;realtime_MMOD_videoserv;realtime_MMOD_Video_FMXClient;realtime_Face_videoserv;realtime_Face_Video_FMXClient;realtime_Face_videoserv_GPU;realtime_Face_Video_FMXClient_GPU;FFMPEG_ReaderDemo;memoryRasterProjection"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_CPU_Parallel:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Alignment_Parallel:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;DNN_OD2:Clean;ResNetImgClassifier:Clean;ResNetImgClassifier2:Clean;LargeResNetImgClassifier:Clean;FastSurfDemo:Clean;VideoTrackerAndSoftDecode_GPU:Clean;VideoTrackerAndSoftDecode_CPU:Clean;RasterizationFormatDemo:Clean;zDrawEngine_HelloWorld:Clean;ImageScriptDemo:Clean;Analysis_EasyConsoleDemo:Clean;Analysis_RandomForestDemo:Clean;Analysis_Decision:Clean;Analysis_numberTrain:Clean;Rep_FaceRecServ:Clean;Rep_FaceRecCli:Clean;realtime_OD_videoserv:Clean;realtime_OD_Video_FMXClient:Clean;realtime_MMOD_videoserv:Clean;realtime_MMOD_Video_FMXClient:Clean;realtime_Face_videoserv:Clean;realtime_Face_Video_FMXClient:Clean;realtime_Face_videoserv_GPU:Clean;realtime_Face_Video_FMXClient_GPU:Clean;FFMPEG_ReaderDemo:Clean"/>
+        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_CPU_Parallel:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Alignment_Parallel:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;DNN_OD2:Clean;ResNetImgClassifier:Clean;ResNetImgClassifier2:Clean;LargeResNetImgClassifier:Clean;LargeMetricImgClassifier:Clean;GoingDeeperWithConvolutionsNetImageClassifier:Clean;GradientBasedNetImageClassifier:Clean;FastSurfDemo:Clean;VideoTrackerAndSoftDecode_GPU:Clean;VideoTrackerAndSoftDecode_CPU:Clean;RasterizationFormatDemo:Clean;zDrawEngine_HelloWorld:Clean;ImageScriptDemo:Clean;Analysis_EasyConsoleDemo:Clean;Analysis_RandomForestDemo:Clean;Analysis_Decision:Clean;Analysis_numberTrain:Clean;Rep_FaceRecServ:Clean;Rep_FaceRecCli:Clean;realtime_OD_videoserv:Clean;realtime_OD_Video_FMXClient:Clean;realtime_MMOD_videoserv:Clean;realtime_MMOD_Video_FMXClient:Clean;realtime_Face_videoserv:Clean;realtime_Face_Video_FMXClient:Clean;realtime_Face_videoserv_GPU:Clean;realtime_Face_Video_FMXClient_GPU:Clean;FFMPEG_ReaderDemo:Clean;memoryRasterProjection:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_CPU_Parallel:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Alignment_Parallel:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;DNN_OD2:Make;ResNetImgClassifier:Make;ResNetImgClassifier2:Make;LargeResNetImgClassifier:Make;FastSurfDemo:Make;VideoTrackerAndSoftDecode_GPU:Make;VideoTrackerAndSoftDecode_CPU:Make;RasterizationFormatDemo:Make;zDrawEngine_HelloWorld:Make;ImageScriptDemo:Make;Analysis_EasyConsoleDemo:Make;Analysis_RandomForestDemo:Make;Analysis_Decision:Make;Analysis_numberTrain:Make;Rep_FaceRecServ:Make;Rep_FaceRecCli:Make;realtime_OD_videoserv:Make;realtime_OD_Video_FMXClient:Make;realtime_MMOD_videoserv:Make;realtime_MMOD_Video_FMXClient:Make;realtime_Face_videoserv:Make;realtime_Face_Video_FMXClient:Make;realtime_Face_videoserv_GPU:Make;realtime_Face_Video_FMXClient_GPU:Make;FFMPEG_ReaderDemo:Make"/>
+        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_CPU_Parallel:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Alignment_Parallel:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;DNN_OD2:Make;ResNetImgClassifier:Make;ResNetImgClassifier2:Make;LargeResNetImgClassifier:Make;LargeMetricImgClassifier:Make;GoingDeeperWithConvolutionsNetImageClassifier:Make;GradientBasedNetImageClassifier:Make;FastSurfDemo:Make;VideoTrackerAndSoftDecode_GPU:Make;VideoTrackerAndSoftDecode_CPU:Make;RasterizationFormatDemo:Make;zDrawEngine_HelloWorld:Make;ImageScriptDemo:Make;Analysis_EasyConsoleDemo:Make;Analysis_RandomForestDemo:Make;Analysis_Decision:Make;Analysis_numberTrain:Make;Rep_FaceRecServ:Make;Rep_FaceRecCli:Make;realtime_OD_videoserv:Make;realtime_OD_Video_FMXClient:Make;realtime_MMOD_videoserv:Make;realtime_MMOD_Video_FMXClient:Make;realtime_Face_videoserv:Make;realtime_Face_Video_FMXClient:Make;realtime_Face_videoserv_GPU:Make;realtime_Face_Video_FMXClient_GPU:Make;FFMPEG_ReaderDemo:Make;memoryRasterProjection:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

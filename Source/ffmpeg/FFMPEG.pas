@@ -1,13 +1,20 @@
 ﻿{ ****************************************************************************** }
-{ * ffmpeg supported on all in one by qq600585                                 * }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * ffmpeg all in one by qq600585                                              * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 (*
  * copyright (c) 2001 Fabrice Bellard
@@ -34,6 +41,7 @@ unit FFMPEG;
   {$MODE DELPHI }
   {$PACKENUM 4}    (* use 4-byte enums *)
   {$PACKRECORDS C} (* C/C++-compatible record packing *)
+  {$DEFINE API_Dynamic}
 {$ELSE}
   {$MINENUMSIZE 4} (* use 4-byte enums *)
   {$LEGACYIFEND ON}
@@ -30462,8 +30470,6 @@ function GetExtLib(LibName: string): HMODULE;
 begin
 {$IF not(Defined(IOS) and Defined(CPUARM))}
   Result := LoadLibrary(PChar(LibName));
-  if Result = 0 then
-      raise Exception.Create(format('LoadLibrary failed:%s', [LibName]));
 {$ELSE}
   Result := 0;
 {$IFEND}
@@ -30556,6 +30562,11 @@ begin
   AVDEVICE_LIBNAME_HND := GetExtLib(AVDEVICE_LIBNAME);
   SWRESAMPLE_LIBNAME_HND := GetExtLib(SWRESAMPLE_LIBNAME);
   SWSCALE_LIBNAME_HND := GetExtLib(SWSCALE_LIBNAME);
+
+  if (AVUTIL_LIBNAME_HND = 0) or (AVCODEC_LIBNAME_HND = 0) or
+    (AVFORMAT_LIBNAME_HND = 0) or (AVFILTER_LIBNAME_HND = 0) or
+    (AVDEVICE_LIBNAME_HND = 0) or (SWRESAMPLE_LIBNAME_HND = 0) or (SWSCALE_LIBNAME_HND = 0) then
+      exit;
 
   av_reduce := GetExtProc_AVUTIL_LIBNAME(_PU + 'av_reduce');
   av_nearer_q := GetExtProc_AVUTIL_LIBNAME(_PU + 'av_nearer_q');
@@ -31389,6 +31400,11 @@ end;
 procedure Free_ffmpeg();
 begin
 {$IFDEF API_Dynamic}
+  if (AVUTIL_LIBNAME_HND = 0) or (AVCODEC_LIBNAME_HND = 0) or
+    (AVFORMAT_LIBNAME_HND = 0) or (AVFILTER_LIBNAME_HND = 0) or
+    (AVDEVICE_LIBNAME_HND = 0) or (SWRESAMPLE_LIBNAME_HND = 0) or (SWSCALE_LIBNAME_HND = 0) then
+      exit;
+
   av_reduce := nil;
   av_nearer_q := nil;
   av_find_nearest_q_idx := nil;
@@ -32228,10 +32244,10 @@ end;
 
 initialization
 
-Load_ffmpeg();
+ Load_ffmpeg();
 
 finalization
 
-Free_ffmpeg();
+ Free_ffmpeg();
 
 end.

@@ -1,0 +1,93 @@
+object GradientBasedNetImageClassifierForm: TGradientBasedNetImageClassifierForm
+  Left = 0
+  Top = 0
+  Caption = 'Gradient-based Net Image Classifier.'
+  ClientHeight = 760
+  ClientWidth = 1486
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object Training_IMGClassifier_Button: TButton
+    Position.X = 16.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 217.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    Text = #35757#32451#22270#29255#20998#31867#22120
+    OnClick = Training_IMGClassifier_ButtonClick
+  end
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Lines.Strings = (
+      #23558#25991#23383#35782#21035#20013#30340#31070#32463#32593#32476#29992#20110#22270#29255#20998#31867#22120
+      
+        'LeCun, Yann, et al. "Gradient-based learning applied to document' +
+        ' recognition."'
+      'Proceedings of the IEEE 86.11 (1998): 2278-2324.'
+      ''
+      'im extracting CNN net struct part, not text recognition!!'
+      'create by qq600585, test passed. 2019/4'
+      ''
+      'RNIC'#25216#26415#25351#26631
+      #25805#20316#31995#32479#65306'windows,linux'
+      #22788#29702#22120#26550#26500#65306'intel x86,x64'
+      'IOT'#65306#19981
+      #20869#23384#38656#27714#65306#39640
+      'GPU'#38656#27714#65306#38656#35201
+      #24182#34892#65306#19981#25903#25345
+      #25968#25454#20860#23481#65306#20840#20860#23481
+      #23454#26102#24615#65306#20013#39640
+      ''
+      #26356#22810#30340#25216#26415#32454#33410#65292#25105#37117#22791#27880#22312#28304#30721#20013
+      ''
+      'GNIC'#19981#26159#25991#23383#35782#21035#65292#21482#26159#21305#37197#25991#23383#30340#22270#20687#20998#31867#22120
+      'GNIC'#21407#29256#30340'NN'#26159#25353'bp'#31070#32463#32593#32476#35774#35745#65292#20027#35201#24037#20316#19982'CPU'#19979#65292#21518#32493#65292#23427#34987#31227#26893#21040#20102#28145#24230#23398#20064#20013#65292#20027#35201#24037#20316'GPU'#19979
+      'GNIC'#24330#31471':'#22914#26524#20998#31867#22270#20687#20869#23481#19981#20855#26377#26126#30830#20849#24615#65292#25311#21512#24037#20316#20960#20046#20250#26080#38480#24490#29615
+      'GNIC'#22810#29992#20110#20351#29992#30333#24213#65292#25110#21017#40657#24213#30340#32479#19968#25968#25454#38598#65292#22914#25991#23383#38598#65292#22270#26631#38598#65292#21830#26631#38598
+      ''
+      'by.qq600585'
+      ''
+      ''
+      '')
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    Position.X = 16.000000000000000000
+    Position.Y = 48.000000000000000000
+    Size.Width = 1449.000000000000000000
+    Size.Height = 697.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 4
+    Viewport.Width = 1445.000000000000000000
+    Viewport.Height = 693.000000000000000000
+  end
+  object Timer1: TTimer
+    Interval = 100
+    OnTimer = Timer1Timer
+    Left = 728
+    Top = 368
+  end
+  object ResetButton: TButton
+    Anchors = [akTop, akRight]
+    Position.X = 1280.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 185.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    Text = #37325#32622
+    OnClick = ResetButtonClick
+  end
+  object TestClassifierButton: TButton
+    Position.X = 240.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 185.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Text = #27979#35797#27169#22411
+    OnClick = TestClassifierButtonClick
+  end
+end

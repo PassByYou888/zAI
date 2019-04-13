@@ -2,14 +2,21 @@
 { * memory Rasterization JPEG support                                          * }
 { * by QQ 600585@qq.com                                                        * }
 { ****************************************************************************** }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 unit Raster_JPEG;
 
@@ -67,7 +74,7 @@ type
     // Source is a TMemoryRaster, the TMemoryRaster is compressed to the internal jpeg image.
     // If Source is another TJpegGraphic,
     // the data streams are copied and the internal Jpeg image is loaded from the
-    // data. It is also possible to assign a TJpegGraphic to a TBitmap, like this:
+    // data. It is also possible to assign a TJpegGraphic to a TMemoryRaster, like this:
     // <code>
     // MyBitmap.Assign(MyJpegGraphic)
     // </code>
@@ -164,7 +171,7 @@ end;
 
 function TMemoryJpegRaster.ImageCreateMap(var AIterator: TMapIterator): TObject;
 begin
-  ImageDebug(Self, wsInfo, PFormat('create TBitmap x=%d y=%d', [AIterator.Width, AIterator.Height]));
+  ImageDebug(Self, wsInfo, PFormat('create TMemoryRaster x=%d y=%d', [AIterator.Width, AIterator.Height]));
 
   // create a bitmap with iterator size and pixelformat
   if (not Assigned(FRaster)) or (FRaster.Width <> AIterator.Width) or (FRaster.Height <> AIterator.Height) then

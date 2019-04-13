@@ -1,13 +1,20 @@
 { ****************************************************************************** }
 { * MixedLibrary,writen by QQ 600585@qq.com                                    * }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 
 {
@@ -183,6 +190,7 @@ function umlGetResourceStream(const FileName: TPascalString): TCoreClassStream;
 
 function umlSameVarValue(const v1, v2: Variant): Boolean;
 
+function umlRandom: Integer;
 function umlRandomRange(const aMin, aMax: Integer): Integer;
 function umlRandomRangeS(const aMin, aMax: Single): Single;
 function umlRandomRangeD(const aMin, aMax: Double): Double;
@@ -314,7 +322,6 @@ function umlGetTextContent(const sour: TPascalString; const bToken, eToken: TArr
 
 type
   TTextType = (ntBool, ntInt, ntInt64, ntUInt64, ntWord, ntByte, ntSmallInt, ntShortInt, ntUInt, ntSingle, ntDouble, ntCurrency, ntUnknow);
-  TTextTypes = set of TTextType;
 function umlGetNumTextType(const s: TPascalString): TTextType;
 
 function umlIsHex(const sVal: TPascalString): Boolean;
@@ -1058,6 +1065,11 @@ begin
   except
       Result := False;
   end;
+end;
+
+function umlRandom: Integer;
+begin
+  Result := Random(MaxInt);
 end;
 
 function umlRandomRange(const aMin, aMax: Integer): Integer;
@@ -3096,7 +3108,9 @@ begin
         begin
           if cnt[vsSymSub] > 0 then
             begin
-              if cnt[vsNum] + cnt[vsAtoF] < 2 then
+              if cnt[vsNum] + cnt[vsAtoF] = 0 then
+                  Result := ntUnknow
+              else if cnt[vsNum] + cnt[vsAtoF] < 2 then
                   Result := ntShortInt
               else if cnt[vsNum] + cnt[vsAtoF] < 4 then
                   Result := ntSmallInt
@@ -3109,7 +3123,9 @@ begin
             end
           else
             begin
-              if cnt[vsNum] + cnt[vsAtoF] < 3 then
+              if cnt[vsNum] + cnt[vsAtoF] = 0 then
+                  Result := ntUnknow
+              else if cnt[vsNum] + cnt[vsAtoF] < 3 then
                   Result := ntByte
               else if cnt[vsNum] + cnt[vsAtoF] < 5 then
                   Result := ntWord
@@ -3125,7 +3141,9 @@ begin
           exit(ntUnknow)
       else if cnt[vsSymSub] > 0 then
         begin
-          if cnt[vsNum] < 3 then
+          if cnt[vsNum] = 0 then
+              Result := ntUnknow
+          else if cnt[vsNum] < 3 then
               Result := ntShortInt
           else if cnt[vsNum] < 5 then
               Result := ntSmallInt
@@ -3138,7 +3156,9 @@ begin
         end
       else
         begin
-          if cnt[vsNum] < 3 then
+          if cnt[vsNum] = 0 then
+              Result := ntUnknow
+          else if cnt[vsNum] < 3 then
               Result := ntByte
           else if cnt[vsNum] < 5 then
               Result := ntWord
@@ -5655,7 +5675,7 @@ var
   n: TPascalString;
   king, buff: TArrayPascalString;
 begin
-  // fill csv head
+  // csv head
   bp := -1;
   for i := low(sour) to high(sour) do
     begin
@@ -5681,7 +5701,7 @@ begin
         end;
     end;
 
-  // fill csv body
+  // csv body
   if bp > 0 then
     for i := bp to high(sour) do
       begin
@@ -5712,7 +5732,7 @@ var
   n: TPascalString;
   king, buff: TArrayPascalString;
 begin
-  // fill csv head
+  // csv head
   bp := -1;
   for i := low(sour) to high(sour) do
     begin
@@ -5738,7 +5758,7 @@ begin
         end;
     end;
 
-  // fill csv body
+  // csv body
   if bp > 0 then
     for i := bp to high(sour) do
       begin
@@ -5772,7 +5792,7 @@ var
   n: TPascalString;
   king, buff: TArrayPascalString;
 begin
-  // fill csv head
+  // csv head
   bp := -1;
   for i := low(sour) to high(sour) do
     begin
@@ -5798,7 +5818,7 @@ begin
         end;
     end;
 
-  // fill csv body
+  // csv body
   if bp > 0 then
     for i := bp to high(sour) do
       begin

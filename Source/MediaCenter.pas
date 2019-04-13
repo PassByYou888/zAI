@@ -1,14 +1,21 @@
 { ****************************************************************************** }
 { * media center                                                               * }
 { * written by QQ 600585@qq.com                                                * }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 unit MediaCenter;
 
@@ -758,6 +765,7 @@ begin
     begin
       db := TObjectDataManager.CreateAsStream(GetResourceStream('sound.ox'), 'sound.ox', ObjectDataMarshal.ID, True, False, True);
       SoundLibrary := TLibraryManager.Create(db, '/');
+      SoundLibrary.AutoFreeDataEngine := True;
       FileIO.AddSearchObj(True, SoundLibrary, '/');
     end;
 
@@ -765,6 +773,7 @@ begin
     begin
       db := TObjectDataManager.CreateAsStream(GetResourceStream('art.ox'), 'art.ox', ObjectDataMarshal.ID, True, False, True);
       ArtLibrary := TLibraryManager.Create(db, '/');
+      ArtLibrary.AutoFreeDataEngine := True;
       FileIO.AddSearchObj(True, ArtLibrary, '/');
     end;
 
@@ -772,6 +781,7 @@ begin
     begin
       db := TObjectDataManager.CreateAsStream(GetResourceStream('tile.ox'), 'tile.ox', ObjectDataMarshal.ID, True, False, True);
       TileLibrary := TLibraryManager.Create(db, '/');
+      TileLibrary.AutoFreeDataEngine := True;
       FileIO.AddSearchObj(True, TileLibrary, '/');
     end;
 
@@ -779,6 +789,7 @@ begin
     begin
       db := TObjectDataManager.CreateAsStream(GetResourceStream('brush.ox'), 'brush.ox', ObjectDataMarshal.ID, True, False, True);
       BrushLibrary := TLibraryManager.Create(db, '/');
+      BrushLibrary.AutoFreeDataEngine := True;
       FileIO.AddSearchObj(True, BrushLibrary, '/');
     end;
 
@@ -786,6 +797,7 @@ begin
     begin
       db := TObjectDataManager.CreateAsStream(GetResourceStream('user.ox'), 'user.ox', ObjectDataMarshal.ID, True, False, True);
       UserLibrary := TLibraryManager.Create(db, '/');
+      UserLibrary.AutoFreeDataEngine := True;
       FileIO.AddSearchObj(True, UserLibrary, '/');
     end;
 
@@ -803,7 +815,6 @@ begin
   if SoundLibrary <> nil then
     begin
       FileIO.DeleteSearchObj(SoundLibrary);
-      DisposeObject(SoundLibrary.DBEngine);
       DisposeObject(SoundLibrary);
       SoundLibrary := nil;
     end;
@@ -811,7 +822,6 @@ begin
   if ArtLibrary <> nil then
     begin
       FileIO.DeleteSearchObj(ArtLibrary);
-      DisposeObject(ArtLibrary.DBEngine);
       DisposeObject(ArtLibrary);
       ArtLibrary := nil;
     end;
@@ -819,7 +829,6 @@ begin
   if TileLibrary <> nil then
     begin
       FileIO.DeleteSearchObj(TileLibrary);
-      DisposeObject(TileLibrary.DBEngine);
       DisposeObject(TileLibrary);
       TileLibrary := nil;
     end;
@@ -827,7 +836,6 @@ begin
   if BrushLibrary <> nil then
     begin
       FileIO.DeleteSearchObj(BrushLibrary);
-      DisposeObject(BrushLibrary.DBEngine);
       DisposeObject(BrushLibrary);
       BrushLibrary := nil;
     end;
@@ -835,7 +843,6 @@ begin
   if UserLibrary <> nil then
     begin
       FileIO.DeleteSearchObj(UserLibrary);
-      DisposeObject(UserLibrary.DBEngine);
       DisposeObject(UserLibrary);
       UserLibrary := nil;
     end;

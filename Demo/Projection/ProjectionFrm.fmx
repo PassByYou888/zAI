@@ -1,0 +1,135 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 728
+  ClientWidth = 1333
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object ScrollBox1: TScrollBox
+    Align = Client
+    Size.Width = 732.000000000000000000
+    Size.Height = 728.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Viewport.Width = 732.000000000000000000
+    Viewport.Height = 728.000000000000000000
+    object d_Image: TImage
+      MultiResBitmap = <
+        item
+        end>
+      Align = Client
+      Size.Width = 732.000000000000000000
+      Size.Height = 728.000000000000000000
+      Size.PlatformDefault = False
+    end
+    object d_RightTop: TCircle
+      Position.X = 472.000000000000000000
+      Position.Y = 184.000000000000000000
+      Size.Width = 50.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
+      OnMouseDown = cMouseDown
+      OnMouseMove = cMouseMove
+      OnMouseUp = cMouseUp
+      OnPaint = cPaint
+    end
+    object d_LeftTop: TCircle
+      Position.X = 240.000000000000000000
+      Position.Y = 192.000000000000000000
+      Size.Width = 50.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
+      OnMouseDown = cMouseDown
+      OnMouseMove = cMouseMove
+      OnMouseUp = cMouseUp
+      OnPaint = cPaint
+    end
+    object d_LeftBottom: TCircle
+      Position.X = 240.000000000000000000
+      Position.Y = 464.000000000000000000
+      Size.Width = 50.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
+      OnMouseDown = cMouseDown
+      OnMouseMove = cMouseMove
+      OnMouseUp = cMouseUp
+      OnPaint = cPaint
+    end
+    object d_RightBottom: TCircle
+      Position.X = 480.000000000000000000
+      Position.Y = 464.000000000000000000
+      Size.Width = 50.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
+      OnMouseDown = cMouseDown
+      OnMouseMove = cMouseMove
+      OnMouseUp = cMouseUp
+      OnPaint = cPaint
+    end
+  end
+  object ScrollBox2: TScrollBox
+    Align = Left
+    Size.Width = 601.000000000000000000
+    Size.Height = 728.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Viewport.Width = 601.000000000000000000
+    Viewport.Height = 728.000000000000000000
+    object s_Image: TImage
+      MultiResBitmap = <
+        item
+        end>
+      Size.Width = 601.000000000000000000
+      Size.Height = 728.000000000000000000
+      Size.PlatformDefault = False
+    end
+    object s_LeftTop: TCircle
+      Position.X = 160.000000000000000000
+      Position.Y = 128.000000000000000000
+      Size.Width = 50.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
+      OnMouseDown = cMouseDown
+      OnMouseMove = cMouseMove
+      OnMouseUp = cMouseUp
+      OnPaint = cPaint
+    end
+    object s_RightTop: TCircle
+      Position.X = 408.000000000000000000
+      Position.Y = 120.000000000000000000
+      Size.Width = 50.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
+      OnMouseDown = cMouseDown
+      OnMouseMove = cMouseMove
+      OnMouseUp = cMouseUp
+      OnPaint = cPaint
+    end
+    object s_LeftBottom: TCircle
+      Position.X = 168.000000000000000000
+      Position.Y = 472.000000000000000000
+      Size.Width = 50.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
+      OnMouseDown = cMouseDown
+      OnMouseMove = cMouseMove
+      OnMouseUp = cMouseUp
+      OnPaint = cPaint
+    end
+    object s_RightBottom: TCircle
+      Position.X = 408.000000000000000000
+      Position.Y = 472.000000000000000000
+      Size.Width = 50.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
+      OnMouseDown = cMouseDown
+      OnMouseMove = cMouseMove
+      OnMouseUp = cMouseUp
+      OnPaint = cPaint
+    end
+  end
+end

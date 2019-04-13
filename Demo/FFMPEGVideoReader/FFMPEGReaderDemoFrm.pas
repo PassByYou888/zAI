@@ -57,20 +57,18 @@ begin
   d.ViewOptions := [devpFrameEndge];
 
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0));
-  if fr.ReadFrame(raster, False) then
-    begin
-      raster.FastUpdateTexture;
-      d.FitDrawTexture(raster, raster.BoundsRectV2, d.ScreenRect, 1.0);
-      d.BeginCaptureShadow(Vec2(1, 1), 1.0);
-      d.DrawText(Format('time:%f:%f' + #13#10 + 'frame:%d:%d', [fr.Current, fr.Total, fr.Current_Frame, fr.Total_Frame]),
-        24, d.ScreenRect, DEColor(0.2, 1, 0.2, 1), False);
-      d.EndCaptureShadow;
-    end
-  else
+  while not fr.ReadFrame(raster, False) do
     begin
       fr.Seek(0);
       fr.Current_Frame := 0;
     end;
+
+  raster.FastUpdateTexture;
+  d.FitDrawTexture(raster, raster.BoundsRectV2, d.ScreenRect, 1.0);
+  d.BeginCaptureShadow(Vec2(1, 1), 1.0);
+  d.DrawText(Format('time:%f:%f' + #13#10 + 'frame:%d:%d', [fr.Current, fr.Total, fr.Current_Frame, fr.Total_Frame]),
+    24, d.ScreenRect, DEColor(0.2, 1, 0.2, 1), False);
+  d.EndCaptureShadow;
   d.Flush;
 end;
 

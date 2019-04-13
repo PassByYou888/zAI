@@ -77,7 +77,6 @@ end;
 
 begin
   MH_1.BeginMemoryHook($FFFFF);
-  FastKDTreeD.Test_All();
   Demo;
   MH_1.EndMemoryHook;
   MH_1.HookPtrList.ProgressP(procedure(NPtr: Pointer; uData: NativeUInt)

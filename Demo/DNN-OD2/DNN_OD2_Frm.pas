@@ -123,7 +123,7 @@ begin
       d.LastNewTime := 0;
     end;
   Raster_DetectAndDraw(frame);
-  frame.FastUpdateTexture;
+  frame.ReleaseFMXResource;
   d.FitDrawTexture(frame, frame.BoundsRectV2, d.ScreenRect, 1.0);
 
   // ÷¥––ªÊÕº÷∏¡Ó

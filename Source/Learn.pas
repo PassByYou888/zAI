@@ -1,13 +1,20 @@
 { ****************************************************************************** }
-{ * machine Learn support, writen by QQ 600585@qq.com                          * }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * machine Learn          writen by QQ 600585@qq.com                          * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 unit Learn;
 
@@ -117,6 +124,9 @@ type
     procedure AddMatrix(const m_in: TLMatrix; const f_Out: TLVec); overload;
     procedure AddMatrix(const m_in: TLMatrix; const f_Out: TLVec; const f_token: SystemString); overload;
 
+    { * kdtree * }
+    procedure AddKDTree(kd: TKDTreeDataList);
+
     { * normal train * }
     function Train(const TrainDepth: TLInt): Boolean; overload;
     function Train: Boolean; overload;
@@ -129,8 +139,10 @@ type
     //
     // wait thread
     procedure WaitTrain;
+
     // token
-    function SearchToken(const v: TLVec): SystemString; overload;
+    function SearchToken(const v: TLVec): SystemString;
+    function SearchOutVecToken(const v: TLVec): SystemString;
 
     // data input/output
     function Process(const p_in, p_out: PLVec): Boolean; overload;

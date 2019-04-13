@@ -2,14 +2,21 @@
 { * memory Rasterization                                                       * }
 { * by QQ 600585@qq.com                                                        * }
 { ****************************************************************************** }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 unit MemoryRaster;
 
@@ -17,10 +24,13 @@ unit MemoryRaster;
 
 interface
 
-uses Types, Math, Variants, CoreClasses, MemoryStream64, Geometry2DUnit, PascalStrings, UnicodeMixedLib,
+uses Types, Math, Variants, CoreClasses, MemoryStream64, Geometry2DUnit,
+  PascalStrings, UnicodeMixedLib,
 {$IFDEF FPC}
   UPascalStrings,
   FPCGenericStructlist,
+{$ELSE FPC}
+  System.IOUtils,
 {$ENDIF FPC}
   ListEngine,
   AggBasics, Agg2D, AggColor32,
@@ -66,11 +76,14 @@ type
   TByteRaster = array of array of Byte;
   PByteRaster = ^TByteRaster;
 
+  TMemoryRaster = class;
   TMemoryRaster_AggImage = class;
   TMemoryRaster_Agg2D = class;
   TVertexMap = class;
   TFontRaster = class;
+  TRasterSerialized = class;
 
+  // rasterization save format.
   TRasterSave = (
     rsRGBA, rsRGB,
     rsYV12, rsHalfYUV, rsQuartYUV, rsFastYV12, rsFastHalfYUV, rsFastQuartYUV,
@@ -80,12 +93,20 @@ type
     rsJpeg_RGBA_Qualily60, rsJPEG_RGB_Qualily60, rsJPEG_Gray_Qualily60, rsJPEG_GrayA_Qualily60,
     rsJpeg_RGBA_Qualily50, rsJPEG_RGB_Qualily50, rsJPEG_Gray_Qualily50, rsJPEG_GrayA_Qualily50
     );
+
+  TOnGetRasterizationMemory = procedure(Sender: TMemoryRaster) of object;
+
 {$ENDREGION 'base define'}
 
 {$REGION 'MemoryRaster'}
 
   TMemoryRaster = class(TCoreClassObject)
   private
+    FSerializedEngine: TRasterSerialized;
+    FMemorySerializedPosition: Int64;
+    FActivted: Boolean;
+    FActiveTimeTick: TTimeTick;
+
     FFreeBits: Boolean;
     FBits: PRasterColorArray;
     FWidth, FHeight: Integer;
@@ -115,7 +136,8 @@ type
 
     function GetAggImage: TMemoryRaster_AggImage;
     function GetAgg: TMemoryRaster_Agg2D;
-    procedure FreeAgg;
+
+    function GetBits: PRasterColorArray;
 
     function GetPixel(const x, y: Integer): TRasterColor;
     procedure SetPixel(const x, y: Integer; const Value: TRasterColor);
@@ -160,6 +182,17 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
 
+    function ActiveTimeTick: TTimeTick;
+
+    { serialized recycle memory }
+    property SerializedEngine: TRasterSerialized read FSerializedEngine write FSerializedEngine;
+    function SerializedAndRecycleMemory(RSeri: TRasterSerialized): Int64; overload;
+    function SerializedAndRecycleMemory(): Int64; overload;
+    function UnserializedMemory(RSeri: TRasterSerialized): Int64; overload;
+    function UnserializedMemory(): Int64; overload;
+    function RecycleMemory(): Int64;
+    procedure ReadyBits;
+
     { memory map }
     procedure SetWorkMemory(WorkMemory: Pointer; NewWidth, NewHeight: Integer); overload;
     procedure SetWorkMemory(raster: TMemoryRaster); overload;
@@ -170,19 +203,22 @@ type
     procedure CloseVertex;
     property Vertex: TVertexMap read GetVertex;
 
-    { font raster support }
+    { font rasterization support }
     procedure OpenFont;
     procedure CloseFont;
     property Font: TFontRaster read GetFont write SetFont;
 
-    { Advanced rasterization }
+    { agg rasterization }
     property AggImage: TMemoryRaster_AggImage read GetAggImage;
     property Agg: TMemoryRaster_Agg2D read GetAgg;
     procedure OpenAgg;
     procedure CloseAgg;
+    procedure FreeAgg;
     function AggActivted: Boolean;
 
     { general }
+    procedure Reset; virtual;
+    procedure Assign(sour: TMemoryRaster); virtual;
     procedure Clear; overload;
     procedure Clear(FillColor: TRasterColor); overload; virtual;
     procedure SetSize(NewWidth, NewHeight: Integer); overload; virtual;
@@ -197,9 +233,7 @@ type
     function BoundsRectV2: TRectV2;
     function Centroid: TVec2;
 
-    { operation }
-    procedure Reset; virtual;
-    procedure Assign(sour: TMemoryRaster); virtual;
+    { pixel operation }
     procedure FlipHorz;
     procedure FlipVert;
     procedure Rotate90;
@@ -278,7 +312,7 @@ type
     procedure DrawText(Text: SystemString; x, y: Integer; RotateVec: TVec2; Angle, alpha, siz: TGeoFloat; TextColor: TRasterColor); overload;
     procedure DrawText(Text: SystemString; x, y: Integer; siz: TGeoFloat; TextColor: TRasterColor); overload;
 
-    { hardware pipe simulate on Projection }
+    { Projection:hardware pipe simulate }
     procedure ProjectionTo(Dst: TMemoryRaster; const sourRect, DestRect: TV2Rect4; const bilinear_sampling: Boolean; const alpha: TGeoFloat);
     procedure Projection(const DestRect: TV2Rect4; const COLOR: TRasterColor); overload;
     procedure Projection(sour: TMemoryRaster; const sourRect, DestRect: TV2Rect4; const bilinear_sampling: Boolean; const alpha: TGeoFloat); overload;
@@ -357,9 +391,9 @@ type
     property PixelWrapLinear[const x, y: TGeoFloat]: TRasterColor read GetPixelWrapLinear;
     property PixelLinear[const x, y: Integer]: TRasterColor read GetPixelLinear;
     property ScanLine[y: Integer]: PRasterColorArray read GetScanLine;
-    property Bits: PRasterColorArray read FBits;
-    property width: Integer read FWidth;
-    property height: Integer read FHeight;
+    property Bits: PRasterColorArray read GetBits;
+    property Width: Integer read FWidth;
+    property Height: Integer read FHeight;
 
     { blend options }
     property DrawMode: TDrawMode read FDrawMode write FDrawMode default dmOpaque;
@@ -386,7 +420,9 @@ type
 {$ELSE FPC}
   TMemoryRasterList_Decl = TGenericsList<TMemoryRaster>;
 {$ENDIF FPC}
-  TMemoryRasterList = TMemoryRasterList_Decl;
+
+  TMemoryRasterList = class(TMemoryRasterList_Decl)
+  end;
 
   TRasterArray = array of TMemoryRaster;
   TRasterMatrix = array of TRasterArray;
@@ -627,8 +663,8 @@ type
 
     property FontSize: Integer read FFontSize;
     property ActivtedWord: Integer read FActivtedWord;
-    property width: Integer read FWidth;
-    property height: Integer read FHeight;
+    property Width: Integer read FWidth;
+    property Height: Integer read FHeight;
 
     // store
     procedure LoadFromStream(stream: TCoreClassStream);
@@ -648,6 +684,31 @@ type
     procedure Draw(Text: TFontRasterString; Dst: TMemoryRaster; dstVec: TVec2; dstColor: TRasterColor); overload;
   end;
 {$ENDREGION 'TFontRaster'}
+
+{$REGION 'MemoryRasterSerialized'}
+
+  TRasterSerialized = class
+  protected
+    FStream: TCoreClassStream;
+    FAutoFreeStream: Boolean;
+    FCritical: TCritical;
+    FWriteList, FReadList: TMemoryRasterList;
+  public
+    constructor Create(stream_: TCoreClassStream);
+    destructor Destroy; override;
+
+    function Write(r: TMemoryRaster): Int64;
+    function Read(r: TMemoryRaster): Int64;
+    procedure Remove(r: TMemoryRaster);
+
+    property AutoFreeStream: Boolean read FAutoFreeStream write FAutoFreeStream;
+    property stream: TCoreClassStream read FStream;
+    property Critical: TCritical read FCritical;
+    property WriteList: TMemoryRasterList read FWriteList;
+    property ReadList: TMemoryRasterList read FReadList;
+  end;
+
+{$ENDREGION 'MemoryRasterSerialized'}
 
 {$REGION 'RasterAPI'}
 
@@ -693,7 +754,7 @@ function AggColor(const Value: TRasterColor): TAggColorRgba8; {$IFDEF INLINE_ASM
 function AggColor(const r, g, b: TGeoFloat; const a: TGeoFloat = 1.0): TAggColorRgba8; {$IFDEF INLINE_ASM} inline; {$ENDIF}overload;
 function AggColor(const Value: TAggColorRgba8): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}overload;
 
-function ComputeSize(const MAX_Width, MAX_Height: Integer; var width, height: Integer): Single;
+function ComputeSize(const MAX_Width, MAX_Height: Integer; var Width, Height: Integer): Single;
 
 procedure FastBlur(Source, dest: TMemoryRaster; radius: Double; const Bounds: TRect); overload;
 procedure FastBlur(Source: TMemoryRaster; radius: Double; const Bounds: TRect); overload;
@@ -839,12 +900,18 @@ type
   TYV12Head = packed record
     Version: Byte;
     Compessed: Byte;
-    width: Integer;
-    height: Integer;
+    Width: Integer;
+    Height: Integer;
   end;
 
   TBlendLine = procedure(Src, Dst: PRasterColor; Count: Integer);
   TBlendLineEx = procedure(Src, Dst: PRasterColor; Count: Integer; M: TRasterColor);
+
+  TRasterSerializedHeader = packed record
+    Width, Height: Integer;
+    siz: Int64;
+    UsedAGG: Boolean;
+  end;
 
 const
   ZERO_RECT: TRect = (Left: 0; Top: 0; Right: 0; Bottom: 0);
@@ -866,78 +933,198 @@ function IsRectEmpty_(const r: TRect): Boolean; forward;
 {$INCLUDE MemoryRaster_ExtApi.inc}
 
 
-function _NewRaster: TMemoryRaster;
+constructor TRasterSerialized.Create(stream_: TCoreClassStream);
+begin
+  inherited Create;
+  FStream := stream_;
+  FAutoFreeStream := False;
+  FCritical := TCritical.Create;
+  FWriteList := TMemoryRasterList.Create;
+  FReadList := TMemoryRasterList.Create;
+end;
+
+destructor TRasterSerialized.Destroy;
+begin
+  if FAutoFreeStream then
+      DisposeObject(FStream);
+  DisposeObject(FCritical);
+  DisposeObject(FWriteList);
+  DisposeObject(FReadList);
+  inherited Destroy;
+end;
+
+function TRasterSerialized.Write(r: TMemoryRaster): Int64;
+var
+  h1, h2: TRasterSerializedHeader;
+  p: Int64;
+  i: Integer;
+begin
+  Result := 0;
+  if (r = nil) or (r.Empty) then
+      exit;
+
+  FCritical.Acquire;
+  try
+    h1.Width := r.Width;
+    h1.Height := r.Height;
+    h1.siz := r.Width * r.Height * 4;
+    h1.UsedAGG := r.FAggNeed;
+
+    p := FStream.Size;
+    if r.FMemorySerializedPosition >= 0 then
+      begin
+        FStream.position := r.FMemorySerializedPosition;
+        if FStream.Read(h2, SizeOf(TRasterSerializedHeader)) = SizeOf(TRasterSerializedHeader) then
+          if (h2.Width = h1.Height) and (h2.Height = h1.Height) then
+              p := r.FMemorySerializedPosition;
+      end;
+
+    FStream.position := p;
+    if FStream.Write(h1, SizeOf(TRasterSerializedHeader)) = SizeOf(TRasterSerializedHeader) then
+      if FStream.Write(r.FBits^[0], h1.siz) = h1.siz then
+        begin
+          r.CloseVertex;
+          r.FreeAgg;
+          FreeMem(r.FBits);
+          r.FBits := nil;
+          r.FMemorySerializedPosition := p;
+          Result := h1.siz;
+        end;
+
+    i := 0;
+    while i < FWriteList.Count do
+      begin
+        if FWriteList[i] = r then
+            FWriteList.Delete(i)
+        else
+            inc(i);
+      end;
+    FWriteList.Add(r);
+  finally
+      FCritical.Release;
+  end;
+end;
+
+function TRasterSerialized.Read(r: TMemoryRaster): Int64;
+var
+  h: TRasterSerializedHeader;
+  i: Integer;
+begin
+  Result := 0;
+  if (r = nil) or (r.FMemorySerializedPosition < 0) then
+      exit;
+
+  r.CloseVertex;
+  r.FreeAgg;
+
+  FCritical.Acquire;
+  try
+    if (r.FMemorySerializedPosition >= 0) then
+      begin
+        FStream.position := r.FMemorySerializedPosition;
+        if FStream.Read(h, SizeOf(TRasterSerializedHeader)) = SizeOf(TRasterSerializedHeader) then
+          if FStream.position + h.siz <= FStream.Size then
+            begin
+              if Assigned(r.FBits) and r.FFreeBits then
+                  FreeMem(r.FBits);
+
+              GetMem(r.FBits, h.siz);
+              r.FWidth := h.Width;
+              r.FHeight := h.Height;
+
+              if FStream.Read(r.FBits^[0], h.siz) = h.siz then
+                begin
+                  r.FFreeBits := True;
+                  if h.UsedAGG then
+                      r.OpenAgg;
+                  Result := h.siz;
+                end;
+            end;
+      end;
+
+    i := 0;
+    while i < FReadList.Count do
+      begin
+        if FReadList[i] = r then
+            FReadList.Delete(i)
+        else
+            inc(i);
+      end;
+    FReadList.Add(r);
+  finally
+      FCritical.Release;
+  end;
+end;
+
+procedure TRasterSerialized.Remove(r: TMemoryRaster);
+var
+  i: Integer;
+begin
+  FCritical.Acquire;
+  try
+    i := 0;
+    while i < FReadList.Count do
+      begin
+        if FReadList[i] = r then
+            FReadList.Delete(i)
+        else
+            inc(i);
+      end;
+
+    i := 0;
+    while i < FWriteList.Count do
+      begin
+        if FWriteList[i] = r then
+            FWriteList.Delete(i)
+        else
+            inc(i);
+      end;
+  finally
+      FCritical.Release;
+  end;
+end;
+
+function NewRaster_: TMemoryRaster;
 begin
   Result := TMemoryRaster.Create;
 end;
 
-function _NewRasterFromFile(const fn: string): TMemoryRaster;
+function NewRasterFromFile_(const fn: string): TMemoryRaster;
 begin
   Result := NewRaster();
   Result.LoadFromFile(fn);
 end;
 
-function _NewRasterFromStream(const stream: TCoreClassStream): TMemoryRaster;
+function NewRasterFromStream_(const stream: TCoreClassStream): TMemoryRaster;
 var
   m64: TMemoryStream64;
 begin
   Result := NewRaster();
 
-  stream.Position := 0;
+  stream.position := 0;
   m64 := TMemoryStream64.Create;
   if stream is TMemoryStream64 then
       m64.SetPointerWithProtectedMode(TMemoryStream64(stream).Memory, TMemoryStream64(stream).Size)
   else
       m64.CopyFrom(stream, stream.Size);
-  m64.Position := 0;
+  m64.position := 0;
 
   Result.LoadFromStream(m64);
 
-  disposeObject(m64);
+  DisposeObject(m64);
 end;
 
-procedure _SaveRaster(mr: TMemoryRaster; const fn: string);
+procedure SaveRaster_(mr: TMemoryRaster; const fn: string);
 begin
   mr.SaveToFile(fn);
 end;
 
-procedure testProjection(fin, fout: SystemString);
-var
-  m1, m2: TMemoryRaster;
-begin
-  m1 := NewRasterFromFile(fin);
-  m2 := TMemoryRaster.Create;
-
-  m2.SetSize(m1.width, m1.height, RasterColorF(1, 1, 1));
-
-  m1.ProjectionTo(m2,
-    TV2Rect4.Init(m1.BoundsRect, 0),
-    TV2Rect4.Init(m2.BoundsRect, 0),
-    True, 1.0);
-
-  m2.SaveToFile(fout);
-
-  disposeObject([m1, m2]);
-end;
-
-procedure TestCalibrateRotate(fin, fout: SystemString);
-var
-  M: TMemoryRaster;
-begin
-  M := NewRasterFromFile(fin);
-
-  M.CalibrateRotate(RasterColorF(0, 0, 0));
-
-  M.SaveToFile(fout);
-  disposeObject(M);
-end;
-
 initialization
 
-NewRaster := {$IFDEF FPC}@{$ENDIF FPC}_NewRaster;
-NewRasterFromFile := {$IFDEF FPC}@{$ENDIF FPC}_NewRasterFromFile;
-NewRasterFromStream := {$IFDEF FPC}@{$ENDIF FPC}_NewRasterFromStream;
-SaveRaster := {$IFDEF FPC}@{$ENDIF FPC}_SaveRaster;
+NewRaster := {$IFDEF FPC}@{$ENDIF FPC}NewRaster_;
+NewRasterFromFile := {$IFDEF FPC}@{$ENDIF FPC}NewRasterFromFile_;
+NewRasterFromStream := {$IFDEF FPC}@{$ENDIF FPC}NewRasterFromStream_;
+SaveRaster := {$IFDEF FPC}@{$ENDIF FPC}SaveRaster_;
 
 MakeMergeTables;
 Init_DefaultFont;

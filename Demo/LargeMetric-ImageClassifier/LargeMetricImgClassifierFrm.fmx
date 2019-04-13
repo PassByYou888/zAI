@@ -1,0 +1,79 @@
+object LargeMetricImgClassifierForm: TLargeMetricImgClassifierForm
+  Left = 0
+  Top = 0
+  Caption = 'Large-Metric-Image-Classifier.'
+  ClientHeight = 760
+  ClientWidth = 1486
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object Training_IMGClassifier_Button: TButton
+    Position.X = 16.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 217.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    Text = #35757#32451#22270#29255#20998#31867#22120
+    OnClick = Training_IMGClassifier_ButtonClick
+  end
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Lines.Strings = (
+      #22823#35268#27169#24230#37327#21270#22270#29255#20998#31867#22120#25216#26415#25351#26631
+      #25805#20316#31995#32479#65306'windows,linux'
+      #22788#29702#22120#26550#26500#65306'intel x86,x64'
+      'IOT'#65306#19981
+      #20869#23384#38656#27714#65306#39640
+      'GPU'#38656#27714#65306#38656#35201
+      #24182#34892#65306#19981#25903#25345
+      #25968#25454#20860#23481#65306#20840#20860#23481
+      #23454#26102#24615#65306#39640
+      ''
+      #26356#22810#30340#25216#26415#32454#33410#65292#25105#37117#22791#27880#22312#28304#30721#20013
+      ''
+      ''
+      'by.qq600585'
+      ''
+      '')
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    Position.X = 16.000000000000000000
+    Position.Y = 48.000000000000000000
+    Size.Width = 1449.000000000000000000
+    Size.Height = 697.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 4
+    Viewport.Width = 1449.000000000000000000
+    Viewport.Height = 697.000000000000000000
+  end
+  object Timer1: TTimer
+    Interval = 100
+    OnTimer = Timer1Timer
+    Left = 728
+    Top = 368
+  end
+  object ResetButton: TButton
+    Anchors = [akTop, akRight]
+    Position.X = 1280.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 185.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    Text = #37325#32622
+    OnClick = ResetButtonClick
+  end
+  object TestClassifierButton: TButton
+    Position.X = 240.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 185.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Text = #27979#35797#27169#22411
+    OnClick = TestClassifierButtonClick
+  end
+end

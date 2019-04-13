@@ -2,14 +2,21 @@
 { * memory Rasterization JPEG support                                          * }
 { * by QQ 600585@qq.com                                                        * }
 { ****************************************************************************** }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 unit Raster_JPEG_type;
 
@@ -508,8 +515,8 @@ const
   mkTEM = $01; // Reserved for temporary use
 
   cColorSpaceNames: array [TJpegColorSpace] of RawByteString =
-    ('AutoDetect', 'Gray', 'GrayA', 'RGB', 'RGBA', 'YCbCr', 'YCbCrA',
-    'CMYK', 'CMYK as YCbCrK', 'YCCK', 'PhotoYCC', 'PhotoYCCA', 'ITU CieLAB');
+    ('AutoDetect',
+    'Gray', 'GrayA', 'RGB', 'RGBA', 'YCbCr', 'YCbCrA', 'CMYK', 'CMYK as YCbCrK', 'YCCK', 'PhotoYCC', 'PhotoYCCA', 'ITU CieLAB');
 
   cDefaultJpgCompressionQuality = 80;
 
@@ -633,10 +640,12 @@ const
   cHuffmanValDCChrom: array [0 .. 11] of Byte =
     (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
 
-const cHuffmanBitsACLum: array [0 .. 15] of Byte =
+const
+  cHuffmanBitsACLum: array [0 .. 15] of Byte =
     (0, 2, 1, 3, 3, 2, 4, 3, 5, 5, 4, 4, 0, 0, 1, $7D);
 
-const cHuffmanValACLum: array [0 .. 161] of Byte =
+const
+  cHuffmanValACLum: array [0 .. 161] of Byte =
     ($01, $02, $03, $00, $04, $11, $05, $12,
     $21, $31, $41, $06, $13, $51, $61, $07,
     $22, $71, $14, $32, $81, $91, $A1, $08,
@@ -719,7 +728,6 @@ const cHuffmanValACLum: array [0 .. 161] of Byte =
     $D3, $D4, $D5, $D6, $D7, $D8, $D9, $DA, $E2, $E3, $E4, $E5, $E6, $E7, $E8,
     $E9, $EA, $F2, $F3, $F4, $F5, $F6, $F7, $F8, $F9, $FA);
 
-resourcestring
   sInternalError = 'Internal error';
   sUnsupportedEncoding = 'Unsupported encoding: SOF%d';
   sMarkerExpected = 'Jpeg Marker expected';
@@ -752,7 +760,6 @@ function IntMin(i1, i2: Integer): Integer; inline;
 function sdGetDivisor(AScale: TJpegScale): Integer;
 
 type
-
   TItemCompareEvent = function(Item1, Item2: TObject; Info: pointer): Integer of object;
   TItemCompareMethod = function(Item1, Item2: TObject; Info: pointer): Integer;
   TPointerCompareMethod = function(Ptr1, Ptr2: pointer): Integer;
@@ -875,12 +882,9 @@ procedure sdWalkingMedianArrayInteger(SFirst, DFirst: PInteger; ACount, ACenter,
 procedure sdWalkingAverageArrayDouble(SFirst, DFirst: PDouble; ACount, ACenter, AWindowSize: Integer);
 procedure sdWalkingMedianArrayDouble(SFirst, DFirst: PDouble; ACount, ACenter, AWindowSize: Integer);
 
-resourcestring
-
+const
   sAddingNonUniqueObject = 'Adding non-unique object to list is not allowed';
   sListMustBeSorted = 'List must be sorted';
-
-const
   cEmptyGuid: TGuid = (D1: 0; D2: 0; D3: 0; D4: (0, 0, 0, 0, 0, 0, 0, 0));
 
 implementation

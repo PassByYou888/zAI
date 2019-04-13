@@ -433,8 +433,8 @@ begin
   Param := THashVariantList.Create;
   Param.SetDefaultValue('ComputeFunc', 'TrainMRN');
   Param.SetDefaultValue('source', 'input' + zAI_Common.C_ImageMatrix_Ext);
-  Param.SetDefaultValue('syncfile', 'output' + C_Metric_ResNet_Ext + '.sync');
-  Param.SetDefaultValue('output', 'output' + C_Metric_ResNet_Ext);
+  Param.SetDefaultValue('syncfile', 'output' + C_Metric_Ext + '.sync');
+  Param.SetDefaultValue('output', 'output' + C_Metric_Ext);
   Param.SetDefaultValue('timeout', 'e"1000*60*60*24*7"');
   Param.SetDefaultValue('weight_decay', 0.0001);
   Param.SetDefaultValue('momentum', 0.9);
@@ -516,19 +516,19 @@ begin
       if check_result_successed then
         begin
           m64 := TMemoryStream64.Create;
-          tt.Read('output' + C_Metric_ResNet_Ext, m64);
+          tt.Read('output' + C_Metric_Ext, m64);
 
           DoStatus('rebuild metric.');
           n_metric := Metric.Metric_ResNet_Open_Stream(m64);
           Metric.Metric_ResNet_Close(Metric_Resnet_Hnd);
           Metric_Resnet_Hnd := n_metric;
-          fn := umlCombineFileName(TPath.GetLibraryPath, 'face' + C_Metric_ResNet_Ext);
+          fn := umlCombineFileName(TPath.GetLibraryPath, 'face' + C_Metric_Ext);
           m64.SaveToFile(fn);
           disposeObject(m64);
 
           DoStatus('rebuild face vector.');
           Face_Learn.Clear;
-          Metric.Metric_ResNet_SaveDetectorDefineToLearnEngine(Metric_Resnet_Hnd, FaceDB, Face_Learn);
+          Metric.Metric_ResNet_SaveDetectorDefineToLearnEngine(Metric_Resnet_Hnd, False, FaceDB, Face_Learn);
           Face_Learn.Train();
           fn := umlCombineFileName(TPath.GetLibraryPath, 'face.learn');
           Face_Learn.SaveToFile(fn);
@@ -796,7 +796,7 @@ var
   n: TPascalString;
 begin
   Metric.Metric_ResNet_Close(Metric_Resnet_Hnd);
-  fn := umlCombineFileName(TPath.GetLibraryPath, 'face' + C_Metric_ResNet_Ext);
+  fn := umlCombineFileName(TPath.GetLibraryPath, 'face' + C_Metric_Ext);
   if umlFileExists(fn) then
     begin
       Metric_Resnet_Hnd := Metric.Metric_ResNet_Open_Stream(fn);
@@ -849,7 +849,7 @@ begin
   FaceDetParallel := TAI_Parallel.Create;
   FaceDetParallel.Prepare_Parallel(10);
   FaceDetParallel.Prepare_Face;
-  Face_Learn := TLearn.CreateClassifier(TLearnType.ltKDT, zAI.C_Metric_ResNet_Dim);
+  Face_Learn := TLearn.CreateClassifier(TLearnType.ltKDT, zAI.C_Metric_Dim);
 
   // face matrix database
   FaceDB := TAI_ImageMatrix.Create;

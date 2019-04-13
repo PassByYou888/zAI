@@ -51,19 +51,11 @@ begin
   Result := FAgg;
 end;
 
-procedure TMemoryRaster.FreeAgg;
+function TMemoryRaster.GetBits: PRasterColorArray;
 begin
-  if Assigned(FAggImage) then
-    begin
-      DisposeObject(FAggImage);
-      FAggImage := nil;
-    end;
-
-  if Assigned(FAgg) then
-    begin
-      DisposeObject(FAgg);
-      FAgg := nil;
-    end;
+  ReadyBits();
+  FActivted := True;
+  Result := FBits;
 end;
 
 function TMemoryRaster.GetPixel(const x, y: Integer): TRasterColor;
@@ -88,12 +80,12 @@ end;
 
 function TMemoryRaster.GetPixelPtr(const x, y: Integer): PRasterColor;
 begin
-  Result := @(FBits^[ClampInt_(x, 0, width - 1) + ClampInt_(y, 0, height - 1) * width]);
+  Result := @(Bits^[ClampInt_(x, 0, width - 1) + ClampInt_(y, 0, height - 1) * width]);
 end;
 
 function TMemoryRaster.GetScanLine(y: Integer): PRasterColorArray;
 begin
-  Result := @(FBits^[y * FWidth]);
+  Result := @(Bits^[y * FWidth]);
 end;
 
 function TMemoryRaster.GetPixelRed(const x, y: Integer): Byte;
@@ -263,6 +255,12 @@ end;
 constructor TMemoryRaster.Create;
 begin
   inherited Create;
+
+  FSerializedEngine := nil;
+  FMemorySerializedPosition := -1;
+  FActivted := True;
+  FActiveTimeTick := 0;
+
   FFreeBits := False;
   FBits := nil;
   FWidth := 0;
@@ -289,12 +287,68 @@ end;
 
 destructor TMemoryRaster.Destroy;
 begin
+  if FSerializedEngine <> nil then
+      FSerializedEngine.Remove(Self);
   CloseFont;
   CloseVertex;
   CloseAgg;
-  if Assigned(FBits) and FFreeBits then
-      FreeMem(FBits);
+  RecycleMemory;
   inherited Destroy;
+end;
+
+function TMemoryRaster.ActiveTimeTick: TTimeTick;
+begin
+  if FActivted then
+    begin
+      FActiveTimeTick := GetTimeTick();
+      FActivted := False;
+    end;
+  Result := FActiveTimeTick;
+end;
+
+function TMemoryRaster.SerializedAndRecycleMemory(RSeri: TRasterSerialized): Int64;
+begin
+  FSerializedEngine := RSeri;
+  Result := SerializedAndRecycleMemory();
+end;
+
+function TMemoryRaster.SerializedAndRecycleMemory(): Int64;
+begin
+  if FSerializedEngine <> nil then
+      Result := FSerializedEngine.Write(Self)
+  else
+      Result := 0;
+end;
+
+function TMemoryRaster.UnserializedMemory(RSeri: TRasterSerialized): Int64;
+begin
+  FSerializedEngine := RSeri;
+  Result := UnserializedMemory();
+end;
+
+function TMemoryRaster.UnserializedMemory(): Int64;
+begin
+  if FSerializedEngine <> nil then
+      Result := FSerializedEngine.Read(Self)
+  else
+      Result := 0;
+end;
+
+function TMemoryRaster.RecycleMemory(): Int64;
+begin
+  Result := 0;
+  if Assigned(FBits) and FFreeBits then
+    begin
+      Result := FWidth * FHeight * 4;
+      FreeMem(FBits);
+    end;
+  FBits := nil;
+end;
+
+procedure TMemoryRaster.ReadyBits;
+begin
+  if (FBits = nil) and (FWidth > 0) and (FHeight > 0) and (FMemorySerializedPosition >= 0) and (FSerializedEngine <> nil) then
+      UnserializedMemory();
 end;
 
 procedure TMemoryRaster.SetWorkMemory(WorkMemory: Pointer; NewWidth, NewHeight: Integer);
@@ -302,8 +356,7 @@ begin
   CloseVertex;
   FreeAgg;
 
-  if Assigned(FBits) and FFreeBits then
-      FreeMem(FBits);
+  RecycleMemory;
 
   if WorkMemory = nil then
     begin
@@ -322,16 +375,19 @@ begin
 
   if FAggNeed then
       OpenAgg;
+
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.SetWorkMemory(raster: TMemoryRaster);
 begin
-  SetWorkMemory(@raster.FBits^[0], raster.width, raster.height);
+  SetWorkMemory(@raster.Bits^[0], raster.width, raster.height);
 end;
 
 function TMemoryRaster.IsMemoryMap: Boolean;
 begin
-  Result := (FBits <> nil) and (not FFreeBits);
+  Result := (FWidth > 0) and (FHeight > 0) and (not FFreeBits);
 end;
 
 procedure TMemoryRaster.OpenVertex;
@@ -368,10 +424,10 @@ end;
 
 procedure TMemoryRaster.OpenAgg;
 begin
-  if Empty then
+  if empty then
     begin
       FAggNeed := True;
-      Exit;
+      exit;
     end;
   if FAggImage = nil then
       FAggImage := TMemoryRaster_AggImage.Create(Self);
@@ -389,9 +445,71 @@ begin
   FAggNeed := False;
 end;
 
+procedure TMemoryRaster.FreeAgg;
+begin
+  if Assigned(FAggImage) then
+    begin
+      DisposeObject(FAggImage);
+      FAggImage := nil;
+    end;
+
+  if Assigned(FAgg) then
+    begin
+      DisposeObject(FAgg);
+      FAgg := nil;
+    end;
+end;
+
 function TMemoryRaster.AggActivted: Boolean;
 begin
   Result := (FAggImage <> nil) and (FAgg <> nil);
+end;
+
+procedure TMemoryRaster.Reset;
+begin
+  if FFont <> nil then
+    begin
+      DisposeObject(FFont);
+      FFont := nil;
+    end;
+
+  CloseVertex;
+  FreeAgg;
+  RecycleMemory;
+
+  FFreeBits := True;
+  FWidth := 0;
+  FHeight := 0;
+
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
+end;
+
+procedure TMemoryRaster.Assign(sour: TMemoryRaster);
+begin
+  Reset;
+  FWidth := sour.FWidth;
+  FHeight := sour.FHeight;
+
+  FDrawMode := sour.FDrawMode;
+  FCombineMode := sour.FCombineMode;
+
+  FMasterAlpha := sour.FMasterAlpha;
+  FOuterColor := sour.FOuterColor;
+
+  CloseVertex;
+  FreeAgg;
+
+  FFreeBits := True;
+  FAggNeed := sour.FAggNeed;
+
+  GetMem(FBits, sour.FWidth * sour.FHeight * SizeOf(TRasterColor));
+  CopyRasterColor(sour.Bits^[0], FBits^[0], sour.FWidth * sour.FHeight);
+
+  if FAggNeed then
+      OpenAgg;
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.Clear;
@@ -401,26 +519,19 @@ end;
 
 procedure TMemoryRaster.Clear(FillColor: TRasterColor);
 begin
-  if Empty then
-      Exit;
+  if empty then
+      exit;
   FillRasterColor(Bits^[0], width * height, FillColor);
 end;
 
 procedure TMemoryRaster.SetSize(NewWidth, NewHeight: Integer);
 begin
-  if (NewWidth = FWidth) and (NewHeight = FHeight) and (Assigned(FBits)) then
-      Exit;
-
-  if Assigned(FBits) then
-    begin
-      if FFreeBits then
-          FreeMem(FBits);
-      FBits := nil;
-    end;
+  if (NewWidth = FWidth) and (NewHeight = FHeight) and (FBits <> nil) then
+      exit;
 
   CloseVertex;
   FreeAgg;
-
+  RecycleMemory;
   FFreeBits := True;
   GetMem(FBits, NewWidth * NewHeight * SizeOf(TRasterColor));
   FWidth := NewWidth;
@@ -428,12 +539,15 @@ begin
 
   if FAggNeed then
       OpenAgg;
+
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.SetSize(NewWidth, NewHeight: Integer; const ClearColor: TRasterColor);
 begin
   SetSize(NewWidth, NewHeight);
-  FillRasterColor(FBits^[0], NewWidth * NewHeight, ClearColor);
+  FillRasterColor(Bits^[0], NewWidth * NewHeight, ClearColor);
 end;
 
 procedure TMemoryRaster.SetSizeF(NewWidth, NewHeight: TGeoFloat; const ClearColor: TRasterColor);
@@ -461,7 +575,7 @@ begin
   Result := SizeOf2DPoint;
 end;
 
-function TMemoryRaster.Empty: Boolean;
+function TMemoryRaster.empty: Boolean;
 begin
   Result := (FBits = nil) or (FWidth <= 0) or (FHeight <= 0);
 end;
@@ -484,49 +598,6 @@ begin
   Result := Vec2(width * 0.5, height * 0.5);
 end;
 
-procedure TMemoryRaster.Reset;
-begin
-  if Assigned(FBits) then
-    begin
-      if FFreeBits then
-          FreeMem(FBits);
-      FBits := nil;
-    end;
-
-  if FFont <> nil then
-    begin
-      DisposeObject(FFont);
-      FFont := nil;
-    end;
-
-  CloseVertex;
-  FreeAgg;
-
-  FFreeBits := True;
-  FWidth := 0;
-  FHeight := 0;
-end;
-
-procedure TMemoryRaster.Assign(sour: TMemoryRaster);
-begin
-  Reset;
-  FWidth := sour.FWidth;
-  FHeight := sour.FHeight;
-
-  FDrawMode := sour.FDrawMode;
-  FCombineMode := sour.FCombineMode;
-
-  FMasterAlpha := sour.FMasterAlpha;
-  FOuterColor := sour.FOuterColor;
-
-  FFreeBits := True;
-  GetMem(FBits, sour.FWidth * sour.FHeight * SizeOf(TRasterColor));
-  CopyRasterColor(sour.FBits^[0], FBits^[0], sour.FWidth * sour.FHeight);
-
-  CloseVertex;
-  FreeAgg;
-end;
-
 procedure TMemoryRaster.FlipHorz;
 var
   i, j: Integer;
@@ -534,6 +605,9 @@ var
   tmp: TRasterColor;
   w, W2: Integer;
 begin
+  CloseVertex;
+  FreeAgg;
+
   w := width;
   { In-place flipping }
   p1 := PRasterColor(Bits);
@@ -554,8 +628,10 @@ begin
       inc(p2, w + W2);
     end;
 
-  CloseVertex;
-  FreeAgg;
+  if FAggNeed then
+      OpenAgg;
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.FlipVert;
@@ -564,6 +640,8 @@ var
   buffer: PRasterColorArray;
   p1, p2: PRasterColor;
 begin
+  CloseVertex;
+  FreeAgg;
   { in-place }
   j2 := height - 1;
   GetMem(buffer, width shl 2);
@@ -578,8 +656,10 @@ begin
     end;
   FreeMem(buffer);
 
-  CloseVertex;
-  FreeAgg;
+  if FAggNeed then
+      OpenAgg;
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.Rotate90;
@@ -587,6 +667,11 @@ var
   tmp: TMemoryRaster;
   x, y, i, j: Integer;
 begin
+  CloseVertex;
+  FreeAgg;
+
+  ReadyBits();
+
   tmp := TMemoryRaster.Create;
 
   tmp.SetSize(height, width);
@@ -596,7 +681,7 @@ begin
       j := height - 1 - y;
       for x := 0 to width - 1 do
         begin
-          tmp.Bits^[j] := Bits^[i];
+          tmp.FBits^[j] := FBits^[i];
           inc(i);
           inc(j, height);
         end;
@@ -612,8 +697,10 @@ begin
   tmp.FBits := nil;
   DisposeObject(tmp);
 
-  CloseVertex;
-  FreeAgg;
+  if FAggNeed then
+      OpenAgg;
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.Rotate180;
@@ -621,17 +708,15 @@ var
   i, i2: Integer;
   tmp: TRasterColor;
 begin
+  ReadyBits();
   i2 := width * height - 1;
   for i := 0 to width * height div 2 - 1 do
     begin
-      tmp := Bits^[i2];
-      Bits^[i2] := Bits^[i];
-      Bits^[i] := tmp;
+      tmp := FBits^[i2];
+      FBits^[i2] := FBits^[i];
+      FBits^[i] := tmp;
       dec(i2);
     end;
-
-  CloseVertex;
-  FreeAgg;
 end;
 
 procedure TMemoryRaster.Rotate270;
@@ -639,6 +724,11 @@ var
   tmp: TMemoryRaster;
   x, y, i, j: Integer;
 begin
+  CloseVertex;
+  FreeAgg;
+
+  ReadyBits();
+
   tmp := TMemoryRaster.Create;
 
   tmp.SetSize(height, width);
@@ -648,7 +738,7 @@ begin
       j := (width - 1) * height + y;
       for x := 0 to width - 1 do
         begin
-          tmp.Bits^[j] := Bits^[i];
+          tmp.FBits^[j] := FBits^[i];
           inc(i);
           dec(j, height);
         end;
@@ -664,8 +754,10 @@ begin
   tmp.FBits := nil;
   DisposeObject(tmp);
 
-  CloseVertex;
-  FreeAgg;
+  if FAggNeed then
+      OpenAgg;
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.Rotate(dest: TMemoryRaster; Angle: TGeoFloat; Endge: Integer);
@@ -680,27 +772,32 @@ procedure TMemoryRaster.Rotate(Angle: TGeoFloat; Endge: Integer; BackgroundColor
 var
   n: TMemoryRaster;
 begin
+  CloseVertex;
+  FreeAgg;
+
   n := TMemoryRaster.Create;
   n.SetSize(width, height, BackgroundColor);
   Rotate(n, Angle, Endge);
   Reset;
   FWidth := n.width;
   FHeight := n.height;
-  FBits := n.FBits;
+  FBits := n.Bits;
 
   n.FBits := nil;
   n.FWidth := 0;
   n.FHeight := 0;
   DisposeObject(n);
 
-  CloseVertex;
-  FreeAgg;
+  if FAggNeed then
+      OpenAgg;
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.CalibrateRotate(BackgroundColor: TRasterColor);
 begin
-  if Empty then
-    Exit;
+  if empty then
+      exit;
   Rotate(-DocmentRotationDetected(10, 128, Self), 1, BackgroundColor);
 end;
 
@@ -746,7 +843,7 @@ begin
   if (Source.width = NewWidth) and (Source.height = NewHeight) then
     begin
       Assign(Source);
-      Exit;
+      exit;
     end;
   SetSize(NewWidth, NewHeight);
 
@@ -772,20 +869,25 @@ procedure TMemoryRaster.NoLineZoom(const NewWidth, NewHeight: Integer);
 var
   n: TMemoryRaster;
 begin
+  CloseVertex;
+  FreeAgg;
+
   n := TMemoryRaster.Create;
   n.NoLineZoomFrom(Self, NewWidth, NewHeight);
   Reset;
   FWidth := n.width;
   FHeight := n.height;
-  FBits := n.FBits;
+  FBits := n.Bits;
 
   n.FBits := nil;
   n.FWidth := 0;
   n.FHeight := 0;
   DisposeObject(n);
 
-  CloseVertex;
-  FreeAgg;
+  if FAggNeed then
+      OpenAgg;
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.ZoomLine(const Source, dest: TMemoryRaster; const pass: Integer);
@@ -820,7 +922,7 @@ begin
   if (Source.width = NewWidth) and (Source.height = NewHeight) then
     begin
       Assign(Source);
-      Exit;
+      exit;
     end;
   SetSize(NewWidth, NewHeight);
 
@@ -851,20 +953,25 @@ procedure TMemoryRaster.Zoom(const NewWidth, NewHeight: Integer);
 var
   n: TMemoryRaster;
 begin
+  CloseVertex;
+  FreeAgg;
+
   n := TMemoryRaster.Create;
   n.ZoomFrom(Self, NewWidth, NewHeight);
   Reset;
   FWidth := n.width;
   FHeight := n.height;
-  FBits := n.FBits;
+  FBits := n.Bits;
 
   n.FBits := nil;
   n.FWidth := 0;
   n.FHeight := 0;
   DisposeObject(n);
 
-  CloseVertex;
-  FreeAgg;
+  if FAggNeed then
+      OpenAgg;
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.FastBlurZoomFrom(const Source: TMemoryRaster; const NewWidth, NewHeight: Integer);
@@ -875,7 +982,7 @@ begin
   if (Source.width = NewWidth) and (Source.height = NewHeight) then
     begin
       Assign(Source);
-      Exit;
+      exit;
     end;
   k1 := Max(NewWidth / Source.width, NewHeight / Source.height);
   k2 := Max(Source.width / NewWidth, Source.height / NewHeight);
@@ -904,20 +1011,25 @@ procedure TMemoryRaster.FastBlurZoom(const NewWidth, NewHeight: Integer);
 var
   n: TMemoryRaster;
 begin
+  CloseVertex;
+  FreeAgg;
+
   n := TMemoryRaster.Create;
   n.FastBlurZoomFrom(Self, NewWidth, NewHeight);
   Reset;
   FWidth := n.width;
   FHeight := n.height;
-  FBits := n.FBits;
+  FBits := n.Bits;
 
   n.FBits := nil;
   n.FWidth := 0;
   n.FHeight := 0;
   DisposeObject(n);
 
-  CloseVertex;
-  FreeAgg;
+  if FAggNeed then
+      OpenAgg;
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.GaussianBlurZoomFrom(const Source: TMemoryRaster; const NewWidth, NewHeight: Integer);
@@ -928,7 +1040,7 @@ begin
   if (Source.width = NewWidth) and (Source.height = NewHeight) then
     begin
       Assign(Source);
-      Exit;
+      exit;
     end;
 
   k1 := Max(NewWidth / Source.width, NewHeight / Source.height);
@@ -957,20 +1069,25 @@ procedure TMemoryRaster.GaussianBlurZoom(const NewWidth, NewHeight: Integer);
 var
   n: TMemoryRaster;
 begin
+  CloseVertex;
+  FreeAgg;
+
   n := TMemoryRaster.Create;
   n.GaussianBlurZoomFrom(Self, NewWidth, NewHeight);
   Reset;
   FWidth := n.width;
   FHeight := n.height;
-  FBits := n.FBits;
+  FBits := n.Bits;
 
   n.FBits := nil;
   n.FWidth := 0;
   n.FHeight := 0;
   DisposeObject(n);
 
-  CloseVertex;
-  FreeAgg;
+  if FAggNeed then
+      OpenAgg;
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.GrayscaleBlurZoomFrom(const Source: TMemoryRaster; const NewWidth, NewHeight: Integer);
@@ -982,7 +1099,7 @@ begin
     begin
       Assign(Source);
       Grayscale;
-      Exit;
+      exit;
     end;
   k1 := Max(NewWidth / Source.width, NewHeight / Source.height);
   k2 := Max(Source.width / NewWidth, Source.height / NewHeight);
@@ -1010,20 +1127,25 @@ procedure TMemoryRaster.GrayscaleBlurZoom(const NewWidth, NewHeight: Integer);
 var
   n: TMemoryRaster;
 begin
+  CloseVertex;
+  FreeAgg;
+
   n := TMemoryRaster.Create;
   n.GrayscaleBlurZoomFrom(Self, NewWidth, NewHeight);
   Reset;
   FWidth := n.width;
   FHeight := n.height;
-  FBits := n.FBits;
+  FBits := n.Bits;
 
   n.FBits := nil;
   n.FWidth := 0;
   n.FHeight := 0;
   DisposeObject(n);
 
-  CloseVertex;
-  FreeAgg;
+  if FAggNeed then
+      OpenAgg;
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
 end;
 
 procedure TMemoryRaster.Scale(k: TGeoFloat);
@@ -1036,12 +1158,9 @@ var
   dest: TMemoryRaster;
   pass: Integer;
 begin
+  ReadyBits();
   dest := TMemoryRaster.Create;
-  dest.FFreeBits := True;
-  GetMem(dest.FBits, width * height * SizeOf(TRasterColor));
-  dest.FWidth := width;
-  dest.FHeight := height;
-
+  dest.SetSize(width, height);
   for pass := (width * height) - 1 downto 0 do
       dest.FBits^[pass] := RGBA2BGRA(FBits^[pass]);
 
@@ -1052,6 +1171,7 @@ procedure TMemoryRaster.FormatBGRA;
 var
   pass: Integer;
 begin
+  ReadyBits();
   for pass := (width * height) - 1 downto 0 do
       SwapBR(FBits^[pass]);
 end;
@@ -1069,6 +1189,8 @@ var
 begin
   if (width <> w) or (height <> h) then
       SetSize(w, h);
+
+  ReadyBits();
   p := @buff;
   for pass := 0 to (width * height) - 1 do
     begin
@@ -1084,6 +1206,7 @@ var
   p: PByte;
   pass: Integer;
 begin
+  ReadyBits();
   p := @buff;
   for pass := 0 to (width * height) - 1 do
     begin
@@ -1256,7 +1379,7 @@ procedure TMemoryRaster.Line(x1, y1, x2, y2: Integer; Value: TRasterColor; L: Bo
     p: PRasterColor;
   begin
     if (x < 0) or (x >= width) then
-        Exit;
+        exit;
     y1 := ClampInt_(y1, 0, height);
     y2 := ClampInt_(y2, 0, height);
 
@@ -1290,7 +1413,7 @@ procedure TMemoryRaster.Line(x1, y1, x2, y2: Integer; Value: TRasterColor; L: Bo
     i: Integer;
   begin
     if (y < 0) or (y >= height) then
-        Exit;
+        exit;
     x1 := ClampInt_(x1, 0, width - 1);
     x2 := ClampInt_(x2, 0, width - 1);
 
@@ -1309,8 +1432,10 @@ begin
     begin
       FAgg.LineColor := Value;
       FAgg.Line(x1, y1, x2, y2);
-      Exit;
+      exit;
     end;
+
+  ReadyBits();
 
   try
     dx := x2 - x1;
@@ -1331,7 +1456,7 @@ begin
             VertLine(x1, y2 + 1, y1);
         if L then
             Pixel[x2, y2] := Value;
-        Exit;
+        exit;
       end;
 
     if dy > 0 then
@@ -1349,7 +1474,7 @@ begin
             HorzLine(x2 + 1, y1, x1);
         if L then
             Pixel[x2, y2] := Value;
-        Exit;
+        exit;
       end;
 
     pi := x1 + y1 * width;
@@ -1410,7 +1535,7 @@ procedure TMemoryRaster.LineF(p1, p2: TVec2; Value: TRasterColor; L, Cross: Bool
 begin
   LineF(p1[0], p1[1], p2[0], p2[1], Value, L);
   if not Cross then
-      Exit;
+      exit;
   DrawCrossF(p1, Round((FWidth + FHeight) div 2 * 0.02), RasterColorInv(Value));
   DrawCrossF(p2, Round((FWidth + FHeight) div 2 * 0.02), RasterColorInv(Value));
 end;
@@ -1557,10 +1682,9 @@ begin
       buff[3].y := r.LeftBottom[1];
       buff[4].x := r.LeftTop[0];
       buff[4].y := r.LeftTop[1];
-
       FAgg.NoFill;
       FAgg.LineColor := Value;
-      FAgg.Polyline(@buff[0], 4);
+      FAgg.Polyline(@buff[0], 5);
     end
   else
     begin
@@ -1671,7 +1795,7 @@ var
   buff: array of TPointDouble;
 begin
   if pl.Count < 2 then
-      Exit;
+      exit;
 
   if FAgg <> nil then
     begin
@@ -1969,7 +2093,7 @@ begin
   try
     bakPos := stream.Position;
 
-    stream.read(hflag, 2);
+    stream.Read(hflag, 2);
     if (hflag = $8D42) or (hflag = $8D43) or (hflag = $8D44) or (hflag = $8D46) or (hflag = $8D47) or (hflag = $8D48) then
         Result := True
     else if (hflag = $D8FF) or (hflag = $8DFF) then
@@ -2005,6 +2129,7 @@ begin
   if (Header.bfType = $4D42) and (Header.biBitCount in [24, 32]) and (Header.biPlanes = 1) and (Header.biCompression = 0) then
     begin
       SetSize(Header.biWidth, abs(Header.biHeight));
+      ReadyBits();
 
       if Header.biBitCount = 32 then
         begin
@@ -2076,7 +2201,7 @@ begin
 
   bakPos := stream.Position;
 
-  stream.read(hflag, 2);
+  stream.Read(hflag, 2);
   if hflag = $8D42 then
     begin
       m64 := TMemoryStream64.Create;
@@ -2084,7 +2209,7 @@ begin
       m64.Position := 0;
       LoadFromBmpStream(m64);
       DisposeObject(m64);
-      Exit;
+      exit;
     end
   else if hflag = $8D43 then
     begin
@@ -2093,7 +2218,7 @@ begin
       m64.Position := 0;
       LoadFromBmpStream(m64);
       DisposeObject(m64);
-      Exit;
+      exit;
     end
   else if hflag = $8D44 then
     begin
@@ -2102,7 +2227,7 @@ begin
       m64.Position := 0;
       LoadFromBmpStream(m64);
       DisposeObject(m64);
-      Exit;
+      exit;
     end
   else if hflag = $4D42 then
     begin
@@ -2112,7 +2237,7 @@ begin
     // jls endian support
   else if (hflag = $D8FF) or (hflag = $8DFF) then
     begin
-      stream.read(hflag2, 2);
+      stream.Read(hflag2, 2);
       stream.Position := bakPos;
       if (hflag2 = $F7FF) then
           DecodeJpegLSRasterFromStream(stream, Self)
@@ -2150,19 +2275,19 @@ begin
   else if hflag = $8D46 then
     begin
       YV12ToRasterization(stream, Self);
-      Exit;
+      exit;
     end
     // half yuv format
   else if hflag = $8D47 then
     begin
       HalfYUVToRasterization(stream, Self);
-      Exit;
+      exit;
     end
     // quart yuv format
   else if hflag = $8D48 then
     begin
       QuartYUVToRasterization(stream, Self);
-      Exit;
+      exit;
     end
   else
       stream.Position := bakPos;
@@ -2274,6 +2399,8 @@ begin
   Header.biClrUsed := 0;
   Header.biClrImportant := 0;
 
+  ReadyBits();
+
   stream.WriteBuffer(Header, SizeOf(TBmpHeader));
 
   SetLength(tempBuff, wSiz);
@@ -2300,7 +2427,7 @@ var
   m64: TMemoryStream64;
 begin
   hflag := $8D42; // MemoryRaster compress format
-  stream.write(hflag, 2);
+  stream.Write(hflag, 2);
 
   m64 := TMemoryStream64.Create;
   SaveToBmp24Stream(m64);
@@ -2315,7 +2442,7 @@ var
   m64: TMemoryStream64;
 begin
   hflag := $8D43; // MemoryRaster compress format
-  stream.write(hflag, 2);
+  stream.Write(hflag, 2);
 
   m64 := TMemoryStream64.Create;
   SaveToBmp24Stream(m64);
@@ -2330,7 +2457,7 @@ var
   m64: TMemoryStream64;
 begin
   hflag := $8D44; // MemoryRaster compress format
-  stream.write(hflag, 2);
+  stream.Write(hflag, 2);
 
   m64 := TMemoryStream64.Create;
   SaveToBmp24Stream(m64);
@@ -2354,7 +2481,7 @@ var
   hflag: Word;
 begin
   hflag := $8D46; // yv12 format
-  stream.write(hflag, 2);
+  stream.Write(hflag, 2);
   RasterizationToYV12(True, Self, stream);
 end;
 
@@ -2363,7 +2490,7 @@ var
   hflag: Word;
 begin
   hflag := $8D46; // yv12 format
-  stream.write(hflag, 2);
+  stream.Write(hflag, 2);
   RasterizationToYV12(False, Self, stream);
 end;
 
@@ -2372,7 +2499,7 @@ var
   hflag: Word;
 begin
   hflag := $8D47; // half yuv format
-  stream.write(hflag, 2);
+  stream.Write(hflag, 2);
   RasterizationToHalfYUV(True, Self, stream);
 end;
 
@@ -2381,7 +2508,7 @@ var
   hflag: Word;
 begin
   hflag := $8D47; // yu12 format
-  stream.write(hflag, 2);
+  stream.Write(hflag, 2);
   RasterizationToHalfYUV(False, Self, stream);
 end;
 
@@ -2390,7 +2517,7 @@ var
   hflag: Word;
 begin
   hflag := $8D48; // quart yuv format
-  stream.write(hflag, 2);
+  stream.Write(hflag, 2);
   RasterizationToQuartYUV(True, Self, stream);
 end;
 
@@ -2399,7 +2526,7 @@ var
   hflag: Word;
 begin
   hflag := $8D48; // quart yuv format
-  stream.write(hflag, 2);
+  stream.Write(hflag, 2);
   RasterizationToQuartYUV(False, Self, stream);
 end;
 
@@ -2417,7 +2544,7 @@ begin
 
   m64 := TMemoryStream64.Create;
   j.SaveToStream(m64);
-  stream.write(m64.Memory^, m64.Size);
+  stream.Write(m64.Memory^, m64.Size);
   DisposeObject(m64);
 
   DisposeObject(j);
@@ -2437,7 +2564,7 @@ begin
 
   m64 := TMemoryStream64.Create;
   j.SaveToStream(m64);
-  stream.write(m64.Memory^, m64.Size);
+  stream.Write(m64.Memory^, m64.Size);
   DisposeObject(m64);
 
   DisposeObject(j);
@@ -2457,7 +2584,7 @@ begin
 
   m64 := TMemoryStream64.Create;
   j.SaveToStream(m64);
-  stream.write(m64.Memory^, m64.Size);
+  stream.Write(m64.Memory^, m64.Size);
   DisposeObject(m64);
 
   DisposeObject(j);
@@ -2477,7 +2604,7 @@ begin
 
   m64 := TMemoryStream64.Create;
   j.SaveToStream(m64);
-  stream.write(m64.Memory^, m64.Size);
+  stream.Write(m64.Memory^, m64.Size);
   DisposeObject(m64);
 
   DisposeObject(j);
@@ -2497,7 +2624,7 @@ begin
 
   m64 := TMemoryStream64.Create;
   j.SaveToStream(m64);
-  stream.write(m64.Memory^, m64.Size);
+  stream.Write(m64.Memory^, m64.Size);
   DisposeObject(m64);
 
   DisposeObject(j);

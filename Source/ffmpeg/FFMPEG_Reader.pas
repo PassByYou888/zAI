@@ -1,13 +1,20 @@
 { ****************************************************************************** }
-{ * FFMPEG video Reader support       by qq600585                              * }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * FFMPEG video Reader               by qq600585                              * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 unit FFMPEG_Reader;
 
@@ -22,17 +29,20 @@ type
   private
     src_filename: RawByteString;
     pFormatCtx: PAVFormatContext;
-    pCodecCtx: PAVCodecContext;
-    pCodec: PAVCodec;
-    optionsDict: PAVDictionary;
+    videoCodecCtx: PAVCodecContext;
+    audioCodecCtx: PAVCodecContext;
+    videoCodec: PAVCodec;
+    audioCodec: PAVCodec;
     pFrame: PAVFrame;
     pFrameRGB: PAVFrame;
     numBytes: integer;
     buffer: PByte;
     sws_ctx: PSwsContext;
     videoStream: integer;
+    audioStream: integer;
+    AVPacket_ptr: PAVPacket;
   public
-    constructor Create(const FileName: RawByteString);
+    constructor Create(const FileName: TPascalString);
     destructor Destroy; override;
 
     function ReadFrame(output: TMemoryRaster; RasterizationCopy_: Boolean): Boolean;
@@ -47,95 +57,111 @@ type
 
 implementation
 
-constructor TFFMPEG_Reader.Create(const FileName: RawByteString);
+constructor TFFMPEG_Reader.Create(const FileName: TPascalString);
 var
   i: integer;
+  av_st: PPAVStream;
 begin
   inherited Create;
 
+  pFormatCtx := nil;
+  videoCodecCtx := nil;
+  audioCodecCtx := nil;
+  videoCodec := nil;
+  audioCodec := nil;
+  pFrame := nil;
+  pFrameRGB := nil;
+  AVPacket_ptr := nil;
+
   // Open video file
-  if (avformat_open_input(@pFormatCtx, PAnsiChar(FileName), nil, nil) <> 0) then
+  if (avformat_open_input(@pFormatCtx, PAnsiChar(FileName.PlatformBytes), nil, nil) <> 0) then
     begin
-      RaiseInfo('Could not open source file %s', [FileName]);
+      DoStatus('Could not open source file %s', [FileName.Text]);
       exit;
     end;
 
   // Retrieve stream information
   if avformat_find_stream_info(pFormatCtx, nil) < 0 then
     begin
-      RaiseInfo('Could not find stream information %s', [FileName]);
+      DoStatus('Could not find stream information %s', [FileName.Text]);
       exit;
     end;
 
-  // Dump information about file onto standard error
-  av_dump_format(pFormatCtx, 0, PAnsiChar(FileName), 0);
+  if IsConsole then
+      av_dump_format(pFormatCtx, 0, PAnsiChar(FileName), 0);
 
-  // Find the first video stream
   videoStream := -1;
+  audioStream := -1;
+  av_st := pFormatCtx^.streams;
   for i := 0 to pFormatCtx^.nb_streams - 1 do
     begin
-      if pFormatCtx^.streams^^.codec^.codec_type = AVMEDIA_TYPE_VIDEO then
+      if av_st^^.codec^.codec_type = AVMEDIA_TYPE_VIDEO then
         begin
-          videoStream := i;
-          // Get a pointer to the codec context for the video stream
-          pCodecCtx := pFormatCtx^.streams^^.codec;
-          break;
+          videoStream := av_st^^.index;
+          videoCodecCtx := av_st^^.codec;
         end
-      else
-          inc(pFormatCtx^.streams);
+      else if av_st^^.codec^.codec_type = AVMEDIA_TYPE_AUDIO then
+        begin
+          audioStream := av_st^^.index;
+          audioCodecCtx := av_st^^.codec;
+        end;
+      inc(av_st);
     end;
 
   if videoStream = -1 then
     begin
-      RaiseInfo('Dont find a video stream');
+      DoStatus('Dont find a video stream');
       exit;
     end;
 
-  // Find the decoder for the video stream
-  pCodec := avcodec_find_decoder(pCodecCtx^.codec_id);
-  if not assigned(pCodec) then
+  videoCodec := avcodec_find_decoder(videoCodecCtx^.codec_id);
+  if videoCodec = nil then
     begin
-      RaiseInfo('Unsupported codec!');
+      DoStatus('Unsupported codec!');
       exit;
     end;
 
-  // Open codec
-  if avcodec_open2(pCodecCtx, pCodec, @optionsDict) < 0 then
+  if avcodec_open2(videoCodecCtx, videoCodec, nil) < 0 then
     begin
-      RaiseInfo('Could not open codec');
+      DoStatus('Could not open codec');
       exit;
     end;
 
-  // Allocate video frame
-  pFrame := av_frame_alloc;
+  if audioStream >= 0 then
+    begin
+      audioCodec := avcodec_find_decoder(audioCodecCtx^.codec_id);
+      if audioCodec <> nil then
+          avcodec_open2(audioCodecCtx, audioCodec, nil);
+    end;
 
-  // Allocate an AVFrame structure
+  pFrame := av_frame_alloc();
+
   pFrameRGB := av_frame_alloc();
   if not assigned(pFrameRGB) then
     begin
-      RaiseInfo('Could not allocate AVFrame structure');
+      DoStatus('Could not allocate AVFrame structure');
       exit;
     end;
 
-  // Determine required buffer size and allocate buffer
-  numBytes := avpicture_get_size(AV_PIX_FMT_RGB32, pCodecCtx^.width, pCodecCtx^.height);
-  buffer := av_malloc(numBytes * sizeof(cardinal));
+  numBytes := avpicture_get_size(AV_PIX_FMT_RGB32, videoCodecCtx^.width, videoCodecCtx^.height);
+  buffer := av_malloc(numBytes * sizeof(Cardinal));
 
   sws_ctx :=
     sws_getContext
     (
-    pCodecCtx^.width,
-    pCodecCtx^.height,
-    pCodecCtx^.pix_fmt,
-    pCodecCtx^.width,
-    pCodecCtx^.height,
+    videoCodecCtx^.width,
+    videoCodecCtx^.height,
+    videoCodecCtx^.pix_fmt,
+    videoCodecCtx^.width,
+    videoCodecCtx^.height,
     AV_PIX_FMT_RGB32,
     SWS_FAST_BILINEAR,
     nil,
     nil,
     nil
     );
-  avpicture_fill(PAVPicture(pFrameRGB), buffer, AV_PIX_FMT_RGB32, pCodecCtx^.width, pCodecCtx^.height);
+  avpicture_fill(PAVPicture(pFrameRGB), buffer, AV_PIX_FMT_RGB32, videoCodecCtx^.width, videoCodecCtx^.height);
+  AVPacket_ptr := av_packet_alloc();
 
   Current := 0;
   Current_Frame := 0;
@@ -143,57 +169,73 @@ end;
 
 destructor TFFMPEG_Reader.Destroy;
 begin
-  av_free(buffer);
-  av_free(pFrameRGB);
-  av_free(pFrame);
-  avcodec_close(pCodecCtx);
-  avformat_close_input(@pFormatCtx);
+  if AVPacket_ptr <> nil then
+      av_free_packet(AVPacket_ptr);
+
+  if buffer <> nil then
+      av_free(buffer);
+
+  if pFrameRGB <> nil then
+      av_free(pFrameRGB);
+
+  if pFrame <> nil then
+      av_free(pFrame);
+
+  if videoCodecCtx <> nil then
+      avcodec_close(videoCodecCtx);
+
+  if audioCodecCtx <> nil then
+      avcodec_close(audioCodecCtx);
+
+  if pFormatCtx <> nil then
+      avformat_close_input(@pFormatCtx);
+
   inherited Destroy;
 end;
 
 function TFFMPEG_Reader.ReadFrame(output: TMemoryRaster; RasterizationCopy_: Boolean): Boolean;
 var
-  packet: TAVPacket;
   frameFinished: integer;
 begin
   Result := False;
   frameFinished := 0;
-  while (av_read_frame(pFormatCtx, @packet) >= 0) do
-    begin
-      if (packet.stream_index = videoStream) then
-        begin
-          avcodec_decode_video2(pCodecCtx, pFrame, @frameFinished, @packet);
-          if frameFinished > 0 then
-            begin
-              sws_scale
-                (
-                sws_ctx,
-                @pFrame^.data,
-                @pFrame^.linesize,
-                0,
-                pCodecCtx^.height,
-                @pFrameRGB^.data,
-                @pFrameRGB^.linesize
-                );
+  try
+    while (av_read_frame(pFormatCtx, AVPacket_ptr) >= 0) do
+      begin
+        if (AVPacket_ptr^.stream_index = videoStream) then
+          begin
+            avcodec_decode_video2(videoCodecCtx, pFrame, @frameFinished, AVPacket_ptr);
+            if frameFinished > 0 then
+              begin
+                sws_scale
+                  (
+                  sws_ctx,
+                  @pFrame^.data,
+                  @pFrame^.linesize,
+                  0,
+                  videoCodecCtx^.height,
+                  @pFrameRGB^.data,
+                  @pFrameRGB^.linesize
+                  );
 
-              if RasterizationCopy_ then
-                begin
-                  output.SetSize(pCodecCtx^.width, pCodecCtx^.height);
-                  CopyRasterColor(pFrameRGB^.data[0]^, output.Bits^[0], pCodecCtx^.width * pCodecCtx^.height);
-                end
-              else
-                  output.SetWorkMemory(pFrameRGB^.data[0], pCodecCtx^.width, pCodecCtx^.height);
+                if RasterizationCopy_ then
+                  begin
+                    output.SetSize(videoCodecCtx^.width, videoCodecCtx^.height);
+                    CopyRasterColor(pFrameRGB^.data[0]^, output.Bits^[0], videoCodecCtx^.width * videoCodecCtx^.height);
+                  end
+                else
+                    output.SetWorkMemory(pFrameRGB^.data[0], videoCodecCtx^.width, videoCodecCtx^.height);
 
-              Result := True;
+                Result := True;
 
-              Current := packet.pts * av_q2d(pFormatCtx^.streams^^.time_base);
-              inc(Current_Frame);
-              av_free_packet(@packet);
-              exit;
-            end;
-        end;
-      av_free_packet(@packet);
-    end;
+                Current := AVPacket_ptr^.pts * av_q2d(pFormatCtx^.streams^^.time_base);
+                inc(Current_Frame);
+                exit;
+              end;
+          end;
+      end;
+  except
+  end;
   output.Reset;
 end;
 

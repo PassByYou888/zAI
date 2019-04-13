@@ -1,13 +1,21 @@
 { ****************************************************************************** }
-{ * Dynamic KDTree support, writen by QQ 600585@qq.com                         * }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * Dynamic KDTree          writen by QQ 600585@qq.com                         * }
+{ ****************************************************************************** }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 unit KDTree;
 
@@ -15,7 +23,11 @@ unit KDTree;
 
 interface
 
-uses CoreClasses, PascalStrings, KM;
+uses CoreClasses, PascalStrings,
+{$IFDEF FPC}
+  FPCGenericStructlist,
+{$ENDIF}
+KM;
 
 type
   TKDTree_VecType = TKMFloat;
@@ -106,6 +118,27 @@ type
     class function KDTreeVec(const s: SystemString): TKDTree_Vec; overload;
     class function KDTreeVec(const v: TKDTree_Vec): SystemString; overload;
     class function KDTreeDistance(const v1, v2: TKDTree_Vec): Double;
+  end;
+
+  TKDTreeData = record
+    vec: TKDTree_Vec;
+    Token: SystemString;
+  end;
+
+  PKDTreeData = ^TKDTreeData;
+
+{$IFDEF FPC}
+  TKDTreeDataList_Decl = specialize TGenericsList<TKDTreeData>;
+{$ELSE FPC}
+  TKDTreeDataList_Decl = TGenericsList<TKDTreeData>;
+{$ENDIF FPC}
+
+  TKDTreeDataList = class(TKDTreeDataList_Decl)
+  private
+    procedure KDTree_Input(const IndexFor: NativeInt; var Source: TKDTree_Source; const Data: Pointer);
+  public
+    procedure Build(kd: TKDTree);
+    procedure Add(vec: TKDTree_Vec; Token: SystemString);
   end;
 
 procedure Test_KDTree(const axis: Integer);
@@ -1114,6 +1147,32 @@ begin
   DoStatusNoLn;
 
   DisposeObject(TKDTree_Test);
+end;
+
+procedure TKDTreeDataList.KDTree_Input(const IndexFor: NativeInt; var Source: TKDTree_Source; const Data: Pointer);
+var
+  i: Integer;
+  v: TKDTreeData;
+begin
+  v := Items[IndexFor];
+  for i := 0 to length(v.vec) - 1 do
+      Source.Buff[i] := v.vec[i];
+  Source.Token := v.Token;
+  Source.Index := IndexFor;
+end;
+
+procedure TKDTreeDataList.Build(kd: TKDTree);
+begin
+  kd.BuildKDTreeM(Count, nil, {$IFDEF FPC}@{$ENDIF FPC}KDTree_Input);
+end;
+
+procedure TKDTreeDataList.Add(vec: TKDTree_Vec; Token: SystemString);
+var
+  d: TKDTreeData;
+begin
+  d.vec := vec;
+  d.Token := Token;
+  inherited Add(d);
 end;
 
 end.

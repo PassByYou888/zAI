@@ -1,13 +1,20 @@
 { ****************************************************************************** }
 { * Core cipher Library ,writen by QQ 600585@qq.com                            * }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 
 (*
@@ -576,14 +583,6 @@ function GenerateQuantumCryptographyPassword(const passwd: TPascalString): TPasc
 function CompareQuantumCryptographyPassword(const passwd, passwdDataSource: TPascalString): Boolean;
 
 // QuantumCryptography for Stream support: used sha-3-512 cryptography as 512 bits password
-type
-  TQuantumEncryptHead = packed record
-    CipherSecurity: Byte;
-    Level: Word;
-    Size: Int64;
-    hash: TSHA3_512_Digest;
-  end;
-
 procedure QuantumEncrypt(input, output: TCoreClassStream; SecurityLevel: Integer; key: TCipherKeyBuffer);
 function QuantumDecrypt(input, output: TCoreClassStream; key: TCipherKeyBuffer): Boolean;
 
@@ -738,12 +737,11 @@ type
   { Miscellaneous algorithms }
   { Misc public utilities }
   TMISC = class(TCoreClassObject)
-  private
+  public
     class procedure Mix128(var x: T128Bit); static;
     class function Ran0Prim(var Seed: Integer; IA, IQ, IR: Integer): Integer; static;
     class function Random64(var Seed: TInt64): Integer; static;
     class procedure Transform(var OutputBuffer: TTransformOutput; var InBuf: TTransformInput); static;
-  public
     class procedure GenerateRandomKey(var key; KeySize: Integer); static;
     class procedure HashELF(var Digest: DWORD; const Buf; BufSize: nativeUInt); static;
     class procedure HashELF64(var Digest: Int64; const Buf; BufSize: nativeUInt); static;
@@ -4852,6 +4850,14 @@ begin
       SetLength(cryptBuff, 0);
     end;
 end;
+
+type
+  TQuantumEncryptHead = packed record
+    CipherSecurity: Byte;
+    Level: Word;
+    Size: Int64;
+    hash: TSHA3_512_Digest;
+  end;
 
 procedure QuantumEncrypt(input, output: TCoreClassStream; SecurityLevel: Integer; key: TCipherKeyBuffer);
 var

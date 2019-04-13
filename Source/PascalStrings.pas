@@ -1,13 +1,20 @@
-{ ***************************************************************************** }
-{ * string support,writen by QQ 600585@qq.com                                 * }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ ****************************************************************************** }
+{ * string                by QQ 600585@qq.com                                  * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 
 (*
@@ -45,8 +52,8 @@ type
     procedure SetChars(index: Integer; const Value: SystemChar);
     function GetBytes: TBytes;
     procedure SetBytes(const Value: TBytes);
-    function GetSysBytes: TBytes;
-    procedure SetSysBytes(const Value: TBytes);
+    function GetPlatformBytes: TBytes;
+    procedure SetPlatformBytes(const Value: TBytes);
     function GetLast: SystemChar;
     procedure SetLast(const Value: SystemChar);
     function GetFirst: SystemChar;
@@ -68,11 +75,13 @@ type
     class operator Add(const Lhs: SystemChar; const Rhs: TPascalString): TPascalString;
     class operator Add(const Lhs: TPascalString; const Rhs: SystemChar): TPascalString;
 
+    class operator Implicit(Value: RawByteString): TPascalString;
     class operator Implicit(Value: SystemString): TPascalString;
     class operator Implicit(Value: SystemChar): TPascalString;
     class operator Implicit(Value: TPascalString): SystemString;
     class operator Implicit(Value: TPascalString): Variant;
 
+    class operator Explicit(Value: TPascalString): RawByteString;
     class operator Explicit(Value: TPascalString): SystemString;
     class operator Explicit(Value: SystemString): TPascalString;
     class operator Explicit(Value: SystemChar): TPascalString;
@@ -132,8 +141,8 @@ type
     property Len: Integer read GetLen write SetLen;
     property L: Integer read GetLen write SetLen;
     property Chars[index: Integer]: SystemChar read GetChars write SetChars; default;
-    property Bytes: TBytes read GetBytes write SetBytes;          // UTF8
-    property SysBytes: TBytes read GetSysBytes write SetSysBytes; // system default
+    property Bytes: TBytes read GetBytes write SetBytes;                         // UTF8
+    property PlatformBytes: TBytes read GetPlatformBytes write SetPlatformBytes; // system default
     function BOMBytes: TBytes;
   end;
 
@@ -169,12 +178,14 @@ function PFormat(const Fmt: SystemString; const Args: array of const): SystemStr
 
 operator := (const s: Variant)r: TPascalString;
 operator := (const s: AnsiString)r: TPascalString;
+operator := (const s: RawByteString)r: TPascalString;
 operator := (const s: UnicodeString)r: TPascalString;
 operator := (const s: WideString)r: TPascalString;
 operator := (const s: ShortString)r: TPascalString;
 operator := (const c: SystemChar)r: TPascalString;
 
 operator := (const s: TPascalString)r: AnsiString;
+operator := (const s: TPascalString)r: RawByteString;
 operator := (const s: TPascalString)r: UnicodeString;
 operator := (const s: TPascalString)r: WideString;
 operator := (const s: TPascalString)r: ShortString;
@@ -1184,6 +1195,11 @@ begin
   r.Text := s;
 end;
 
+operator := (const s: RawByteString)r: TPascalString;
+begin
+  r.Text := s;
+end;
+
 operator := (const s: UnicodeString)r: TPascalString;
 begin
   r.Text := s;
@@ -1205,6 +1221,11 @@ begin
 end;
 
 operator := (const s: TPascalString)r: AnsiString;
+begin
+  r := s.Text;
+end;
+
+operator := (const s: TPascalString)r: RawByteString;
 begin
   r := s.Text;
 end;
@@ -1349,7 +1370,7 @@ begin
 {$ENDIF}
 end;
 
-procedure TPascalString.SetSysBytes(const Value: TBytes);
+procedure TPascalString.SetPlatformBytes(const Value: TBytes);
 begin
   SetLength(buff, 0);
   if length(Value) = 0 then
@@ -1361,7 +1382,7 @@ begin
   end;
 end;
 
-function TPascalString.GetSysBytes: TBytes;
+function TPascalString.GetPlatformBytes: TBytes;
 begin
   SetLength(Result, 0);
   if length(buff) = 0 then
@@ -1457,6 +1478,11 @@ begin
   CombineCharsPC(Lhs.buff, Rhs, Result.buff);
 end;
 
+class operator TPascalString.Implicit(Value: RawByteString): TPascalString;
+begin
+  Result.Text := Value;
+end;
+
 class operator TPascalString.Implicit(Value: SystemString): TPascalString;
 begin
   Result.Text := Value;
@@ -1474,6 +1500,11 @@ begin
 end;
 
 class operator TPascalString.Implicit(Value: TPascalString): Variant;
+begin
+  Result := Value.Text;
+end;
+
+class operator TPascalString.Explicit(Value: TPascalString): RawByteString;
 begin
   Result := Value.Text;
 end;

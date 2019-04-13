@@ -1,8 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<BorlandProject>
-	<Transactions>
-    <Transaction>2019/03/20 21:45:04.000.912,C:\ZAIDemo\Large-Resnet-144Layer-ImageClassifier\ResNetImgClassifier.dproj=C:\ZAIDemo\Large-Resnet-144Layer-ImageClassifier\LargeResNetImgClassifier.dproj</Transaction>
-    <Transaction>2019/03/20 21:45:10.000.960,C:\ZAIDemo\Large-Resnet-144Layer-ImageClassifier\ResNetImgClassifierFrm.fmx=C:\ZAIDemo\Large-Resnet-144Layer-ImageClassifier\LargeResNetImgClassifierFrm.fmx</Transaction>
-    <Transaction>2019/03/20 21:45:10.000.960,C:\ZAIDemo\Large-Resnet-144Layer-ImageClassifier\ResNetImgClassifierFrm.pas=C:\ZAIDemo\Large-Resnet-144Layer-ImageClassifier\LargeResNetImgClassifierFrm.pas</Transaction>
-  </Transactions>
-</BorlandProject>

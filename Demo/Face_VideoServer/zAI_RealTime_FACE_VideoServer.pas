@@ -147,7 +147,7 @@ begin
   // extract and alignment
   ai := face_det_para.GetAndLockAI;
 
-  face_hnd := ai.Face_Detector_All(mr, zAI.C_Metric_ResNet_Image_Size);
+  face_hnd := ai.Face_Detector_All(mr, zAI.C_Metric_Input_Size);
   SetLength(face_arry, ai.Face_chips_num(face_hnd));
 
   for i := 0 to length(face_arry) - 1 do
@@ -272,11 +272,11 @@ begin
   face_det_para.Prepare_Face;
   // gpu worker
   Face_Metric := TAI.OpenEngine();
-  fn := umlCombineFileName(TPath.GetLibraryPath, 'RealTime_Face' + C_Metric_ResNet_Ext);
+  fn := umlCombineFileName(TPath.GetLibraryPath, 'RealTime_Face' + C_Metric_Ext);
   Face_MDNN_Hnd := Face_Metric.Metric_ResNet_Open_Stream(fn);
 
   // learn engine
-  Face_LearnEng := TLearn.CreateClassifier(ltKDT, zAI.C_Metric_ResNet_Dim);
+  Face_LearnEng := TLearn.CreateClassifier(ltKDT, zAI.C_Metric_Dim);
   fn := umlCombineFileName(TPath.GetLibraryPath, 'RealTime_Face' + C_Learn_Ext);
   Face_LearnEng.LoadFromFile(fn);
   Face_LearnEng.Train();
