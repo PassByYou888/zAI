@@ -22,7 +22,7 @@ unit FFMPEG_Reader;
 
 interface
 
-uses CoreClasses, PascalStrings, UnicodeMixedLib, MemoryRaster, FFMPEG, DoStatusIO;
+uses SysUtils, CoreClasses, PascalStrings, UnicodeMixedLib, MemoryRaster, FFMPEG, DoStatusIO;
 
 type
   TFFMPEG_Reader = class
@@ -61,6 +61,7 @@ constructor TFFMPEG_Reader.Create(const FileName: TPascalString);
 var
   i: integer;
   av_st: PPAVStream;
+  p: Pointer;
 begin
   inherited Create;
 
@@ -73,98 +74,104 @@ begin
   pFrameRGB := nil;
   AVPacket_ptr := nil;
 
+  p := FileName.BuildPlatformPChar;
+
   // Open video file
-  if (avformat_open_input(@pFormatCtx, PAnsiChar(FileName.PlatformBytes), nil, nil) <> 0) then
-    begin
-      DoStatus('Could not open source file %s', [FileName.Text]);
-      exit;
-    end;
+  try
+    if (avformat_open_input(@pFormatCtx, PAnsiChar(p), nil, nil) <> 0) then
+      begin
+        DoStatus('Could not open source file %s', [FileName.Text]);
+        exit;
+      end;
 
-  // Retrieve stream information
-  if avformat_find_stream_info(pFormatCtx, nil) < 0 then
-    begin
-      DoStatus('Could not find stream information %s', [FileName.Text]);
-      exit;
-    end;
+    // Retrieve stream information
+    if avformat_find_stream_info(pFormatCtx, nil) < 0 then
+      begin
+        DoStatus('Could not find stream information %s', [FileName.Text]);
+        exit;
+      end;
 
-  if IsConsole then
-      av_dump_format(pFormatCtx, 0, PAnsiChar(FileName), 0);
+    if IsConsole then
+        av_dump_format(pFormatCtx, 0, PAnsiChar(p), 0);
 
-  videoStream := -1;
-  audioStream := -1;
-  av_st := pFormatCtx^.streams;
-  for i := 0 to pFormatCtx^.nb_streams - 1 do
-    begin
-      if av_st^^.codec^.codec_type = AVMEDIA_TYPE_VIDEO then
-        begin
-          videoStream := av_st^^.index;
-          videoCodecCtx := av_st^^.codec;
-        end
-      else if av_st^^.codec^.codec_type = AVMEDIA_TYPE_AUDIO then
-        begin
-          audioStream := av_st^^.index;
-          audioCodecCtx := av_st^^.codec;
-        end;
-      inc(av_st);
-    end;
+    videoStream := -1;
+    audioStream := -1;
+    av_st := pFormatCtx^.streams;
+    for i := 0 to pFormatCtx^.nb_streams - 1 do
+      begin
+        if av_st^^.codec^.codec_type = AVMEDIA_TYPE_VIDEO then
+          begin
+            videoStream := av_st^^.index;
+            videoCodecCtx := av_st^^.codec;
+          end
+        else if av_st^^.codec^.codec_type = AVMEDIA_TYPE_AUDIO then
+          begin
+            audioStream := av_st^^.index;
+            audioCodecCtx := av_st^^.codec;
+          end;
+        inc(av_st);
+      end;
 
-  if videoStream = -1 then
-    begin
-      DoStatus('Dont find a video stream');
-      exit;
-    end;
+    if videoStream = -1 then
+      begin
+        DoStatus('Dont find a video stream');
+        exit;
+      end;
 
-  videoCodec := avcodec_find_decoder(videoCodecCtx^.codec_id);
-  if videoCodec = nil then
-    begin
-      DoStatus('Unsupported codec!');
-      exit;
-    end;
+    videoCodec := avcodec_find_decoder(videoCodecCtx^.codec_id);
+    if videoCodec = nil then
+      begin
+        DoStatus('Unsupported codec!');
+        exit;
+      end;
 
-  if avcodec_open2(videoCodecCtx, videoCodec, nil) < 0 then
-    begin
-      DoStatus('Could not open codec');
-      exit;
-    end;
+    if avcodec_open2(videoCodecCtx, videoCodec, nil) < 0 then
+      begin
+        DoStatus('Could not open codec');
+        exit;
+      end;
 
-  if audioStream >= 0 then
-    begin
-      audioCodec := avcodec_find_decoder(audioCodecCtx^.codec_id);
-      if audioCodec <> nil then
-          avcodec_open2(audioCodecCtx, audioCodec, nil);
-    end;
+    if audioStream >= 0 then
+      begin
+        audioCodec := avcodec_find_decoder(audioCodecCtx^.codec_id);
+        if audioCodec <> nil then
+            avcodec_open2(audioCodecCtx, audioCodec, nil);
+      end;
 
-  pFrame := av_frame_alloc();
+    pFrame := av_frame_alloc();
 
-  pFrameRGB := av_frame_alloc();
-  if not assigned(pFrameRGB) then
-    begin
-      DoStatus('Could not allocate AVFrame structure');
-      exit;
-    end;
+    pFrameRGB := av_frame_alloc();
+    if not assigned(pFrameRGB) then
+      begin
+        DoStatus('Could not allocate AVFrame structure');
+        exit;
+      end;
 
-  numBytes := avpicture_get_size(AV_PIX_FMT_RGB32, videoCodecCtx^.width, videoCodecCtx^.height);
-  buffer := av_malloc(numBytes * sizeof(Cardinal));
+    numBytes := avpicture_get_size(AV_PIX_FMT_RGB32, videoCodecCtx^.width, videoCodecCtx^.height);
+    buffer := av_malloc(numBytes * sizeof(Cardinal));
 
-  sws_ctx :=
-    sws_getContext
-    (
-    videoCodecCtx^.width,
-    videoCodecCtx^.height,
-    videoCodecCtx^.pix_fmt,
-    videoCodecCtx^.width,
-    videoCodecCtx^.height,
-    AV_PIX_FMT_RGB32,
-    SWS_FAST_BILINEAR,
-    nil,
-    nil,
-    nil
-    );
-  avpicture_fill(PAVPicture(pFrameRGB), buffer, AV_PIX_FMT_RGB32, videoCodecCtx^.width, videoCodecCtx^.height);
-  AVPacket_ptr := av_packet_alloc();
+    sws_ctx :=
+      sws_getContext
+      (
+      videoCodecCtx^.width,
+      videoCodecCtx^.height,
+      videoCodecCtx^.pix_fmt,
+      videoCodecCtx^.width,
+      videoCodecCtx^.height,
+      AV_PIX_FMT_RGB32,
+      SWS_FAST_BILINEAR,
+      nil,
+      nil,
+      nil
+      );
+    avpicture_fill(PAVPicture(pFrameRGB), buffer, AV_PIX_FMT_RGB32, videoCodecCtx^.width, videoCodecCtx^.height);
+    AVPacket_ptr := av_packet_alloc();
 
-  Current := 0;
-  Current_Frame := 0;
+    Current := 0;
+    Current_Frame := 0;
+  finally
+      TPascalString.FreePlatformPChar(p);
+  end;
 end;
 
 destructor TFFMPEG_Reader.Destroy;

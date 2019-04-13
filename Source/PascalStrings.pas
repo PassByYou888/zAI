@@ -104,10 +104,10 @@ type
     function Exists(c: array of SystemChar): Boolean; overload;
     function Exists(const s: TPascalString): Boolean; overload;
     function GetCharCount(c: SystemChar): Integer;
-    //
+
     function hash: THash;
     function Hash64: THash64;
-    //
+
     property Last: SystemChar read GetLast write SetLast;
     property First: SystemChar read GetFirst write SetFirst;
 
@@ -119,10 +119,8 @@ type
     procedure Append(c: SystemChar); overload;
     function GetString(bPos, ePos: NativeInt): TPascalString;
     procedure Insert(AText: SystemString; idx: Integer);
-    //
     procedure FastAsText(var output: SystemString);
     procedure FastGetBytes(var output: TBytes);
-    //
     property Text: SystemString read GetText write SetText;
     function LowerText: SystemString;
     function UpperText: SystemString;
@@ -133,6 +131,9 @@ type
     function ReplaceChar(const Chars: TPascalString; const newChar: SystemChar): TPascalString; overload;
     function ReplaceChar(const Chars, newChar: SystemChar): TPascalString; overload;
     function ReplaceChar(const Chars: TOrdChars; const newChar: SystemChar): TPascalString; overload;
+
+    function BuildPlatformPChar: Pointer;
+    class procedure FreePlatformPChar(p: Pointer); static;
 
     { https://en.wikipedia.org/wiki/Smith%E2%80%93Waterman_algorithm }
     function SmithWaterman(const p: PPascalString): Double; overload;
@@ -1948,6 +1949,27 @@ begin
         Result.buff[i] := newChar
     else
         Result.buff[i] := buff[i];
+end;
+
+function TPascalString.BuildPlatformPChar: Pointer;
+type
+  TAnsiChar_Buff = array [0 .. MaxInt - 1] of Byte;
+  PAnsiChar_Buff = ^TAnsiChar_Buff;
+var
+  swap_buff: TBytes;
+  buff_P: PAnsiChar_Buff;
+begin
+  swap_buff := PlatformBytes;
+  buff_P := GetMemory(length(swap_buff) + 1);
+  CopyPtr(@swap_buff[0], buff_P, length(swap_buff));
+  buff_P^[length(swap_buff)] := 0;
+  SetLength(swap_buff, 0);
+  Result := buff_P;
+end;
+
+class procedure TPascalString.FreePlatformPChar(p: Pointer);
+begin
+  FreeMemory(p);
 end;
 
 function TPascalString.SmithWaterman(const p: PPascalString): Double;
