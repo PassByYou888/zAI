@@ -2,14 +2,21 @@
 { * AI Key IO(platform compatible)                                             * }
 { * by QQ 600585@qq.com                                                        * }
 { ****************************************************************************** }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 unit zAI_KeyIO;
 
@@ -28,10 +35,11 @@ uses SysUtils, Classes,
   CommunicationFramework;
 
 type
-  TAI_Key = array [0 .. 39] of Byte;
+  TAI_Key = array [0 .. 87] of Byte;
 
 function AIKey(key: TAI_Key): TAI_Key;
-procedure AIKeyState(var expire: SystemString; var OD_key, SP_key, MetricDNN_key, MMOD_key, RNIC_key: Boolean);
+procedure AIKeyState(var expire: SystemString; var OD_key, SP_key, MetricDNN_key, MMOD_key, RNIC_key: Boolean); overload;
+procedure AIKeyState(var expire: SystemString; var SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key: Boolean); overload;
 
 implementation
 
@@ -39,7 +47,7 @@ implementation
 uses zAI_Common;
 
 type
-  TGetKeyServer_Remote = class
+  TGetKeyServer_Remote = class(TCoreClassObject)
   public
     ProductID: TPascalString;
     UserKey: TPascalString;
@@ -47,7 +55,7 @@ type
     ResultKey: TAI_Key;
     Tunnel: TPhysicsClient;
     expire: SystemString;
-    OD_key, SP_key, MetricDNN_key, MMOD_key, RNIC_key: Boolean;
+    SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key: Boolean;
     constructor Create;
     destructor Destroy; override;
     procedure QueryAIKey;
@@ -65,11 +73,17 @@ begin
   Tunnel.SwitchMaxSecurity;
   Tunnel.QuietMode := True;
   expire := DateToStr(umlNow());
+  SURF_key := False;
   OD_key := False;
   SP_key := False;
   MetricDNN_key := False;
+  LMetricDNN_key := False;
   MMOD_key := False;
   RNIC_key := False;
+  LRNIC_key := False;
+  GDCNIC_key := False;
+  GNIC_key := False;
+  VideoTracker_key := False;
 end;
 
 destructor TGetKeyServer_Remote.Destroy;
@@ -161,11 +175,18 @@ begin
     if ResultDE.Reader.ReadBool() then
       begin
         expire := ResultDE.Reader.ReadString();
+
+        SURF_key := ResultDE.Reader.ReadBool();
         OD_key := ResultDE.Reader.ReadBool();
         SP_key := ResultDE.Reader.ReadBool();
         MetricDNN_key := ResultDE.Reader.ReadBool();
+        LMetricDNN_key := ResultDE.Reader.ReadBool();
         MMOD_key := ResultDE.Reader.ReadBool();
         RNIC_key := ResultDE.Reader.ReadBool();
+        LRNIC_key := ResultDE.Reader.ReadBool();
+        GDCNIC_key := ResultDE.Reader.ReadBool();
+        GNIC_key := ResultDE.Reader.ReadBool();
+        VideoTracker_key := ResultDE.Reader.ReadBool();
       end;
     Tunnel.Disconnect;
     Tunnel.Progress;
@@ -198,6 +219,27 @@ begin
   MetricDNN_key := K_Tunnel.MetricDNN_key;
   MMOD_key := K_Tunnel.MMOD_key;
   RNIC_key := K_Tunnel.RNIC_key;
+  disposeObject(K_Tunnel);
+end;
+
+procedure AIKeyState(var expire: SystemString; var SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key: Boolean);
+var
+  K_Tunnel: TGetKeyServer_Remote;
+begin
+  K_Tunnel := TGetKeyServer_Remote.Create;
+  K_Tunnel.GetKeyState();
+  expire := K_Tunnel.expire;
+  SURF_key := K_Tunnel.SURF_key;
+  OD_key := K_Tunnel.OD_key;
+  SP_key := K_Tunnel.SP_key;
+  MetricDNN_key := K_Tunnel.MetricDNN_key;
+  LMetricDNN_key := K_Tunnel.LMetricDNN_key;
+  MMOD_key := K_Tunnel.MMOD_key;
+  RNIC_key := K_Tunnel.RNIC_key;
+  LRNIC_key := K_Tunnel.LRNIC_key;
+  GDCNIC_key := K_Tunnel.GDCNIC_key;
+  GNIC_key := K_Tunnel.GNIC_key;
+  VideoTracker_key := K_Tunnel.VideoTracker_key;
   disposeObject(K_Tunnel);
 end;
 

@@ -1,15 +1,22 @@
 { ****************************************************************************** }
-{ * AI Training task Support(platform compatible)                              * }
+{ * AI Training task(platform compatible)                                      * }
 { * by QQ 600585@qq.com                                                        * }
 { ****************************************************************************** }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 unit zAI_TrainingTask;
 
@@ -469,6 +476,20 @@ begin
       if not Result then
           report := PFormat('error training source: %s', [inputfile1])
     end
+  else if umlMultipleMatch(['TrainGDCNIC', 'TrainingGDCNIC'], ComputeFunc) then
+    begin
+      inputfile1 := Param.GetDefaultValue('source', '');
+      Result := Exists(inputfile1);
+      if not Result then
+          report := PFormat('error training source: %s', [inputfile1])
+    end
+  else if umlMultipleMatch(['TrainGNIC', 'TrainingGNIC'], ComputeFunc) then
+    begin
+      inputfile1 := Param.GetDefaultValue('source', '');
+      Result := Exists(inputfile1);
+      if not Result then
+          report := PFormat('error training source: %s', [inputfile1])
+    end
   else
     begin
       report := 'illegal ComputeFunc.';
@@ -551,10 +572,10 @@ begin
     end
   else if umlMultipleMatch(['TrainMRN', 'TrainingMRN', 'TrainMetricResNet'], ComputeFunc) then
     begin
-      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_Metric_ResNet_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_Metric_Ext + '.sync');
       if Exists(outputfile) then
         begin
-          outputfile := Param.GetDefaultValue('output', 'output' + C_Metric_ResNet_Ext);
+          outputfile := Param.GetDefaultValue('output', 'output' + C_Metric_Ext);
           Result := Exists(outputfile);
           if not Result then
               report := PFormat('error training output: %s', [outputfile]);
@@ -564,10 +585,10 @@ begin
     end
   else if umlMultipleMatch(['TrainLMRN', 'TrainingLMRN', 'TrainLMetricResNet'], ComputeFunc) then
     begin
-      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_LMetric_ResNet_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_LMetric_Ext + '.sync');
       if Exists(outputfile) then
         begin
-          outputfile := Param.GetDefaultValue('output', 'output' + C_LMetric_ResNet_Ext);
+          outputfile := Param.GetDefaultValue('output', 'output' + C_LMetric_Ext);
           Result := Exists(outputfile);
           if not Result then
               report := PFormat('error training output: %s', [outputfile]);
@@ -607,6 +628,32 @@ begin
       if Exists(outputfile) then
         begin
           outputfile := Param.GetDefaultValue('output', 'output' + C_LRNIC_Ext);
+          Result := Exists(outputfile);
+          if not Result then
+              report := PFormat('error training output: %s', [outputfile]);
+        end
+      else
+          report := PFormat('error training sync file: %s', [outputfile]);
+    end
+  else if umlMultipleMatch(['TrainGDCNIC', 'TrainingGDCNIC'], ComputeFunc) then
+    begin
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_GDCNIC_Ext + '.sync');
+      if Exists(outputfile) then
+        begin
+          outputfile := Param.GetDefaultValue('output', 'output' + C_GDCNIC_Ext);
+          Result := Exists(outputfile);
+          if not Result then
+              report := PFormat('error training output: %s', [outputfile]);
+        end
+      else
+          report := PFormat('error training sync file: %s', [outputfile]);
+    end
+  else if umlMultipleMatch(['TrainGNIC', 'TrainingGNIC'], ComputeFunc) then
+    begin
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_GNIC_Ext + '.sync');
+      if Exists(outputfile) then
+        begin
+          outputfile := Param.GetDefaultValue('output', 'output' + C_GNIC_Ext);
           Result := Exists(outputfile);
           if not Result then
               report := PFormat('error training output: %s', [outputfile]);
@@ -694,9 +741,9 @@ begin
   else if umlMultipleMatch(['TrainMRN', 'TrainingMRN', 'TrainMetricResNet'], ComputeFunc) then
     begin
       inputfile1 := Param.GetDefaultValue('source', '');
-      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_Metric_ResNet_Ext + '.sync');
-      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_Metric_ResNet_Ext + '.sync');
-      outputfile := Param.GetDefaultValue('output', 'output' + C_Metric_ResNet_Ext);
+      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_Metric_Ext + '.sync');
+      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_Metric_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output', 'output' + C_Metric_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(syncfile, dest, inputfile2);
@@ -705,9 +752,9 @@ begin
   else if umlMultipleMatch(['TrainLMRN', 'TrainingLMRN', 'TrainLMetricResNet'], ComputeFunc) then
     begin
       inputfile1 := Param.GetDefaultValue('source', '');
-      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_LMetric_ResNet_Ext + '.sync');
-      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_LMetric_ResNet_Ext + '.sync');
-      outputfile := Param.GetDefaultValue('output', 'output' + C_LMetric_ResNet_Ext);
+      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_LMetric_Ext + '.sync');
+      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_LMetric_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output', 'output' + C_LMetric_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(syncfile, dest, inputfile2);
@@ -741,6 +788,28 @@ begin
       inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_LRNIC_Ext + '.sync');
       syncfile := Param.GetDefaultValue('output.sync', 'output' + C_LRNIC_Ext + '.sync');
       outputfile := Param.GetDefaultValue('output', 'output' + C_LRNIC_Ext);
+      CopyTo(paramFile, dest, paramFile);
+      CopyTo(inputfile1, dest, inputfile1);
+      CopyTo(syncfile, dest, inputfile2);
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainGDCNIC', 'TrainingGDCNIC'], ComputeFunc) then
+    begin
+      inputfile1 := Param.GetDefaultValue('source', '');
+      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_GDCNIC_Ext + '.sync');
+      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_GDCNIC_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output', 'output' + C_GDCNIC_Ext);
+      CopyTo(paramFile, dest, paramFile);
+      CopyTo(inputfile1, dest, inputfile1);
+      CopyTo(syncfile, dest, inputfile2);
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainGNIC', 'TrainingGNIC'], ComputeFunc) then
+    begin
+      inputfile1 := Param.GetDefaultValue('source', '');
+      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_GNIC_Ext + '.sync');
+      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_GNIC_Ext + '.sync');
+      outputfile := Param.GetDefaultValue('output', 'output' + C_GNIC_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(syncfile, dest, inputfile2);

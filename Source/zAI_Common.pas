@@ -2,14 +2,21 @@
 { * AI Common (platform compatible)                                            * }
 { * by QQ 600585@qq.com                                                        * }
 { ****************************************************************************** }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 unit zAI_Common;
 
@@ -96,8 +103,8 @@ type
     constructor Create(AOwner: TAI_ImageList);
     destructor Destroy; override;
 
-    function RunExpCondition(ScriptStyle: TTextStyle; exp: SystemString): Boolean;
-    function RunExpProcess(ScriptStyle: TTextStyle; exp: SystemString): Boolean;
+    function RunExpCondition(RSeri: TRasterSerialized; ScriptStyle: TTextStyle; exp: SystemString): Boolean;
+    function RunExpProcess(RSeri: TRasterSerialized; ScriptStyle: TTextStyle; exp: SystemString): Boolean;
     function GetExpFunctionList: TPascalStringList;
 
     procedure Clear;
@@ -121,6 +128,10 @@ type
 
     function ExistsToken(Token: TPascalString): Boolean;
     function GetTokenCount(Token: TPascalString): Integer;
+
+    // Serialized And Recycle Memory
+    procedure SerializedAndRecycleMemory(Serializ: TRasterSerialized);
+    procedure UnserializedMemory(Serializ: TRasterSerialized);
   end;
 
   TAI_ImageList = class(TImageList_Decl)
@@ -139,6 +150,8 @@ type
     procedure Clear;
     procedure ClearPrepareRaster;
 
+    procedure RunScript(RSeri: TRasterSerialized; ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString); overload;
+    procedure RunScript(RSeri: TRasterSerialized; condition_exp, process_exp: SystemString); overload;
     procedure RunScript(ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString); overload;
     procedure RunScript(condition_exp, process_exp: SystemString); overload;
 
@@ -190,6 +203,7 @@ type
     function DetectorDefineCount: Integer;
     function DetectorDefinePartCount: Integer;
 
+    function ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height: Integer): TMemoryRaster2DArray;
     function ExtractDetectorDefineAsSnapshot: TMemoryRaster2DArray;
     function ExtractDetectorDefineAsPrepareRaster(SS_width, SS_height: Integer): TMemoryRaster2DArray;
     function ExtractDetectorDefineAsScaleSpace(SS_width, SS_height: Integer): TMemoryRaster2DArray;
@@ -200,62 +214,105 @@ type
     function Tokens: TArrayPascalString;
     function ExistsToken(Token: TPascalString): Boolean;
     function GetTokenCount(Token: TPascalString): Integer;
+
+    // Serialized And Recycle Memory
+    procedure SerializedAndRecycleMemory(Serializ: TRasterSerialized);
+    procedure UnserializedMemory(Serializ: TRasterSerialized);
   end;
 
 {$IFDEF FPC}
-
   TAI_ImageMatrix_Decl = specialize TGenericsList<TAI_ImageList>;
 {$ELSE FPC}
   TAI_ImageMatrix_Decl = TGenericsObjectList<TAI_ImageList>;
 {$ENDIF FPC}
 
   TAI_ImageMatrix = class(TAI_ImageMatrix_Decl)
+  private
+    procedure BuildSnapshotProjection_HashList(SS_width, SS_height: Integer; imgList: TAI_ImageList; hList: THashObjectList); overload;
+    procedure BuildSnapshot_HashList(imgList: TAI_ImageList; hList: THashObjectList); overload;
+    procedure BuildDefinePrepareRaster_HashList(SS_width, SS_height: Integer; imgList: TAI_ImageList; hList: THashObjectList); overload;
+    procedure BuildScaleSpace_HashList(SS_width, SS_height: Integer; imgList: TAI_ImageList; hList: THashObjectList); overload;
+
+    procedure BuildSnapshotProjection_HashList(SS_width, SS_height: Integer; imgList: TAI_ImageList; RSeri: TRasterSerialized; hList: THashObjectList); overload;
+    procedure BuildSnapshot_HashList(imgList: TAI_ImageList; RSeri: TRasterSerialized; hList: THashObjectList); overload;
+    procedure BuildDefinePrepareRaster_HashList(SS_width, SS_height: Integer; imgList: TAI_ImageList; RSeri: TRasterSerialized; hList: THashObjectList); overload;
+    procedure BuildScaleSpace_HashList(SS_width, SS_height: Integer; imgList: TAI_ImageList; RSeri: TRasterSerialized; hList: THashObjectList); overload;
   public
     UsedJpegForXML: Boolean;
     constructor Create;
     destructor Destroy; override;
 
+    // scipt
+    procedure RunScript(RSeri: TRasterSerialized; ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString); overload;
+    procedure RunScript(RSeri: TRasterSerialized; condition_exp, process_exp: SystemString); overload;
     procedure RunScript(ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString); overload;
     procedure RunScript(condition_exp, process_exp: SystemString); overload;
 
-    function FindImageList(FileInfo: TPascalString): TAI_ImageList;
+    // import
+    procedure SearchAndAddImageList(RSeri: TRasterSerialized; rootPath, filter: SystemString; includeSubdir, LoadImg: Boolean); overload;
+    procedure SearchAndAddImageList(rootPath, filter: SystemString; includeSubdir, LoadImg: Boolean); overload;
 
+    // image matrix stream
     procedure SaveToStream(stream: TCoreClassStream; SaveImg: Boolean; RasterSave_: TRasterSave); overload;
     procedure SaveToStream(stream: TCoreClassStream); overload;
     procedure LoadFromStream(stream: TCoreClassStream);
 
+    // image matrix file
     procedure SaveToFile(fileName: SystemString; SaveImg: Boolean; RasterSave_: TRasterSave); overload;
     procedure SaveToFile(fileName: SystemString); overload;
     procedure LoadFromFile(fileName: SystemString);
 
-    procedure ClearPrepareRaster;
-
-    procedure SearchAndAddImageList(rootPath, filter: SystemString; includeSubdir, LoadImg: Boolean);
-
+    // image matrix scale
     procedure Scale(f: TGeoFloat);
 
+    // clean PrepareRaster
+    procedure ClearPrepareRaster;
+
+    // export
     procedure Export_PrepareRaster(outputPath: SystemString);
     procedure Export_DetectorRaster(outputPath: SystemString);
-
     procedure Build_XML(TokenFilter: SystemString; includeLabel, includePart, usedJpeg: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(TokenFilter: SystemString; includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(includeLabel, includePart: Boolean; datasetName, comment, build_output_file, Prefix: SystemString; BuildFileList: TPascalStringList); overload;
     procedure Build_XML(includeLabel, includePart: Boolean; datasetName, comment, build_output_file: SystemString); overload;
 
+    // statistics
     function ImageCount: Integer;
+    function ImageList: TImageList_Decl;
     function DetectorDefineCount: Integer;
     function DetectorDefinePartCount: Integer;
+    function FoundNoTokenDetectorDefine(output: TMemoryRaster): Boolean; overload;
+    function FoundNoTokenDetectorDefine: Boolean; overload;
+    function Tokens: TArrayPascalString;
+    function ExistsToken(Token: TPascalString): Boolean;
+    function GetTokenCount(Token: TPascalString): Integer;
+    function FindImageList(FileInfo: TPascalString): TAI_ImageList;
 
+    // parallel image matrix extract
+    function ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height: Integer): TMemoryRaster2DArray;
     function ExtractDetectorDefineAsSnapshot: TMemoryRaster2DArray;
     function ExtractDetectorDefineAsPrepareRaster(SS_width, SS_height: Integer): TMemoryRaster2DArray;
     function ExtractDetectorDefineAsScaleSpace(SS_width, SS_height: Integer): TMemoryRaster2DArray;
 
-    function FoundNoTokenDetectorDefine(output: TMemoryRaster): Boolean; overload;
-    function FoundNoTokenDetectorDefine: Boolean; overload;
+    // large-scale image matrix stream
+    procedure LargeScale_SaveToStream(RSeri: TRasterSerialized; stream: TCoreClassStream; RasterSave_: TRasterSave); overload;
+    procedure LargeScale_SaveToStream(RSeri: TRasterSerialized; stream: TCoreClassStream); overload;
+    procedure LargeScale_LoadFromStream(RSeri: TRasterSerialized; stream: TCoreClassStream);
 
-    function Tokens: TArrayPascalString;
-    function ExistsToken(Token: TPascalString): Boolean;
-    function GetTokenCount(Token: TPascalString): Integer;
+    // large-scale image matrix: file
+    procedure LargeScale_SaveToFile(RSeri: TRasterSerialized; fileName: SystemString; RasterSave_: TRasterSave); overload;
+    procedure LargeScale_SaveToFile(RSeri: TRasterSerialized; fileName: SystemString); overload;
+    procedure LargeScale_LoadFromFile(RSeri: TRasterSerialized; fileName: SystemString);
+
+    // large-scale image matrix extract
+    function LargeScale_ExtractDetectorDefineAsSnapshotProjection(RSeri: TRasterSerialized; SS_width, SS_height: Integer): TMemoryRaster2DArray;
+    function LargeScale_ExtractDetectorDefineAsSnapshot(RSeri: TRasterSerialized): TMemoryRaster2DArray;
+    function LargeScale_ExtractDetectorDefineAsPrepareRaster(RSeri: TRasterSerialized; SS_width, SS_height: Integer): TMemoryRaster2DArray;
+    function LargeScale_ExtractDetectorDefineAsScaleSpace(RSeri: TRasterSerialized; SS_width, SS_height: Integer): TMemoryRaster2DArray;
+
+    // large-scale image matrix: Serialized And Recycle Memory
+    procedure SerializedAndRecycleMemory(Serializ: TRasterSerialized);
+    procedure UnserializedMemory(Serializ: TRasterSerialized);
   end;
 
 var
@@ -275,6 +332,8 @@ var
   AI_ModelTool: U_String;
   AI_TrainingServer: U_String;
 
+  AI_Configure_ReadyDone: Boolean;
+
   On_Script_RegisterProc: TAI_Image_Script_Register;
 
 const
@@ -285,12 +344,14 @@ const
   C_OD_Ext: SystemString = '.svm_od';
   C_OD_Marshal_Ext: SystemString = '.svm_od_marshal';
   C_SP_Ext: SystemString = '.shape';
-  C_Metric_ResNet_Ext: SystemString = '.metric';
-  C_LMetric_ResNet_Ext: SystemString = '.large_metric';
+  C_Metric_Ext: SystemString = '.metric';
+  C_LMetric_Ext: SystemString = '.large_metric';
   C_Learn_Ext: SystemString = '.learn';
   C_MMOD_Ext: SystemString = '.svm_dnn_od';
-  C_RNIC_Ext: SystemString = '.rnic';
+  C_RNIC_Ext: SystemString = '.RNIC';
   C_LRNIC_Ext: SystemString = '.LRNIC';
+  C_GDCNIC_Ext: SystemString = '.GDCNIC';
+  C_GNIC_Ext: SystemString = '.GNIC';
 
 procedure ReadAIConfig; overload;
 procedure ReadAIConfig(ini: THashTextEngine); overload;
@@ -340,6 +401,8 @@ begin
   AI_ModelTool := '';
   AI_TrainingServer := 'localhost';
 
+  AI_Configure_ReadyDone := False;
+
   On_Script_RegisterProc := nil;
 end;
 
@@ -383,6 +446,8 @@ begin
 
   AI_Parallel_Count := ini.GetDefaultValue('AI', 'Parallel', AI_Parallel_Count);
   AI_TrainingServer := ini.GetDefaultValue('AI', 'TrainingServer', AI_TrainingServer);
+
+  AI_Configure_ReadyDone := True;
 end;
 
 procedure WriteAIConfig;
@@ -420,7 +485,6 @@ begin
     WriteAIConfig;
   end;
   disposeObject(ini);
-
 end;
 
 procedure Build_XML_Dataset(xslFile, name, comment, body: SystemString; build_output: TMemoryStream64);
@@ -1069,22 +1133,37 @@ begin
   inherited Destroy;
 end;
 
-function TAI_Image.RunExpCondition(ScriptStyle: TTextStyle; exp: SystemString): Boolean;
+function TAI_Image.RunExpCondition(RSeri: TRasterSerialized; ScriptStyle: TTextStyle; exp: SystemString): Boolean;
 begin
   CheckAndRegOPRT;
   DoStatusNoLn('Image (%d * %d, detector:%d) EvaluateExpression: %s', [Raster.width, Raster.height, DetectorDefineList.Count, exp]);
+
+  if RSeri <> nil then
+      UnserializedMemory(RSeri);
+
   Result := EvaluateExpressionValue(ScriptStyle, exp, FOP_RT);
+
   if Result then
       DoStatusNoLn(' = yes.')
   else
       DoStatusNoLn(' = no.');
   DoStatusNoLn;
+
+  if RSeri <> nil then
+      SerializedAndRecycleMemory(RSeri);
 end;
 
-function TAI_Image.RunExpProcess(ScriptStyle: TTextStyle; exp: SystemString): Boolean;
+function TAI_Image.RunExpProcess(RSeri: TRasterSerialized; ScriptStyle: TTextStyle; exp: SystemString): Boolean;
 begin
   CheckAndRegOPRT;
+
+  if RSeri <> nil then
+      UnserializedMemory(RSeri);
+
   Result := EvaluateExpressionValue(ScriptStyle, exp, FOP_RT);
+
+  if RSeri <> nil then
+      SerializedAndRecycleMemory(RSeri);
 end;
 
 function TAI_Image.GetExpFunctionList: TPascalStringList;
@@ -1331,6 +1410,30 @@ begin
         inc(Result);
 end;
 
+procedure TAI_Image.SerializedAndRecycleMemory(Serializ: TRasterSerialized);
+var
+  i: Integer;
+begin
+  for i := 0 to DetectorDefineList.Count - 1 do
+      DetectorDefineList[i].PrepareRaster.SerializedAndRecycleMemory(Serializ);
+
+  Raster.SerializedAndRecycleMemory(Serializ);
+end;
+
+procedure TAI_Image.UnserializedMemory(Serializ: TRasterSerialized);
+var
+  i: Integer;
+begin
+  for i := 0 to DetectorDefineList.Count - 1 do
+    begin
+      if DetectorDefineList[i].PrepareRaster.Empty then
+          DetectorDefineList[i].PrepareRaster.UnserializedMemory(Serializ);
+    end;
+
+  if Raster.Empty then
+      Raster.UnserializedMemory(Serializ);
+end;
+
 constructor TAI_ImageList.Create;
 begin
   inherited Create;
@@ -1384,7 +1487,7 @@ begin
       Items[i].ClearPrepareRaster;
 end;
 
-procedure TAI_ImageList.RunScript(ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString);
+procedure TAI_ImageList.RunScript(RSeri: TRasterSerialized; ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString);
 var
   i, j: Integer;
   img: TAI_Image;
@@ -1403,8 +1506,8 @@ begin
     begin
       img := Items[i];
 
-      if img.RunExpCondition(ScriptStyle, condition_exp) then
-          img.RunExpProcess(ScriptStyle, process_exp);
+      if img.RunExpCondition(RSeri, ScriptStyle, condition_exp) then
+          img.RunExpProcess(RSeri, ScriptStyle, process_exp);
     end;
 
   // process delete state
@@ -1435,6 +1538,16 @@ begin
           inc(i);
         end;
     end;
+end;
+
+procedure TAI_ImageList.RunScript(RSeri: TRasterSerialized; condition_exp, process_exp: SystemString);
+begin
+  RunScript(RSeri, tsPascal, condition_exp, process_exp);
+end;
+
+procedure TAI_ImageList.RunScript(ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString);
+begin
+  RunScript(nil, ScriptStyle, condition_exp, process_exp);
 end;
 
 procedure TAI_ImageList.RunScript(condition_exp, process_exp: SystemString);
@@ -1754,7 +1867,7 @@ begin
     end;
 
   if Compressed then
-      de.EncodeAsZLib(stream, False)
+      de.EncodeAsSelectCompress(stream, False)
   else
       de.EncodeTo(stream, True);
 
@@ -2172,7 +2285,7 @@ begin
     end;
 end;
 
-function TAI_ImageList.ExtractDetectorDefineAsSnapshot: TMemoryRaster2DArray;
+function TAI_ImageList.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height: Integer): TMemoryRaster2DArray;
 var
   i, j: Integer;
   imgData: TAI_Image;
@@ -2182,6 +2295,7 @@ var
   mrList: TMemoryRasterList;
   pl: TPascalStringList;
 begin
+  DoStatus('begin prepare dataset.');
   hList := THashObjectList.Create(True);
   for i := 0 to Count - 1 do
     begin
@@ -2193,7 +2307,66 @@ begin
             begin
               mr := NewRaster();
               mr.UserToken := DetDef.Token;
-              mr.SetWorkMemory(DetDef.Owner.Raster);
+
+              // projection
+              if (DetDef.Owner.Raster.width <> SS_width) or (DetDef.Owner.Raster.height <> SS_height) then
+                begin
+                  mr.SetSize(SS_width, SS_height);
+                  DetDef.Owner.Raster.ProjectionTo(mr,
+                    TV2Rect4.Init(RectFit(SS_width, SS_height, DetDef.Owner.Raster.BoundsRectV2), 0),
+                    TV2Rect4.Init(mr.BoundsRectV2, 0),
+                    True, 1.0);
+                end
+              else // fast assign
+                  mr.Assign(DetDef.Owner.Raster);
+
+              if not hList.Exists(DetDef.Token) then
+                  hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+              if TMemoryRasterList(hList[DetDef.Token]).IndexOf(mr) < 0 then
+                  TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+            end;
+        end;
+    end;
+
+  // process sequence
+  SetLength(Result, hList.Count);
+  pl := TPascalStringList.Create;
+  hList.GetNameList(pl);
+  for i := 0 to pl.Count - 1 do
+    begin
+      mrList := TMemoryRasterList(hList[pl[i]]);
+      SetLength(Result[i], mrList.Count);
+      for j := 0 to mrList.Count - 1 do
+          Result[i, j] := mrList[j];
+    end;
+
+  disposeObject(pl);
+  disposeObject(hList);
+end;
+
+function TAI_ImageList.ExtractDetectorDefineAsSnapshot: TMemoryRaster2DArray;
+var
+  i, j: Integer;
+  imgData: TAI_Image;
+  DetDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+  hList: THashObjectList;
+  mrList: TMemoryRasterList;
+  pl: TPascalStringList;
+begin
+  DoStatus('begin prepare dataset.');
+  hList := THashObjectList.Create(True);
+  for i := 0 to Count - 1 do
+    begin
+      imgData := Items[i];
+      for j := 0 to imgData.DetectorDefineList.Count - 1 do
+        begin
+          DetDef := imgData.DetectorDefineList[j];
+          if DetDef.Token <> '' then
+            begin
+              mr := NewRaster();
+              mr.UserToken := DetDef.Token;
+              mr.Assign(DetDef.Owner.Raster);
               if not hList.Exists(DetDef.Token) then
                   hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
               if TMemoryRasterList(hList[DetDef.Token]).IndexOf(mr) < 0 then
@@ -2228,6 +2401,7 @@ var
   mrList: TMemoryRasterList;
   pl: TPascalStringList;
 begin
+  DoStatus('begin prepare dataset.');
   hList := THashObjectList.Create(True);
   for i := 0 to Count - 1 do
     begin
@@ -2274,6 +2448,7 @@ var
   mrList: TMemoryRasterList;
   pl: TPascalStringList;
 begin
+  DoStatus('begin prepare dataset.');
   hList := THashObjectList.Create(True);
   for i := 0 to Count - 1 do
     begin
@@ -2368,6 +2543,310 @@ begin
       inc(Result, Items[i].GetTokenCount(Token));
 end;
 
+procedure TAI_ImageList.SerializedAndRecycleMemory(Serializ: TRasterSerialized);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].SerializedAndRecycleMemory(Serializ);
+end;
+
+procedure TAI_ImageList.UnserializedMemory(Serializ: TRasterSerialized);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].UnserializedMemory(Serializ);
+end;
+
+procedure TAI_ImageMatrix.BuildSnapshotProjection_HashList(SS_width, SS_height: Integer; imgList: TAI_ImageList; hList: THashObjectList);
+var
+  i, j: Integer;
+  imgData: TAI_Image;
+  DetDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+begin
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgData := imgList[i];
+      if imgData.DetectorDefineList.Count > 0 then
+        begin
+          for j := 0 to imgData.DetectorDefineList.Count - 1 do
+            begin
+              DetDef := imgData.DetectorDefineList[j];
+              if DetDef.Token <> '' then
+                begin
+                  mr := NewRaster();
+                  mr.SetSize(SS_width, SS_height);
+
+                  // projection
+                  if (DetDef.Owner.Raster.width <> SS_width) or (DetDef.Owner.Raster.height <> SS_height) then
+                    begin
+                      mr.SetSize(SS_width, SS_height);
+                      DetDef.Owner.Raster.ProjectionTo(mr,
+                        TV2Rect4.Init(RectFit(SS_width, SS_height, DetDef.Owner.Raster.BoundsRectV2), 0),
+                        TV2Rect4.Init(mr.BoundsRectV2, 0),
+                        True, 1.0);
+                    end
+                  else // fast assign
+                      mr.Assign(DetDef.Owner.Raster);
+
+                  mr.UserToken := DetDef.Token;
+
+                  LockObject(hList);
+                  if not hList.Exists(DetDef.Token) then
+                      hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+                  if TMemoryRasterList(hList[DetDef.Token]).IndexOf(mr) < 0 then
+                      TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+                  UnLockObject(hList);
+                end;
+            end;
+        end;
+    end;
+end;
+
+procedure TAI_ImageMatrix.BuildSnapshot_HashList(imgList: TAI_ImageList; hList: THashObjectList);
+var
+  i, j: Integer;
+  imgData: TAI_Image;
+  DetDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+begin
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgData := imgList[i];
+      if imgData.DetectorDefineList.Count > 0 then
+        begin
+          for j := 0 to imgData.DetectorDefineList.Count - 1 do
+            begin
+              DetDef := imgData.DetectorDefineList[j];
+              if DetDef.Token <> '' then
+                begin
+                  mr := NewRaster();
+                  mr.Assign(DetDef.Owner.Raster);
+                  mr.UserToken := DetDef.Token;
+
+                  LockObject(hList);
+                  if not hList.Exists(DetDef.Token) then
+                      hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+                  if TMemoryRasterList(hList[DetDef.Token]).IndexOf(mr) < 0 then
+                      TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+                  UnLockObject(hList);
+                end;
+            end;
+        end;
+    end;
+end;
+
+procedure TAI_ImageMatrix.BuildDefinePrepareRaster_HashList(SS_width, SS_height: Integer; imgList: TAI_ImageList; hList: THashObjectList);
+var
+  i, j: Integer;
+  imgData: TAI_Image;
+  DetDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+begin
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgData := imgList[i];
+      for j := 0 to imgData.DetectorDefineList.Count - 1 do
+        begin
+          DetDef := imgData.DetectorDefineList[j];
+          if DetDef.Token <> '' then
+            begin
+              if not DetDef.PrepareRaster.Empty then
+                begin
+                  mr := NewRaster();
+                  mr.ZoomFrom(DetDef.PrepareRaster, SS_width, SS_height);
+
+                  LockObject(hList);
+                  mr.UserToken := DetDef.Token;
+                  if not hList.Exists(DetDef.Token) then
+                      hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+                  TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+                  UnLockObject(hList);
+                end;
+            end;
+        end;
+    end;
+end;
+
+procedure TAI_ImageMatrix.BuildScaleSpace_HashList(SS_width, SS_height: Integer; imgList: TAI_ImageList; hList: THashObjectList);
+var
+  i, j: Integer;
+  imgData: TAI_Image;
+  DetDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+begin
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgData := imgList[i];
+      for j := 0 to imgData.DetectorDefineList.Count - 1 do
+        begin
+          DetDef := imgData.DetectorDefineList[j];
+          if DetDef.Token <> '' then
+            begin
+              mr := DetDef.Owner.Raster.BuildAreaOffsetScaleSpace(DetDef.R, SS_width, SS_height);
+
+              LockObject(hList);
+              mr.UserToken := DetDef.Token;
+              if not hList.Exists(DetDef.Token) then
+                  hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+              TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+              UnLockObject(hList);
+            end;
+        end;
+    end;
+end;
+
+procedure TAI_ImageMatrix.BuildSnapshotProjection_HashList(SS_width, SS_height: Integer; imgList: TAI_ImageList; RSeri: TRasterSerialized; hList: THashObjectList);
+var
+  i, j: Integer;
+  imgData: TAI_Image;
+  DetDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+begin
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgData := imgList[i];
+      if imgData.DetectorDefineList.Count > 0 then
+        begin
+          for j := 0 to imgData.DetectorDefineList.Count - 1 do
+            begin
+              DetDef := imgData.DetectorDefineList[j];
+              if DetDef.Token <> '' then
+                begin
+                  mr := NewRaster();
+
+                  // projection
+                  if (DetDef.Owner.Raster.width <> SS_width) or (DetDef.Owner.Raster.height <> SS_height) then
+                    begin
+                      mr.SetSize(SS_width, SS_height);
+                      DetDef.Owner.Raster.ProjectionTo(mr,
+                        TV2Rect4.Init(RectFit(SS_width, SS_height, DetDef.Owner.Raster.BoundsRectV2), 0),
+                        TV2Rect4.Init(mr.BoundsRectV2, 0),
+                        True, 1.0);
+                    end
+                  else // fast assign
+                      mr.Assign(DetDef.Owner.Raster);
+
+                  mr.SerializedAndRecycleMemory(RSeri);
+
+                  mr.UserToken := DetDef.Token;
+
+                  LockObject(hList);
+                  if not hList.Exists(DetDef.Token) then
+                      hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+                  if TMemoryRasterList(hList[DetDef.Token]).IndexOf(mr) < 0 then
+                      TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+                  UnLockObject(hList);
+                end;
+            end;
+        end;
+      imgData.Raster.RecycleMemory;
+    end;
+end;
+
+procedure TAI_ImageMatrix.BuildSnapshot_HashList(imgList: TAI_ImageList; RSeri: TRasterSerialized; hList: THashObjectList);
+var
+  i, j: Integer;
+  imgData: TAI_Image;
+  DetDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+begin
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgData := imgList[i];
+      if imgData.DetectorDefineList.Count > 0 then
+        begin
+          for j := 0 to imgData.DetectorDefineList.Count - 1 do
+            begin
+              DetDef := imgData.DetectorDefineList[j];
+              if DetDef.Token <> '' then
+                begin
+                  mr := NewRaster();
+                  mr.Assign(DetDef.Owner.Raster);
+                  mr.SerializedAndRecycleMemory(RSeri);
+
+                  mr.UserToken := DetDef.Token;
+
+                  LockObject(hList);
+                  if not hList.Exists(DetDef.Token) then
+                      hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+                  if TMemoryRasterList(hList[DetDef.Token]).IndexOf(mr) < 0 then
+                      TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+                  UnLockObject(hList);
+                end;
+            end;
+        end;
+      imgData.Raster.RecycleMemory;
+    end;
+end;
+
+procedure TAI_ImageMatrix.BuildDefinePrepareRaster_HashList(SS_width, SS_height: Integer; imgList: TAI_ImageList; RSeri: TRasterSerialized; hList: THashObjectList);
+var
+  i, j: Integer;
+  imgData: TAI_Image;
+  DetDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+begin
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgData := imgList[i];
+      for j := 0 to imgData.DetectorDefineList.Count - 1 do
+        begin
+          DetDef := imgData.DetectorDefineList[j];
+          if DetDef.Token <> '' then
+            begin
+              DetDef.PrepareRaster.UnserializedMemory(RSeri);
+              if not DetDef.PrepareRaster.Empty then
+                begin
+                  mr := NewRaster();
+                  mr.ZoomFrom(DetDef.PrepareRaster, SS_width, SS_height);
+                  DetDef.PrepareRaster.RecycleMemory;
+                  mr.SerializedAndRecycleMemory(RSeri);
+
+                  LockObject(hList);
+                  mr.UserToken := DetDef.Token;
+                  if not hList.Exists(DetDef.Token) then
+                      hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+                  TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+                  UnLockObject(hList);
+                end;
+            end;
+        end;
+    end;
+end;
+
+procedure TAI_ImageMatrix.BuildScaleSpace_HashList(SS_width, SS_height: Integer; imgList: TAI_ImageList; RSeri: TRasterSerialized; hList: THashObjectList);
+var
+  i, j: Integer;
+  imgData: TAI_Image;
+  DetDef: TAI_DetectorDefine;
+  mr: TMemoryRaster;
+begin
+  for i := 0 to imgList.Count - 1 do
+    begin
+      imgData := imgList[i];
+      for j := 0 to imgData.DetectorDefineList.Count - 1 do
+        begin
+          DetDef := imgData.DetectorDefineList[j];
+          if DetDef.Token <> '' then
+            begin
+              mr := DetDef.Owner.Raster.BuildAreaOffsetScaleSpace(DetDef.R, SS_width, SS_height);
+              mr.SerializedAndRecycleMemory(RSeri);
+
+              LockObject(hList);
+              mr.UserToken := DetDef.Token;
+              if not hList.Exists(DetDef.Token) then
+                  hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
+              TMemoryRasterList(hList[DetDef.Token]).Add(mr);
+              UnLockObject(hList);
+            end;
+        end;
+      imgData.Raster.RecycleMemory;
+    end;
+end;
+
 constructor TAI_ImageMatrix.Create;
 begin
   inherited Create;
@@ -2377,6 +2856,22 @@ end;
 destructor TAI_ImageMatrix.Destroy;
 begin
   inherited Destroy;
+end;
+
+procedure TAI_ImageMatrix.RunScript(RSeri: TRasterSerialized; ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].RunScript(RSeri, ScriptStyle, condition_exp, process_exp);
+end;
+
+procedure TAI_ImageMatrix.RunScript(RSeri: TRasterSerialized; condition_exp, process_exp: SystemString);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].RunScript(RSeri, condition_exp, process_exp);
 end;
 
 procedure TAI_ImageMatrix.RunScript(ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString);
@@ -2395,17 +2890,61 @@ begin
       Items[i].RunScript(condition_exp, process_exp);
 end;
 
-function TAI_ImageMatrix.FindImageList(FileInfo: TPascalString): TAI_ImageList;
-var
-  i: Integer;
-begin
-  for i := 0 to Count - 1 do
-    if FileInfo.Same(@Items[i].FileInfo) then
+procedure TAI_ImageMatrix.SearchAndAddImageList(RSeri: TRasterSerialized; rootPath, filter: SystemString; includeSubdir, LoadImg: Boolean);
+  procedure ProcessImg(fn, Prefix: TPascalString);
+  var
+    imgList: TAI_ImageList;
+  begin
+    DoStatus('%s (%s)', [fn.Text, Prefix.Text]);
+    imgList := TAI_ImageList.Create;
+    imgList.LoadFromFile(fn, LoadImg);
+    imgList.FileInfo := Prefix;
+    if RSeri <> nil then
+        imgList.SerializedAndRecycleMemory(RSeri);
+    Add(imgList);
+  end;
+
+  procedure ProcessPath(ph, Prefix: TPascalString);
+  var
+    fl, dl: TPascalStringList;
+    i: Integer;
+  begin
+    fl := TPascalStringList.Create;
+    umlGetFileList(ph, fl);
+
+    for i := 0 to fl.Count - 1 do
+      if umlMultipleMatch(filter, fl[i]) then
+        begin
+          if Prefix.Len > 0 then
+              ProcessImg(umlCombineFileName(ph, fl[i]), Prefix + '.' + umlChangeFileExt(fl[i], ''))
+          else
+              ProcessImg(umlCombineFileName(ph, fl[i]), umlChangeFileExt(fl[i], ''));
+        end;
+
+    disposeObject(fl);
+
+    if includeSubdir then
       begin
-        Result := Items[i];
-        exit;
+        dl := TPascalStringList.Create;
+        umlGetDirList(ph, dl);
+        for i := 0 to dl.Count - 1 do
+          begin
+            if Prefix.Len > 0 then
+                ProcessPath(umlCombinePath(ph, dl[i]), Prefix + '.' + dl[i])
+            else
+                ProcessPath(umlCombinePath(ph, dl[i]), dl[i]);
+          end;
+        disposeObject(dl);
       end;
-  Result := nil;
+  end;
+
+begin
+  ProcessPath(rootPath, '')
+end;
+
+procedure TAI_ImageMatrix.SearchAndAddImageList(rootPath, filter: SystemString; includeSubdir, LoadImg: Boolean);
+begin
+  SearchAndAddImageList(nil, rootPath, filter, includeSubdir, LoadImg);
 end;
 
 procedure TAI_ImageMatrix.SaveToStream(stream: TCoreClassStream; SaveImg: Boolean; RasterSave_: TRasterSave);
@@ -2490,7 +3029,6 @@ begin
 {$IFDEF parallel}
 {$IFDEF FPC}
   ProcThreadPool.DoParallelLocalProc(@fpc_Prepare_Save_ParallelFor, 0, Count - 1);
-  Save();
 {$ELSE FPC}
   TParallel.for(0, Count - 1, procedure(pass: Integer)
     var
@@ -2505,12 +3043,11 @@ begin
       p^.fn := p^.fn + C_ImageList_Ext;
       FinishSave[pass] := p;
     end);
-  Save();
 {$ENDIF FPC}
 {$ELSE parallel}
   Prepare_Save();
-  Save();
 {$ENDIF parallel}
+  Save();
   disposeObject(dbEng);
   DoStatus('Save Image Matrix done.');
 end;
@@ -2652,71 +3189,20 @@ begin
   disposeObject(fs);
 end;
 
-procedure TAI_ImageMatrix.ClearPrepareRaster;
-var
-  i: Integer;
-begin
-  for i := 0 to Count - 1 do
-      Items[i].ClearPrepareRaster;
-end;
-
-procedure TAI_ImageMatrix.SearchAndAddImageList(rootPath, filter: SystemString; includeSubdir, LoadImg: Boolean);
-
-  procedure ProcessImg(fn, Prefix: TPascalString);
-  var
-    imgList: TAI_ImageList;
-  begin
-    DoStatus('%s (%s)', [fn.Text, Prefix.Text]);
-    imgList := TAI_ImageList.Create;
-    imgList.LoadFromFile(fn, LoadImg);
-    imgList.FileInfo := Prefix;
-    Add(imgList);
-  end;
-
-  procedure ProcessPath(ph, Prefix: TPascalString);
-  var
-    fl, dl: TPascalStringList;
-    i: Integer;
-  begin
-    fl := TPascalStringList.Create;
-    umlGetFileList(ph, fl);
-
-    for i := 0 to fl.Count - 1 do
-      if umlMultipleMatch(filter, fl[i]) then
-        begin
-          if Prefix.Len > 0 then
-              ProcessImg(umlCombineFileName(ph, fl[i]), Prefix + '.' + umlChangeFileExt(fl[i], ''))
-          else
-              ProcessImg(umlCombineFileName(ph, fl[i]), umlChangeFileExt(fl[i], ''));
-        end;
-
-    disposeObject(fl);
-
-    if includeSubdir then
-      begin
-        dl := TPascalStringList.Create;
-        umlGetDirList(ph, dl);
-        for i := 0 to dl.Count - 1 do
-          begin
-            if Prefix.Len > 0 then
-                ProcessPath(umlCombinePath(ph, dl[i]), Prefix + '.' + dl[i])
-            else
-                ProcessPath(umlCombinePath(ph, dl[i]), dl[i]);
-          end;
-        disposeObject(dl);
-      end;
-  end;
-
-begin
-  ProcessPath(rootPath, '')
-end;
-
 procedure TAI_ImageMatrix.Scale(f: TGeoFloat);
 var
   i: Integer;
 begin
   for i := 0 to Count - 1 do
       Items[i].Scale(f);
+end;
+
+procedure TAI_ImageMatrix.ClearPrepareRaster;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].ClearPrepareRaster;
 end;
 
 procedure TAI_ImageMatrix.Export_PrepareRaster(outputPath: SystemString);
@@ -2875,6 +3361,20 @@ begin
       inc(Result, Items[i].Count);
 end;
 
+function TAI_ImageMatrix.ImageList: TImageList_Decl;
+var
+  i, j: Integer;
+  imgL: TAI_ImageList;
+begin
+  Result := TImageList_Decl.Create;
+  for i := 0 to Count - 1 do
+    begin
+      imgL := Items[i];
+      for j := 0 to imgL.Count - 1 do
+          Result.Add(imgL[j]);
+    end;
+end;
+
 function TAI_ImageMatrix.DetectorDefineCount: Integer;
 var
   i: Integer;
@@ -2891,175 +3391,6 @@ begin
   Result := 0;
   for i := 0 to Count - 1 do
       inc(Result, Items[i].DetectorDefinePartCount);
-end;
-
-function TAI_ImageMatrix.ExtractDetectorDefineAsSnapshot: TMemoryRaster2DArray;
-  procedure BuildHashList(imgList: TAI_ImageList; hList: THashObjectList);
-  var
-    i, j: Integer;
-    imgData: TAI_Image;
-    DetDef: TAI_DetectorDefine;
-    mr: TMemoryRaster;
-  begin
-    for i := 0 to imgList.Count - 1 do
-      begin
-        imgData := imgList[i];
-        if imgData.DetectorDefineList.Count > 0 then
-          begin
-            for j := 0 to imgData.DetectorDefineList.Count - 1 do
-              begin
-                DetDef := imgData.DetectorDefineList[j];
-                if DetDef.Token <> '' then
-                  begin
-                    mr := NewRaster();
-                    mr.SetWorkMemory(DetDef.Owner.Raster);
-                    mr.UserToken := DetDef.Token;
-                    if not hList.Exists(DetDef.Token) then
-                        hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
-                    if TMemoryRasterList(hList[DetDef.Token]).IndexOf(mr) < 0 then
-                        TMemoryRasterList(hList[DetDef.Token]).Add(mr);
-                  end;
-              end;
-          end
-        else
-          begin
-          end;
-      end;
-  end;
-
-var
-  i, j: Integer;
-  mr: TMemoryRaster;
-  hList: THashObjectList;
-  mrList: TMemoryRasterList;
-  pl: TPascalStringList;
-begin
-  hList := THashObjectList.Create(True);
-  for i := 0 to Count - 1 do
-      BuildHashList(Items[i], hList);
-
-  // process sequence
-  SetLength(Result, hList.Count);
-  pl := TPascalStringList.Create;
-  hList.GetNameList(pl);
-  for i := 0 to pl.Count - 1 do
-    begin
-      mrList := TMemoryRasterList(hList[pl[i]]);
-      SetLength(Result[i], mrList.Count);
-      for j := 0 to mrList.Count - 1 do
-          Result[i, j] := mrList[j];
-    end;
-
-  disposeObject(pl);
-  disposeObject(hList);
-end;
-
-function TAI_ImageMatrix.ExtractDetectorDefineAsPrepareRaster(SS_width, SS_height: Integer): TMemoryRaster2DArray;
-  procedure BuildHashList(imgList: TAI_ImageList; hList: THashObjectList);
-  var
-    i, j: Integer;
-    imgData: TAI_Image;
-    DetDef: TAI_DetectorDefine;
-    mr: TMemoryRaster;
-  begin
-    for i := 0 to imgList.Count - 1 do
-      begin
-        imgData := imgList[i];
-        for j := 0 to imgData.DetectorDefineList.Count - 1 do
-          begin
-            DetDef := imgData.DetectorDefineList[j];
-            if DetDef.Token <> '' then
-              if not DetDef.PrepareRaster.Empty then
-                begin
-                  mr := NewRaster();
-                  mr.ZoomFrom(DetDef.PrepareRaster, SS_width, SS_height);
-                  mr.UserToken := DetDef.Token;
-                  if not hList.Exists(DetDef.Token) then
-                      hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
-                  TMemoryRasterList(hList[DetDef.Token]).Add(mr);
-                end;
-          end;
-      end;
-  end;
-
-var
-  i, j: Integer;
-  mr: TMemoryRaster;
-  hList: THashObjectList;
-  mrList: TMemoryRasterList;
-  pl: TPascalStringList;
-begin
-  hList := THashObjectList.Create(True);
-  for i := 0 to Count - 1 do
-      BuildHashList(Items[i], hList);
-
-  // process sequence
-  SetLength(Result, hList.Count);
-  pl := TPascalStringList.Create;
-  hList.GetNameList(pl);
-  for i := 0 to pl.Count - 1 do
-    begin
-      mrList := TMemoryRasterList(hList[pl[i]]);
-      SetLength(Result[i], mrList.Count);
-      for j := 0 to mrList.Count - 1 do
-          Result[i, j] := mrList[j];
-    end;
-
-  disposeObject(pl);
-  disposeObject(hList);
-end;
-
-function TAI_ImageMatrix.ExtractDetectorDefineAsScaleSpace(SS_width, SS_height: Integer): TMemoryRaster2DArray;
-  procedure BuildHashList(imgList: TAI_ImageList; hList: THashObjectList);
-  var
-    i, j: Integer;
-    imgData: TAI_Image;
-    DetDef: TAI_DetectorDefine;
-    mr: TMemoryRaster;
-  begin
-    for i := 0 to imgList.Count - 1 do
-      begin
-        imgData := imgList[i];
-        for j := 0 to imgData.DetectorDefineList.Count - 1 do
-          begin
-            DetDef := imgData.DetectorDefineList[j];
-            if DetDef.Token <> '' then
-              begin
-                mr := DetDef.Owner.Raster.BuildAreaOffsetScaleSpace(DetDef.R, SS_width, SS_height);
-                mr.UserToken := DetDef.Token;
-                if not hList.Exists(DetDef.Token) then
-                    hList.FastAdd(DetDef.Token, TMemoryRasterList.Create);
-                TMemoryRasterList(hList[DetDef.Token]).Add(mr);
-              end;
-          end;
-      end;
-  end;
-
-var
-  i, j: Integer;
-  mr: TMemoryRaster;
-  hList: THashObjectList;
-  mrList: TMemoryRasterList;
-  pl: TPascalStringList;
-begin
-  hList := THashObjectList.Create(True);
-  for i := 0 to Count - 1 do
-      BuildHashList(Items[i], hList);
-
-  // process sequence
-  SetLength(Result, hList.Count);
-  pl := TPascalStringList.Create;
-  hList.GetNameList(pl);
-  for i := 0 to pl.Count - 1 do
-    begin
-      mrList := TMemoryRasterList(hList[pl[i]]);
-      SetLength(Result[i], mrList.Count);
-      for j := 0 to mrList.Count - 1 do
-          Result[i, j] := mrList[j];
-    end;
-
-  disposeObject(pl);
-  disposeObject(hList);
 end;
 
 function TAI_ImageMatrix.FoundNoTokenDetectorDefine(output: TMemoryRaster): Boolean;
@@ -3135,6 +3466,786 @@ begin
   Result := 0;
   for i := 0 to Count - 1 do
       inc(Result, Items[i].GetTokenCount(Token));
+end;
+
+function TAI_ImageMatrix.FindImageList(FileInfo: TPascalString): TAI_ImageList;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+    if FileInfo.Same(@Items[i].FileInfo) then
+      begin
+        Result := Items[i];
+        exit;
+      end;
+  Result := nil;
+end;
+
+function TAI_ImageMatrix.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height: Integer): TMemoryRaster2DArray;
+var
+  hList: THashObjectList;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  begin
+    BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], hList);
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to Count - 1 do
+        BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], hList);
+  end;
+{$ENDIF parallel}
+  procedure runDone;
+  var
+    i, j: Integer;
+    mr: TMemoryRaster;
+    mrList: TMemoryRasterList;
+    pl: TPascalStringList;
+  begin
+    // process sequence
+    SetLength(Result, hList.Count);
+    pl := TPascalStringList.Create;
+    hList.GetNameList(pl);
+    for i := 0 to pl.Count - 1 do
+      begin
+        mrList := TMemoryRasterList(hList[pl[i]]);
+        SetLength(Result[i], mrList.Count);
+        for j := 0 to mrList.Count - 1 do
+            Result[i, j] := mrList[j];
+      end;
+
+    disposeObject(pl);
+  end;
+
+begin
+  DoStatus('prepare dataset.');
+  hList := THashObjectList.Create(True);
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+  TParallel.for(0, Count - 1, procedure(pass: Integer)
+    begin
+      BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], hList);
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  DoFor;
+{$ENDIF parallel}
+  runDone;
+  disposeObject(hList);
+end;
+
+function TAI_ImageMatrix.ExtractDetectorDefineAsSnapshot: TMemoryRaster2DArray;
+var
+  hList: THashObjectList;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  begin
+    BuildSnapshot_HashList(Items[pass], hList);
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to Count - 1 do
+        BuildSnapshot_HashList(Items[pass], hList);
+  end;
+{$ENDIF parallel}
+  procedure runDone;
+  var
+    i, j: Integer;
+    mr: TMemoryRaster;
+    mrList: TMemoryRasterList;
+    pl: TPascalStringList;
+  begin
+    // process sequence
+    SetLength(Result, hList.Count);
+    pl := TPascalStringList.Create;
+    hList.GetNameList(pl);
+    for i := 0 to pl.Count - 1 do
+      begin
+        mrList := TMemoryRasterList(hList[pl[i]]);
+        SetLength(Result[i], mrList.Count);
+        for j := 0 to mrList.Count - 1 do
+            Result[i, j] := mrList[j];
+      end;
+
+    disposeObject(pl);
+  end;
+
+begin
+  DoStatus('prepare dataset.');
+  hList := THashObjectList.Create(True);
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+  TParallel.for(0, Count - 1, procedure(pass: Integer)
+    begin
+      BuildSnapshot_HashList(Items[pass], hList);
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  DoFor;
+{$ENDIF parallel}
+  runDone;
+  disposeObject(hList);
+end;
+
+function TAI_ImageMatrix.ExtractDetectorDefineAsPrepareRaster(SS_width, SS_height: Integer): TMemoryRaster2DArray;
+var
+  hList: THashObjectList;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  begin
+    BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], hList);
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to Count - 1 do
+        BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], hList);
+  end;
+{$ENDIF parallel}
+  procedure runDone;
+  var
+    i, j: Integer;
+    mr: TMemoryRaster;
+    mrList: TMemoryRasterList;
+    pl: TPascalStringList;
+  begin
+    // process sequence
+    SetLength(Result, hList.Count);
+    pl := TPascalStringList.Create;
+    hList.GetNameList(pl);
+    for i := 0 to pl.Count - 1 do
+      begin
+        mrList := TMemoryRasterList(hList[pl[i]]);
+        SetLength(Result[i], mrList.Count);
+        for j := 0 to mrList.Count - 1 do
+            Result[i, j] := mrList[j];
+      end;
+
+    disposeObject(pl);
+  end;
+
+begin
+  DoStatus('prepare dataset.');
+  hList := THashObjectList.Create(True);
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+  TParallel.for(0, Count - 1, procedure(pass: Integer)
+    begin
+      BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], hList);
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  DoFor;
+{$ENDIF parallel}
+  runDone;
+  disposeObject(hList);
+end;
+
+function TAI_ImageMatrix.ExtractDetectorDefineAsScaleSpace(SS_width, SS_height: Integer): TMemoryRaster2DArray;
+var
+  hList: THashObjectList;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  begin
+    BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], hList);
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to Count - 1 do
+        BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], hList);
+  end;
+{$ENDIF parallel}
+  procedure runDone;
+  var
+    i, j: Integer;
+    mr: TMemoryRaster;
+    mrList: TMemoryRasterList;
+    pl: TPascalStringList;
+  begin
+    // process sequence
+    SetLength(Result, hList.Count);
+    pl := TPascalStringList.Create;
+    hList.GetNameList(pl);
+    for i := 0 to pl.Count - 1 do
+      begin
+        mrList := TMemoryRasterList(hList[pl[i]]);
+        SetLength(Result[i], mrList.Count);
+        for j := 0 to mrList.Count - 1 do
+            Result[i, j] := mrList[j];
+      end;
+
+    disposeObject(pl);
+  end;
+
+begin
+  DoStatus('prepare dataset.');
+  hList := THashObjectList.Create(True);
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+  TParallel.for(0, Count - 1, procedure(pass: Integer)
+    begin
+      BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], hList);
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  DoFor;
+{$ENDIF parallel}
+  runDone;
+  disposeObject(hList);
+end;
+
+procedure TAI_ImageMatrix.LargeScale_SaveToStream(RSeri: TRasterSerialized; stream: TCoreClassStream; RasterSave_: TRasterSave);
+type
+  PSaveRec = ^TSaveRec;
+
+  TSaveRec = record
+    fn: TPascalString;
+    m64: TMemoryStream64;
+  end;
+
+var
+  dbEng: TObjectDataManager;
+  fPos: Int64;
+  PrepareSave: array of TSaveRec;
+  FinishSave: array of PSaveRec;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure fpc_Prepare_Save_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  var
+    p: PSaveRec;
+  begin
+    p := @PrepareSave[pass];
+    p^.m64 := TMemoryStream64.CustomCreate(1024 * 1024);
+    Items[pass].SaveToStream(p^.m64, True, False, RasterSave_);
+    Items[pass].SerializedAndRecycleMemory(RSeri);
+    p^.fn := Items[pass].FileInfo.TrimChar(#32#9);
+    if (p^.fn.Len = 0) then
+        p^.fn := umlStreamMD5String(p^.m64);
+    p^.fn := p^.fn + C_ImageList_Ext;
+    FinishSave[pass] := p;
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure Prepare_Save();
+  var
+    i: Integer;
+    p: PSaveRec;
+  begin
+    for i := 0 to Count - 1 do
+      begin
+        p := @PrepareSave[i];
+        p^.m64 := TMemoryStream64.CustomCreate(1024 * 1024);
+        Items[i].SaveToStream(p^.m64, True, False, RasterSave_);
+        Items[i].SerializedAndRecycleMemory(RSeri);
+        p^.fn := Items[i].FileInfo.TrimChar(#32#9);
+        if (p^.fn.Len = 0) then
+            p^.fn := umlStreamMD5String(p^.m64);
+        p^.fn := p^.fn + C_ImageList_Ext;
+        FinishSave[i] := p;
+      end;
+  end;
+
+{$ENDIF parallel}
+  procedure Save();
+  var
+    i: Integer;
+    p: PSaveRec;
+    itmHnd: TItemHandle;
+  begin
+    for i := 0 to Count - 1 do
+      begin
+        while FinishSave[i] = nil do
+            TCoreClassThread.Sleep(1);
+
+        p := FinishSave[i];
+
+        dbEng.ItemFastCreate(fPos, p^.fn, 'ImageMatrix', itmHnd);
+        dbEng.ItemWrite(itmHnd, p^.m64.Size, p^.m64.memory^);
+        dbEng.ItemClose(itmHnd);
+        disposeObject(p^.m64);
+        p^.fn := '';
+      end;
+  end;
+
+begin
+  dbEng := TObjectDataManagerOfCache.CreateAsStream(stream, '', DBMarshal.ID, False, True, False);
+  fPos := dbEng.RootField;
+
+  SetLength(PrepareSave, Count);
+  SetLength(FinishSave, Count);
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@fpc_Prepare_Save_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+  TParallel.for(0, Count - 1, procedure(pass: Integer)
+    var
+      p: PSaveRec;
+    begin
+      p := @PrepareSave[pass];
+      p^.m64 := TMemoryStream64.CustomCreate(1024 * 1024);
+      Items[pass].SaveToStream(p^.m64, True, False, RasterSave_);
+      Items[pass].SerializedAndRecycleMemory(RSeri);
+      p^.fn := Items[pass].FileInfo.TrimChar(#32#9);
+      if (p^.fn.Len = 0) then
+          p^.fn := umlStreamMD5String(p^.m64);
+      p^.fn := p^.fn + C_ImageList_Ext;
+      FinishSave[pass] := p;
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  Prepare_Save();
+{$ENDIF parallel}
+  Save();
+  disposeObject(dbEng);
+  DoStatus('Save Image Matrix done.');
+end;
+
+procedure TAI_ImageMatrix.LargeScale_SaveToStream(RSeri: TRasterSerialized; stream: TCoreClassStream);
+begin
+  LargeScale_SaveToStream(RSeri, stream, TRasterSave.rsRGB);
+end;
+
+procedure TAI_ImageMatrix.LargeScale_LoadFromStream(RSeri: TRasterSerialized; stream: TCoreClassStream);
+type
+  PLoadRec = ^TLoadRec;
+
+  TLoadRec = record
+    fn: TPascalString;
+    itmHnd: TItemHandle;
+    imgList: TAI_ImageList;
+  end;
+
+var
+  dbEng: TObjectDataManager;
+  fPos: Int64;
+  PrepareLoadBuffer: TCoreClassList;
+  itmSR: TItemSearch;
+  Critical: TCritical;
+
+  procedure PrepareMemory;
+  var
+    p: PLoadRec;
+  begin
+    new(p);
+    p^.fn := umlChangeFileExt(itmSR.name, '');
+    dbEng.ItemFastOpen(itmSR.HeaderPOS, p^.itmHnd);
+    p^.imgList := TAI_ImageList.Create;
+    Add(p^.imgList);
+    PrepareLoadBuffer.Add(p);
+  end;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Load_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  var
+    p: PLoadRec;
+    m64: TMemoryStream64;
+  begin
+    p := PrepareLoadBuffer[pass];
+    m64 := TMemoryStream64.Create;
+    m64.Size := p^.itmHnd.Item.Size;
+    Critical.Acquire;
+    dbEng.ItemRead(p^.itmHnd, p^.itmHnd.Item.Size, m64.memory^);
+    Critical.Release;
+    m64.Position := 0;
+    p^.imgList.LoadFromStream(m64);
+    p^.imgList.FileInfo := p^.fn;
+    p^.imgList.SerializedAndRecycleMemory(RSeri);
+    disposeObject(m64);
+    p^.fn := '';
+    Dispose(p);
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure Load_For();
+  var
+    i: Integer;
+    p: PLoadRec;
+    m64: TMemoryStream64;
+  begin
+    for i := 0 to PrepareLoadBuffer.Count - 1 do
+      begin
+        p := PrepareLoadBuffer[i];
+        m64 := TMemoryStream64.Create;
+        m64.Size := p^.itmHnd.Item.Size;
+        Critical.Acquire;
+        dbEng.ItemRead(p^.itmHnd, p^.itmHnd.Item.Size, m64.memory^);
+        Critical.Release;
+        m64.Position := 0;
+        p^.imgList.LoadFromStream(m64);
+        p^.imgList.FileInfo := p^.fn;
+        p^.imgList.SerializedAndRecycleMemory(RSeri);
+        disposeObject(m64);
+        p^.fn := '';
+        Dispose(p);
+      end;
+  end;
+{$ENDIF parallel}
+
+
+begin
+  dbEng := TObjectDataManagerOfCache.CreateAsStream(stream, '', DBMarshal.ID, True, False, False);
+  fPos := dbEng.RootField;
+  PrepareLoadBuffer := TCoreClassList.Create;
+
+  if dbEng.ItemFastFindFirst(fPos, '', itmSR) then
+    begin
+      repeat
+        if umlMultipleMatch('*' + C_ImageList_Ext, itmSR.name) then
+            PrepareMemory;
+      until not dbEng.ItemFindNext(itmSR);
+    end;
+
+  Critical := TCritical.Create;
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Load_ParallelFor, 0, PrepareLoadBuffer.Count - 1);
+{$ELSE FPC}
+  TParallel.for(0, PrepareLoadBuffer.Count - 1, procedure(pass: Integer)
+    var
+      p: PLoadRec;
+      m64: TMemoryStream64;
+    begin
+      p := PrepareLoadBuffer[pass];
+      m64 := TMemoryStream64.Create;
+      m64.Size := p^.itmHnd.Item.Size;
+      Critical.Acquire;
+      dbEng.ItemRead(p^.itmHnd, p^.itmHnd.Item.Size, m64.memory^);
+      Critical.Release;
+      m64.Position := 0;
+      p^.imgList.LoadFromStream(m64);
+      p^.imgList.FileInfo := p^.fn;
+      p^.imgList.SerializedAndRecycleMemory(RSeri);
+      disposeObject(m64);
+      p^.fn := '';
+      Dispose(p);
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  Load_For();
+{$ENDIF parallel}
+  disposeObject(Critical);
+  disposeObject(PrepareLoadBuffer);
+  disposeObject(dbEng);
+  DoStatus('Load Image Matrix done.');
+end;
+
+procedure TAI_ImageMatrix.LargeScale_SaveToFile(RSeri: TRasterSerialized; fileName: SystemString; RasterSave_: TRasterSave);
+var
+  fs: TCoreClassFileStream;
+begin
+  DoStatus('save Image Matrix: %s', [fileName]);
+  fs := TCoreClassFileStream.Create(fileName, fmCreate);
+  LargeScale_SaveToStream(RSeri, fs, RasterSave_);
+  disposeObject(fs);
+end;
+
+procedure TAI_ImageMatrix.LargeScale_SaveToFile(RSeri: TRasterSerialized; fileName: SystemString);
+begin
+  LargeScale_SaveToFile(RSeri, fileName, TRasterSave.rsRGB);
+end;
+
+procedure TAI_ImageMatrix.LargeScale_LoadFromFile(RSeri: TRasterSerialized; fileName: SystemString);
+var
+  fs: TCoreClassFileStream;
+begin
+  DoStatus('loading Image Matrix: %s', [fileName]);
+  fs := TCoreClassFileStream.Create(fileName, fmOpenRead or fmShareDenyWrite);
+  LargeScale_LoadFromStream(RSeri, fs);
+  disposeObject(fs);
+end;
+
+function TAI_ImageMatrix.LargeScale_ExtractDetectorDefineAsSnapshotProjection(RSeri: TRasterSerialized; SS_width, SS_height: Integer): TMemoryRaster2DArray;
+var
+  hList: THashObjectList;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  begin
+    BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to Count - 1 do
+        BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
+  end;
+{$ENDIF parallel}
+  procedure runDone;
+  var
+    i, j: Integer;
+    mr: TMemoryRaster;
+    mrList: TMemoryRasterList;
+    pl: TPascalStringList;
+  begin
+    // process sequence
+    SetLength(Result, hList.Count);
+    pl := TPascalStringList.Create;
+    hList.GetNameList(pl);
+    for i := 0 to pl.Count - 1 do
+      begin
+        mrList := TMemoryRasterList(hList[pl[i]]);
+        SetLength(Result[i], mrList.Count);
+        for j := 0 to mrList.Count - 1 do
+            Result[i, j] := mrList[j];
+      end;
+
+    disposeObject(pl);
+  end;
+
+begin
+  DoStatus('prepare dataset.');
+  hList := THashObjectList.Create(True);
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+  TParallel.for(0, Count - 1, procedure(pass: Integer)
+    begin
+      BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  DoFor;
+{$ENDIF parallel}
+  runDone;
+  disposeObject(hList);
+end;
+
+function TAI_ImageMatrix.LargeScale_ExtractDetectorDefineAsSnapshot(RSeri: TRasterSerialized): TMemoryRaster2DArray;
+var
+  hList: THashObjectList;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  begin
+    BuildSnapshot_HashList(Items[pass], RSeri, hList);
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to Count - 1 do
+        BuildSnapshot_HashList(Items[pass], RSeri, hList);
+  end;
+{$ENDIF parallel}
+  procedure runDone;
+  var
+    i, j: Integer;
+    mr: TMemoryRaster;
+    mrList: TMemoryRasterList;
+    pl: TPascalStringList;
+  begin
+    // process sequence
+    SetLength(Result, hList.Count);
+    pl := TPascalStringList.Create;
+    hList.GetNameList(pl);
+    for i := 0 to pl.Count - 1 do
+      begin
+        mrList := TMemoryRasterList(hList[pl[i]]);
+        SetLength(Result[i], mrList.Count);
+        for j := 0 to mrList.Count - 1 do
+            Result[i, j] := mrList[j];
+      end;
+
+    disposeObject(pl);
+  end;
+
+begin
+  DoStatus('prepare dataset.');
+  hList := THashObjectList.Create(True);
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+  TParallel.for(0, Count - 1, procedure(pass: Integer)
+    begin
+      BuildSnapshot_HashList(Items[pass], RSeri, hList);
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  DoFor;
+{$ENDIF parallel}
+  runDone;
+  disposeObject(hList);
+end;
+
+function TAI_ImageMatrix.LargeScale_ExtractDetectorDefineAsPrepareRaster(RSeri: TRasterSerialized; SS_width, SS_height: Integer): TMemoryRaster2DArray;
+var
+  hList: THashObjectList;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  begin
+    BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to Count - 1 do
+        BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
+  end;
+{$ENDIF parallel}
+  procedure runDone;
+  var
+    i, j: Integer;
+    mr: TMemoryRaster;
+    mrList: TMemoryRasterList;
+    pl: TPascalStringList;
+  begin
+    // process sequence
+    SetLength(Result, hList.Count);
+    pl := TPascalStringList.Create;
+    hList.GetNameList(pl);
+    for i := 0 to pl.Count - 1 do
+      begin
+        mrList := TMemoryRasterList(hList[pl[i]]);
+        SetLength(Result[i], mrList.Count);
+        for j := 0 to mrList.Count - 1 do
+            Result[i, j] := mrList[j];
+      end;
+
+    disposeObject(pl);
+  end;
+
+begin
+  DoStatus('prepare dataset.');
+  hList := THashObjectList.Create(True);
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+  TParallel.for(0, Count - 1, procedure(pass: Integer)
+    begin
+      BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  DoFor;
+{$ENDIF parallel}
+  runDone;
+  disposeObject(hList);
+end;
+
+function TAI_ImageMatrix.LargeScale_ExtractDetectorDefineAsScaleSpace(RSeri: TRasterSerialized; SS_width, SS_height: Integer): TMemoryRaster2DArray;
+var
+  hList: THashObjectList;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  begin
+    BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to Count - 1 do
+        BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
+  end;
+{$ENDIF parallel}
+  procedure runDone;
+  var
+    i, j: Integer;
+    mr: TMemoryRaster;
+    mrList: TMemoryRasterList;
+    pl: TPascalStringList;
+  begin
+    // process sequence
+    SetLength(Result, hList.Count);
+    pl := TPascalStringList.Create;
+    hList.GetNameList(pl);
+    for i := 0 to pl.Count - 1 do
+      begin
+        mrList := TMemoryRasterList(hList[pl[i]]);
+        SetLength(Result[i], mrList.Count);
+        for j := 0 to mrList.Count - 1 do
+            Result[i, j] := mrList[j];
+      end;
+
+    disposeObject(pl);
+  end;
+
+begin
+  DoStatus('prepare dataset.');
+  hList := THashObjectList.Create(True);
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+  TParallel.for(0, Count - 1, procedure(pass: Integer)
+    begin
+      BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  DoFor;
+{$ENDIF parallel}
+  runDone;
+  disposeObject(hList);
+end;
+
+procedure TAI_ImageMatrix.SerializedAndRecycleMemory(Serializ: TRasterSerialized);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].SerializedAndRecycleMemory(Serializ);
+end;
+
+procedure TAI_ImageMatrix.UnserializedMemory(Serializ: TRasterSerialized);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].UnserializedMemory(Serializ);
 end;
 
 initialization
