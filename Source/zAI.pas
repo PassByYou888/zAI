@@ -976,7 +976,7 @@ function Prepare_AI_Engine: PAI_Entry; overload;
 procedure Close_AI_Engine;
 
 function Alloc_P_Bytes(const buff: TPascalString): P_Bytes; overload;
-function Alloc_P_Bytes(const buff: TBytes): P_Bytes; overload;
+function Alloc_P_Bytes_FromBuff(const buff: TBytes): P_Bytes; overload;
 procedure Free_P_Bytes(const buff: P_Bytes);
 function Get_P_Bytes_String(const buff: P_Bytes): TPascalString;
 
@@ -1213,7 +1213,8 @@ begin
   if (detID < 0) or (detID >= hnd^.image.DetectorDefineList.Count) then
       exit;
   detDef := hnd^.image.DetectorDefineList[detID];
-  p := Alloc_P_Bytes(detDef.Token);
+  // using UTF8 format
+  p := Alloc_P_Bytes_FromBuff(detDef.Token.Bytes);
   Result := 1;
 end;
 
@@ -1475,10 +1476,10 @@ end;
 
 function Alloc_P_Bytes(const buff: TPascalString): P_Bytes;
 begin
-  Result := Alloc_P_Bytes(buff.PlatformBytes);
+  Result := Alloc_P_Bytes_FromBuff(buff.PlatformBytes);
 end;
 
-function Alloc_P_Bytes(const buff: TBytes): P_Bytes;
+function Alloc_P_Bytes_FromBuff(const buff: TBytes): P_Bytes;
 begin
   new(Result);
   Result^.Size := length(buff);
@@ -8198,7 +8199,7 @@ begin
   rgb_hnd := Prepare_RGB_Image(Raster);
   if rgb_hnd = nil then
       exit;
-  a := AIRect(track_rect);
+  a := AIRect(ForwardRect(track_rect));
   Result := AI_Ptr^.Start_Tracker(rgb_hnd, @a);
   Close_RGB_Image(rgb_hnd);
 end;
@@ -8216,7 +8217,7 @@ begin
   rgb_hnd := Prepare_RGB_Image(Raster);
   if rgb_hnd = nil then
       exit;
-  a := AIRect(track_rect);
+  a := AIRect(ForwardRect(track_rect));
   Result := AI_Ptr^.Start_Tracker(rgb_hnd, @a);
   Close_RGB_Image(rgb_hnd);
 end;

@@ -580,6 +580,7 @@ var
     i: Integer;
   begin
     Result := False;
+    DoStatus('detector face from %d * %d', [mr.Width, mr.Height]);
     face_hnd := ai.Face_Detector_All(mr);
 
     if face_hnd <> nil then
@@ -633,7 +634,7 @@ var
             // close face handle
             ai.Face_Close(face_hnd);
 
-            if (depthRec) and (mr.width * mr.height < 1200 * 1200) then
+            if (depthRec) and (mr.Width * mr.Height < 1200 * 1200) then
               begin
                 mr.Scale(2.0);
                 if RunRec(k * 0.5) then

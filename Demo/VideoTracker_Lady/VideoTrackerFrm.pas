@@ -23,11 +23,9 @@ type
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure FormCreate(Sender: TObject);
-    procedure PaintBox1MouseDown(Sender: TObject; Button: TMouseButton; Shift:
-      TShiftState; X, Y: Single);
+    procedure PaintBox1MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure PaintBox1MouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
-    procedure PaintBox1MouseUp(Sender: TObject; Button: TMouseButton; Shift:
-      TShiftState; X, Y: Single);
+    procedure PaintBox1MouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure Timer1Timer(Sender: TObject);
     procedure PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
     procedure TrackBar1Change(Sender: TObject);
@@ -258,7 +256,7 @@ begin
       exit;
 
   ai.Tracker_Close(tracker_hnd);
-  tracker_hnd := ai.Tracker_Open(Frame, RectSub(RectV2(down_PT, move_PT), LastDrawRect[0]));
+  tracker_hnd := ai.Tracker_Open(Frame, ForwardRect(RectSub(RectV2(down_PT, move_PT), LastDrawRect[0])));
 end;
 
 procedure TForm1.TrackBar1Change(Sender: TObject);
@@ -270,6 +268,7 @@ begin
     begin
       Frame.Assign(imgList[idx]);
       Frame.ReleaseFMXResource;
+      imgList[idx].RecycleMemory;
     end;
 end;
 

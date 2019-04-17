@@ -27,7 +27,7 @@ uses CoreClasses, PascalStrings,
 {$IFDEF FPC}
   FPCGenericStructlist,
 {$ENDIF}
-KM;
+  KM;
 
 type
   TKDTree_VecType = TKMFloat;
