@@ -66,12 +66,15 @@ end;
 
 procedure FillRasterColor(var x; Count: Cardinal; Value: TRasterColor);
 var
-  i: Integer;
-  p: PRasterColorArray;
+  p: PRasterColor;
 begin
-  p := PRasterColorArray(@x);
-  for i := Count - 1 downto 0 do
-      p^[i] := Value;
+  p := PRasterColor(@x);
+  while Count > 0 do
+    begin
+      p^ := Value;
+      inc(p);
+      dec(Count);
+    end;
 end;
 
 procedure CopyRasterColor(const Source; var dest; Count: Cardinal);

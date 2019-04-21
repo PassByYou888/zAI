@@ -439,13 +439,13 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\Binary\DNN_OD2.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\Binary\DNN_OD2.exe" Configuration="Release" Class="ProjectOutput">
                     <Platform Name="Win64">
                         <RemoteName>DNN_OD2.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="..\Binary\DNN_OD2.exe" Configuration="Release" Class="ProjectOutput">
+                <DeployFile LocalName="..\Binary\DNN_OD2.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win64">
                         <RemoteName>DNN_OD2.exe</RemoteName>
                         <Overwrite>true</Overwrite>

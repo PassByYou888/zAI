@@ -122,8 +122,8 @@
     {$C+} { Assertions }
   {$ELSE}
     {$UNDEF INLINE_ASM}
-    {$R+} { range check }
-    {$I+} { Input output checking }
+    {$R-} { range check }
+    {$I-} { Input output checking }
     {$O-} { optimization }
     {$C+} { Assertions }
   {$ENDIF}
@@ -179,40 +179,3 @@
 {$IFOPT Q+}
   {$DEFINE OverflowCheck}
 {$ENDIF}
-
-(*
-  {$IFDEF FPC}
-  {$ELSE FPC}
-  {$ENDIF FPC}
-
-  {$IFDEF FPC}
-  {$ENDIF FPC}
-
-  {$IFDEF FPC}@{$ENDIF FPC}
-
-  {$IFNDEF FPC}
-  {$ENDIF FPC}
-
-  {$IFDEF parallel}
-  {$ELSE parallel}
-  {$ENDIF parallel}
-
-  {$IFNDEF parallel}
-  {$ENDIF parallel}
-
-  {$Region 'RegionName'}
-  {$EndRegion 'RegionName'}
-
-  {$IFDEF OverflowCheck}{$Q-}{$ENDIF}
-  {$IFDEF OverflowCheck}{$Q+}{$ENDIF}
-
-  {$IFDEF RangeCheck}{$R-}{$ENDIF}
-  {$IFDEF RangeCheck}{$R+}{$ENDIF}
-
-  {$IFDEF Z_AI_Dataset_Build_In}
-  {$ELSE Z_AI_Dataset_Build_In}
-  {$ENDIF Z_AI_Dataset_Build_In}
-*)
-
-
-

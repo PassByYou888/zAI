@@ -985,7 +985,7 @@ begin
         begin
           r.CloseVertex;
           r.FreeAgg;
-          FreeMem(r.FBits);
+          System.FreeMemory(r.FBits);
           r.FBits := nil;
           r.FMemorySerializedPosition := p;
           Result := h1.siz;
@@ -1026,9 +1026,9 @@ begin
           if FStream.position + h.siz <= FStream.Size then
             begin
               if Assigned(r.FBits) and r.FFreeBits then
-                  FreeMem(r.FBits);
+                  System.FreeMemory(r.FBits);
 
-              GetMem(r.FBits, h.siz);
+              r.FBits := System.GetMemory(h.siz);
               r.FWidth := h.Width;
               r.FHeight := h.Height;
 

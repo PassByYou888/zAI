@@ -340,7 +340,7 @@ begin
   if Assigned(FBits) and FFreeBits then
     begin
       Result := FWidth * FHeight * 4;
-      FreeMem(FBits);
+      System.FreeMemory(FBits);
     end;
   FBits := nil;
 end;
@@ -503,7 +503,7 @@ begin
   FFreeBits := True;
   FAggNeed := sour.FAggNeed;
 
-  GetMem(FBits, sour.FWidth * sour.FHeight * SizeOf(TRasterColor));
+  FBits := System.GetMemory(sour.FWidth * sour.FHeight * SizeOf(TRasterColor));
   CopyRasterColor(sour.Bits^[0], FBits^[0], sour.FWidth * sour.FHeight);
 
   if FAggNeed then
@@ -533,7 +533,7 @@ begin
   FreeAgg;
   RecycleMemory;
   FFreeBits := True;
-  GetMem(FBits, NewWidth * NewHeight * SizeOf(TRasterColor));
+  FBits := System.GetMemory(NewWidth * NewHeight * SizeOf(TRasterColor));
   FWidth := NewWidth;
   FHeight := NewHeight;
 
@@ -644,7 +644,7 @@ begin
   FreeAgg;
   { in-place }
   j2 := height - 1;
-  GetMem(buffer, width shl 2);
+  buffer := System.GetMemory(width shl 2);
   for j := 0 to height div 2 - 1 do
     begin
       p1 := PixelPtr[0, j];
@@ -654,7 +654,7 @@ begin
       CopyRasterColor(buffer^, p2^, width);
       dec(j2);
     end;
-  FreeMem(buffer);
+  System.FreeMemory(buffer);
 
   if FAggNeed then
       OpenAgg;
