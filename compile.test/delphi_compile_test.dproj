@@ -362,7 +362,6 @@
         <DCCReference Include="..\Source\Learn.pas"/>
         <DCCReference Include="..\Source\LearnTypes.pas"/>
         <DCCReference Include="..\Source\LibraryManager.pas"/>
-        <DCCReference Include="..\Source\LinerAction.pas"/>
         <DCCReference Include="..\Source\ListEngine.pas"/>
         <DCCReference Include="..\Source\MediaCenter.pas"/>
         <DCCReference Include="..\Source\MemoryRaster.pas"/>

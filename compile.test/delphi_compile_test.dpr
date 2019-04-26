@@ -221,7 +221,6 @@ uses
   Learn in '..\Source\Learn.pas',
   LearnTypes in '..\Source\LearnTypes.pas',
   LibraryManager in '..\Source\LibraryManager.pas',
-  LinerAction in '..\Source\LinerAction.pas',
   ListEngine in '..\Source\ListEngine.pas',
   MediaCenter in '..\Source\MediaCenter.pas',
   MemoryRaster in '..\Source\MemoryRaster.pas',
