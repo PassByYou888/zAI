@@ -137,8 +137,7 @@ type
   TACBaselineHuffmanDecoder = class(T8bitHuffmanDecoder)
   private
   public
-    procedure DecodeMcuBlock(var ABlock: TMcuBlock; AReader: TBitReader;
-      AZigZag: PsdZigZagArray);
+    procedure DecodeMcuBlock(var ABlock: TMcuBlock; AReader: TBitReader; AZigZag: PsdZigZagArray);
     // Special routine for jsDiv8 scale loading, just skipping this data
     procedure DecodeMcuBlockSkip(AReader: TBitReader);
   end;
@@ -158,19 +157,15 @@ type
   TDCProgressiveHuffmanDecoder = class(TDCBaselineHuffmanDecoder)
   public
     // Progressive
-    procedure DecodeProgFirst(var ABlock: TMcuBlock; AReader: TBitReader;
-      ApproxLow: integer);
-    procedure DecodeProgRefine(var ABlock: TMcuBlock; AReader: TBitReader;
-      ApproxLow: integer);
+    procedure DecodeProgFirst(var ABlock: TMcuBlock; AReader: TBitReader; ApproxLow: integer);
+    procedure DecodeProgRefine(var ABlock: TMcuBlock; AReader: TBitReader; ApproxLow: integer);
   end;
 
   TACProgressiveHuffmanDecoder = class(TACBaselineHuffmanDecoder)
   public
     // Progressive
-    procedure DecodeProgFirst(var ABlock: TMcuBlock; AReader: TBitReader;
-      var EOBRun: integer; SSStart, SSEnd, ApproxLow: integer);
-    procedure DecodeProgRefine(var ABlock: TMcuBlock; AReader: TBitReader;
-      var EOBRun: integer; SSStart, SSEnd, ApproxLow: integer);
+    procedure DecodeProgFirst(var ABlock: TMcuBlock; AReader: TBitReader; var EOBRun: integer; SSStart, SSEnd, ApproxLow: integer);
+    procedure DecodeProgRefine(var ABlock: TMcuBlock; AReader: TBitReader; var EOBRun: integer; SSStart, SSEnd, ApproxLow: integer);
   end;
 
 implementation
@@ -859,8 +854,7 @@ begin
   ABlock.Values^[0] := Code shl ApproxLow;
 end;
 
-procedure TDCProgressiveHuffmanDecoder.DecodeProgRefine(var ABlock: TMcuBlock;
-  AReader: TBitReader; ApproxLow: integer);
+procedure TDCProgressiveHuffmanDecoder.DecodeProgRefine(var ABlock: TMcuBlock; AReader: TBitReader; ApproxLow: integer);
 var
   Plus: integer;
   Value: Psmallint;
@@ -881,8 +875,7 @@ end;
 
 { TACProgressiveHuffmanDecoder }
 
-procedure TACProgressiveHuffmanDecoder.DecodeProgFirst(var ABlock: TMcuBlock;
-  AReader: TBitReader; var EOBRun: integer; SSStart, SSEnd, ApproxLow: integer);
+procedure TACProgressiveHuffmanDecoder.DecodeProgFirst(var ABlock: TMcuBlock; AReader: TBitReader; var EOBRun: integer; SSStart, SSEnd, ApproxLow: integer);
 var
   k, kz: integer; // Position in zigzag
   Values: PsdCoefBlock;
@@ -980,8 +973,7 @@ begin
     end;
 end;
 
-procedure TACProgressiveHuffmanDecoder.DecodeProgRefine(var ABlock: TMcuBlock;
-  AReader: TBitReader; var EOBRun: integer; SSStart, SSEnd, ApproxLow: integer);
+procedure TACProgressiveHuffmanDecoder.DecodeProgRefine(var ABlock: TMcuBlock; AReader: TBitReader; var EOBRun: integer; SSStart, SSEnd, ApproxLow: integer);
 var
   k, kz: integer;
   Values: PsdCoefBlock;

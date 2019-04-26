@@ -33,11 +33,12 @@ type
     mpeg_r: TFFMPEG_Reader;
     // 服务器发回来的当前贞
     mpeg_frame: TDETexture;
-
+    // 定时器引擎
     cadencer_eng: TCadencer;
-
+    // mmod专用客户端接口
     realtime_od_cli: TRealTime_MMOD_VideoClient;
     procedure CheckConnect;
+    procedure DoInput;
   end;
 
 var
@@ -47,32 +48,6 @@ implementation
 
 {$R *.fmx}
 
-
-procedure Trealtime_MMOD_Video_FMXClientForm.CadencerProgress(const deltaTime, newTime: Double);
-begin
-  EnginePool.Progress(deltaTime);
-  Invalidate;
-end;
-
-procedure Trealtime_MMOD_Video_FMXClientForm.CheckConnect;
-begin
-  realtime_od_cli.AsyncConnectP('127.0.0.1', 7866, 7867, procedure(const cState: Boolean)
-    begin
-      if not cState then
-        begin
-          CheckConnect;
-          exit;
-        end;
-      realtime_od_cli.TunnelLinkP(procedure(const lState: Boolean)
-        begin
-        end);
-    end);
-end;
-
-procedure Trealtime_MMOD_Video_FMXClientForm.DoStatusMethod(AText: SystemString; const ID: Integer);
-begin
-  DrawPool(Self).PostScrollText(5, AText, 16, DEColor(1, 1, 1, 1));
-end;
 
 procedure Trealtime_MMOD_Video_FMXClientForm.FormCreate(Sender: TObject);
 begin
@@ -122,6 +97,22 @@ begin
   d.Flush;
 end;
 
+procedure Trealtime_MMOD_Video_FMXClientForm.SysProgress_TimerTimer(Sender: TObject);
+begin
+  realtime_od_cli.Progress;
+end;
+
+procedure Trealtime_MMOD_Video_FMXClientForm.DoStatusMethod(AText: SystemString; const ID: Integer);
+begin
+  DrawPool(Self).PostScrollText(5, AText, 16, DEColor(1, 1, 1, 1));
+end;
+
+procedure Trealtime_MMOD_Video_FMXClientForm.CadencerProgress(const deltaTime, newTime: Double);
+begin
+  EnginePool.Progress(deltaTime);
+  Invalidate;
+end;
+
 procedure Trealtime_MMOD_Video_FMXClientForm.OD_Result(Sender: TRealTime_MMOD_VideoClient; video_stream: TMemoryStream64; video_info: TMMOD_Video_Info);
 begin
   video_stream.Position := 0;
@@ -130,12 +121,22 @@ begin
   cadencer_eng.Progress;
 end;
 
-procedure Trealtime_MMOD_Video_FMXClientForm.SysProgress_TimerTimer(Sender: TObject);
+procedure Trealtime_MMOD_Video_FMXClientForm.CheckConnect;
 begin
-  realtime_od_cli.Progress;
+  realtime_od_cli.AsyncConnectP('127.0.0.1', 7866, 7867, procedure(const cState: Boolean)
+    begin
+      if not cState then
+        begin
+          CheckConnect;
+          exit;
+        end;
+      realtime_od_cli.TunnelLinkP(procedure(const lState: Boolean)
+        begin
+        end);
+    end);
 end;
 
-procedure Trealtime_MMOD_Video_FMXClientForm.Video_RealSendTimerTimer(Sender: TObject);
+procedure Trealtime_MMOD_Video_FMXClientForm.DoInput;
 var
   mr: TMemoryRaster;
 begin
@@ -148,6 +149,12 @@ begin
 
   realtime_od_cli.Input_MMOD(mr);
   disposeObject(mr);
+end;
+
+procedure Trealtime_MMOD_Video_FMXClientForm.Video_RealSendTimerTimer(Sender:
+    TObject);
+begin
+  DoInput;
 end;
 
 end.

@@ -1,0 +1,47 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  Caption = 'Soft Renderer'
+  ClientHeight = 410
+  ClientWidth = 730
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  DesignerMasterStyle = 0
+  object RenderButton: TButton
+    Position.X = 11.000000000000000000
+    Position.Y = 13.000000000000000000
+    Size.Width = 94.000000000000000000
+    Size.Height = 22.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Text = 'Render'
+    OnClick = RenderButtonClick
+  end
+  object PaintBox: TPaintBox
+    Position.X = 355.000000000000000000
+    Position.Y = 43.000000000000000000
+    Size.Width = 337.000000000000000000
+    Size.Height = 321.000000000000000000
+    Size.PlatformDefault = False
+    OnPaint = PaintBoxPaint
+  end
+  object Timer1: TTimer
+    Interval = 10
+    OnTimer = Timer1Timer
+    Left = 300
+    Top = 211
+  end
+  object Image: TImage
+    MultiResBitmap = <
+      item
+      end>
+    Position.X = 7.000000000000000000
+    Position.Y = 43.000000000000000000
+    Size.Width = 337.000000000000000000
+    Size.Height = 321.000000000000000000
+    Size.PlatformDefault = False
+  end
+end

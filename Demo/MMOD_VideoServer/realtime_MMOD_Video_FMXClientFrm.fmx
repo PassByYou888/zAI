@@ -17,7 +17,7 @@ object realtime_MMOD_Video_FMXClientForm: Trealtime_MMOD_Video_FMXClientForm
     Top = 192
   end
   object Video_RealSendTimer: TTimer
-    Interval = 10
+    Interval = 20
     OnTimer = Video_RealSendTimerTimer
     Left = 352
     Top = 272

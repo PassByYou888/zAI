@@ -221,6 +221,7 @@ type
   end;
 
 {$IFDEF FPC}
+
   TAI_ImageMatrix_Decl = specialize TGenericsList<TAI_ImageList>;
 {$ELSE FPC}
   TAI_ImageMatrix_Decl = TGenericsObjectList<TAI_ImageList>;
@@ -1677,8 +1678,13 @@ var
 begin
   img := TAI_Image.Create(Self);
   disposeObject(img.Raster);
-  img.Raster := NewRasterFromStream(stream);
-  Add(img);
+  try
+    img.Raster := NewRasterFromStream(stream);
+    Add(img);
+  except
+    img.Raster := NewRaster();
+    disposeObject(img);
+  end;
 end;
 
 procedure TAI_ImageList.AddPicture(fileName: SystemString);
@@ -1688,12 +1694,12 @@ begin
   img := TAI_Image.Create(Self);
   disposeObject(img.Raster);
   try
-      img.Raster := NewRasterFromFile(fileName);
+    img.Raster := NewRasterFromFile(fileName);
+    Add(img);
   except
+    img.Raster := NewRaster();
     disposeObject(img);
-    exit;
   end;
-  Add(img);
 end;
 
 procedure TAI_ImageList.AddPicture(R: TMemoryRaster);
@@ -1867,7 +1873,7 @@ begin
     end;
 
   if Compressed then
-      de.EncodeAsSelectCompress(stream, False)
+      de.EncodeAsSelectCompressor(stream, False)
   else
       de.EncodeTo(stream, True);
 

@@ -1,0 +1,212 @@
+object GaussPyramidsForm: TGaussPyramidsForm
+  Left = 0
+  Top = 0
+  Caption = #39640#26031#37329#23383#22612#22270#29255#19981#35268#21017#25240#32447#21306#22495#20869#23481#35782#21035'...'
+  ClientHeight = 894
+  ClientWidth = 1018
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnDestroy = FormDestroy
+  DesignerMasterStyle = 0
+  object TabControl1: TTabControl
+    Align = Client
+    Size.Width = 1018.000000000000000000
+    Size.Height = 642.000000000000000000
+    Size.PlatformDefault = False
+    TabIndex = 0
+    TabOrder = 1
+    TabPosition = PlatformDefault
+    Sizes = (
+      1018s
+      615s
+      1018s
+      615s
+      1018s
+      615s)
+    object TabItem1: TTabItem
+      CustomIcon = <
+        item
+        end>
+      IsSelected = True
+      Size.Width = 51.000000000000000000
+      Size.Height = 27.000000000000000000
+      Size.PlatformDefault = False
+      StyleLookup = ''
+      TabOrder = 0
+      Text = #22270#29255'1'
+      ExplicitSize.cx = 51.000000000000000000
+      ExplicitSize.cy = 27.000000000000000000
+      object PaintBox1: TPaintBox
+        Align = Client
+        Size.Width = 1018.000000000000000000
+        Size.Height = 615.000000000000000000
+        Size.PlatformDefault = False
+        OnMouseDown = PaintBox1MouseDown
+        OnPaint = PaintBox1Paint
+        OnResize = PaintBox1Resize
+        object Button4: TButton
+          Anchors = [akTop, akRight]
+          Position.X = 936.000000000000000000
+          Position.Y = 2.000000000000000000
+          TabOrder = 0
+          Text = #21019#24314#29305#24449
+          OnClick = Button4Click
+        end
+        object Button5: TButton
+          Anchors = [akTop, akRight]
+          Position.X = 855.000000000000000000
+          Position.Y = 2.000000000000000000
+          TabOrder = 1
+          Text = #37325#32622#37319#26679
+          OnClick = Button5Click
+        end
+      end
+    end
+    object TabItem2: TTabItem
+      CustomIcon = <
+        item
+        end>
+      IsSelected = False
+      Size.Width = 51.000000000000000000
+      Size.Height = 27.000000000000000000
+      Size.PlatformDefault = False
+      StyleLookup = ''
+      TabOrder = 0
+      Text = #22270#29255'2'
+      ExplicitSize.cx = 51.000000000000000000
+      ExplicitSize.cy = 27.000000000000000000
+      object PaintBox2: TPaintBox
+        Align = Client
+        Size.Width = 1018.000000000000000000
+        Size.Height = 615.000000000000000000
+        Size.PlatformDefault = False
+        OnMouseDown = PaintBox2MouseDown
+        OnPaint = PaintBox2Paint
+        OnResize = PaintBox2Resize
+        object Button6: TButton
+          Anchors = [akTop, akRight]
+          Position.X = 855.000000000000000000
+          Position.Y = 2.000000000000000000
+          TabOrder = 1
+          Text = #37325#32622#37319#26679
+          OnClick = Button6Click
+        end
+        object Button7: TButton
+          Anchors = [akTop, akRight]
+          Position.X = 936.000000000000000000
+          Position.Y = 2.000000000000000000
+          TabOrder = 0
+          Text = #21019#24314#29305#24449
+          OnClick = Button7Click
+        end
+      end
+    end
+    object TabItem3: TTabItem
+      CustomIcon = <
+        item
+        end>
+      IsSelected = False
+      Size.Width = 68.000000000000000000
+      Size.Height = 27.000000000000000000
+      Size.PlatformDefault = False
+      StyleLookup = ''
+      TabOrder = 0
+      Text = #29305#24449#20998#26512
+      ExplicitSize.cx = 68.000000000000000000
+      ExplicitSize.cy = 27.000000000000000000
+      object OpenDialog1: TOpenDialog
+        Filter = 'picture file|*.jpg;*.jpeg;*.png;*.bmp'
+        Left = 248
+        Top = 64
+      end
+      object ImageViewer1: TImageViewer
+        Align = Client
+        Size.Width = 1018.000000000000000000
+        Size.Height = 615.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        ShowBackground = True
+        ShowSizeGrip = True
+        Viewport.Width = 1014.000000000000000000
+        Viewport.Height = 611.000000000000000000
+      end
+    end
+  end
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Lines.Strings = (
+      #22522#20110#39640#26031#24494#20998#37329#23383#22612#8220#39640#26234#21830'+'#23450#28857#21306#22495#8221#30340#22270#29255#20869#23481#20998#26512#28436#31034#31639#27861
+      #24494#20998#37319#26679#31639#27861#25903#25345#19979#21015#29305#24615
+      
+        #26059#36716#26080#20851#24615' '#21464#24418#26080#20851#24615' '#20809#29031#26080#20851#24615' '#23610#23544#26080#20851#24615' 4k'#20197#19978#30340#39640#20998#36776#29575#25903#25345' 100%'#24182#34892#21270#20869#26680#31639#27861' '#32431#21407#29983#20195#30721#23454#29616' '#25903#25345'X86/x6' +
+        '4/ARM/MIPS'#22788#29702#22120' 20'#39033#20197#19978#21487#35843#25972#21442#37327
+      #19982'zAnalysis'#30340#30697#38453#32039#23494#32467#21512#19981#20381#36182#20219#20309#22806#37096#24211
+      ''
+      #36816#34892#20110#21518#21488#26381#21153#22120#65292#38656#35201#20197#24182#34892#20026#20027#30340#24037#20316#29615#22659#26469#37197#32622#30828#20214
+      'by.QQ600585'
+      '2018-5')
+    TextSettings.WordWrap = True
+    Align = MostBottom
+    Position.Y = 696.000000000000000000
+    Size.Width = 1018.000000000000000000
+    Size.Height = 198.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Viewport.Width = 1018.000000000000000000
+    Viewport.Height = 198.000000000000000000
+  end
+  object Layout1: TLayout
+    Align = Top
+    Size.Width = 1018.000000000000000000
+    Size.Height = 41.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    object Button1: TButton
+      Position.X = 16.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 80.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+      Text = #35774#32622#22270#29255'1'
+      OnClick = Button1Click
+    end
+    object Button2: TButton
+      Position.X = 104.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 80.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Text = #35774#32622#22270#29255'2'
+      OnClick = Button2Click
+    end
+    object Button3: TButton
+      Position.X = 192.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 80.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = #29305#24449#20998#26512
+      OnClick = Button3Click
+    end
+  end
+  object Splitter1: TSplitter
+    Align = Bottom
+    Cursor = crVSplit
+    MinSize = 20.000000000000000000
+    Position.Y = 683.000000000000000000
+    Size.Width = 1018.000000000000000000
+    Size.Height = 13.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Timer1: TTimer
+    Interval = 40
+    OnTimer = Timer1Timer
+    Left = 280
+    Top = 284
+  end
+end

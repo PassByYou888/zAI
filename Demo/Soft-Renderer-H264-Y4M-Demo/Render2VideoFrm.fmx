@@ -1,0 +1,159 @@
+object Render2VideoForm: TRender2VideoForm
+  Left = 0
+  Top = 0
+  Caption = 'Render to Video...by qq600585'
+  ClientHeight = 551
+  ClientWidth = 952
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  DesignerMasterStyle = 0
+  object ClientLayout: TLayout
+    Align = Client
+    Size.Width = 952.000000000000000000
+    Size.Height = 551.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object Layout1: TLayout
+      Align = Top
+      Size.Width = 952.000000000000000000
+      Size.Height = 50.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      object PlayButton: TButton
+        Position.X = 16.000000000000000000
+        Position.Y = 8.000000000000000000
+        Size.Width = 113.000000000000000000
+        Size.Height = 33.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        Text = 'Play'
+      end
+      object Layout2: TLayout
+        Position.X = 136.000000000000000000
+        Position.Y = 8.000000000000000000
+        Size.Width = 137.000000000000000000
+        Size.Height = 34.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 3
+        object Label1: TLabel
+          Align = Left
+          StyledSettings = [Family, Style, FontColor]
+          Size.Width = 105.000000000000000000
+          Size.Height = 34.000000000000000000
+          Size.PlatformDefault = False
+          Text = 'per second frame:'
+          TabOrder = 0
+        end
+        object fpsEdit: TEdit
+          Touch.InteractiveGestures = [LongTap, DoubleTap]
+          Align = VertCenter
+          TabOrder = 1
+          Text = '30'
+          Position.X = 105.000000000000000000
+          Position.Y = 6.000000000000000000
+          Size.Width = 32.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+          OnChange = fpsEditChange
+        end
+      end
+      object ComboBox: TComboBox
+        Anchors = [akLeft, akBottom]
+        Items.Strings = (
+          'YUV for Mpeg'
+          'H264')
+        ItemIndex = 1
+        Position.X = 336.000000000000000000
+        Position.Y = 12.000000000000000000
+        Size.Width = 97.000000000000000000
+        Size.Height = 22.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+      end
+      object BuildButton: TButton
+        Position.X = 280.000000000000000000
+        Position.Y = 8.000000000000000000
+        Size.Width = 49.000000000000000000
+        Size.Height = 33.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 4
+        Text = 'Build'
+        OnClick = BuildButtonClick
+      end
+      object Layout3: TLayout
+        Position.X = 440.000000000000000000
+        Position.Y = 8.000000000000000000
+        Size.Width = 121.000000000000000000
+        Size.Height = 34.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        object Label2: TLabel
+          Align = Left
+          StyledSettings = [Family, Style, FontColor]
+          Size.Width = 73.000000000000000000
+          Size.Height = 34.000000000000000000
+          Size.PlatformDefault = False
+          Text = 'total frame:'
+          TabOrder = 0
+        end
+        object TotalFrameEdit: TEdit
+          Touch.InteractiveGestures = [LongTap, DoubleTap]
+          Align = VertCenter
+          TabOrder = 1
+          Text = '2000'
+          Position.X = 73.000000000000000000
+          Position.Y = 6.000000000000000000
+          Size.Width = 48.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+          OnChange = fpsEditChange
+        end
+      end
+      object ProgressBar: TProgressBar
+        Anchors = [akLeft, akTop, akRight]
+        Orientation = Horizontal
+        Position.X = 568.000000000000000000
+        Position.Y = 16.000000000000000000
+        Size.Width = 377.000000000000000000
+        Size.Height = 20.000000000000000000
+        Size.PlatformDefault = False
+        object SizeInfoLabel: TLabel
+          Align = Center
+          TabOrder = 0
+        end
+      end
+    end
+    object PaintBox: TPaintBox
+      Align = Client
+      Size.Width = 952.000000000000000000
+      Size.Height = 501.000000000000000000
+      Size.PlatformDefault = False
+      OnPaint = PaintBoxPaint
+    end
+  end
+  object h264SaveDialog: TSaveDialog
+    FileName = '.h264'
+    Filter = 'h264 file(*.h264)|*.h264'
+    FilterIndex = 0
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
+    Left = 296
+    Top = 152
+  end
+  object Y4MSaveDialog: TSaveDialog
+    FileName = '.y4m'
+    Filter = 'yuv for Mpeg file(*.y4m)|*.y4m'
+    FilterIndex = 0
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
+    Left = 288
+    Top = 208
+  end
+  object Timer: TTimer
+    Interval = 1
+    OnTimer = TimerTimer
+    Left = 200
+    Top = 210
+  end
+end

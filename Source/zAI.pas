@@ -563,6 +563,7 @@ type
     SerializedTime: TTimeTick;
   end;
 {$ENDREGION 'API'}
+{$REGION 'CoreClass'}
 
   TAI = class(TCoreClassObject)
   protected
@@ -926,7 +927,8 @@ type
     // engine activted
     function Activted: Boolean;
   end;
-
+{$ENDREGION 'CoreClass'}
+{$REGION 'Parallel'}
 {$IFDEF FPC}
 
   TAI_Parallel_Decl = specialize TGenericsList<TAI>;
@@ -956,6 +958,7 @@ type
     procedure UnLockAI(AI: TAI);
     function Busy: Integer;
   end;
+{$ENDREGION 'Parallel'}
 
 const
   // core parameter

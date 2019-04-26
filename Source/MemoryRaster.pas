@@ -700,6 +700,7 @@ type
     function Write(r: TMemoryRaster): Int64;
     function Read(r: TMemoryRaster): Int64;
     procedure Remove(r: TMemoryRaster);
+    procedure Clear;
 
     property AutoFreeStream: Boolean read FAutoFreeStream write FAutoFreeStream;
     property stream: TCoreClassStream read FStream;
@@ -945,6 +946,7 @@ end;
 
 destructor TRasterSerialized.Destroy;
 begin
+  Clear();
   if FAutoFreeStream then
       DisposeObject(FStream);
   DisposeObject(FCritical);
@@ -1082,6 +1084,15 @@ begin
   finally
       FCritical.Release;
   end;
+end;
+
+procedure TRasterSerialized.Clear;
+begin
+  while FReadList.Count > 0 do
+      Remove(FReadList[0]);
+  while FWriteList.Count > 0 do
+      Remove(FWriteList[0]);
+  FStream.Size := 0;
 end;
 
 function NewRaster_: TMemoryRaster;

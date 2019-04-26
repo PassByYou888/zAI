@@ -1,0 +1,120 @@
+object VideoForm: TVideoForm
+  Left = 0
+  Top = 0
+  Caption = 'soft Video demo...'
+  ClientHeight = 631
+  ClientWidth = 640
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  DesignerMasterStyle = 0
+  object clientLayout: TLayout
+    Align = Client
+    Size.Width = 640.000000000000000000
+    Size.Height = 631.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    object ComboBox: TComboBox
+      Anchors = [akLeft, akBottom]
+      Items.Strings = (
+        'YUV for Mpeg'
+        'H264')
+      ItemIndex = 1
+      Position.X = 280.000000000000000000
+      Position.Y = 552.000000000000000000
+      Size.Width = 145.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+    end
+    object Label1: TLabel
+      Anchors = [akLeft, akBottom]
+      Position.X = 184.000000000000000000
+      Position.Y = 555.000000000000000000
+      Size.Width = 89.000000000000000000
+      Size.Height = 17.000000000000000000
+      Size.PlatformDefault = False
+      Text = 'output format'
+      TabOrder = 1
+    end
+    object Memo: TMemo
+      Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+      DataDetectorTypes = []
+      Anchors = [akLeft, akRight, akBottom]
+      Position.X = 24.000000000000000000
+      Position.Y = 352.000000000000000000
+      Size.Width = 585.000000000000000000
+      Size.Height = 169.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+      Viewport.Width = 581.000000000000000000
+      Viewport.Height = 165.000000000000000000
+    end
+    object OpenButton: TButton
+      Position.X = 24.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 97.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 3
+      Text = 'open Y4M'
+      OnClick = OpenButtonClick
+    end
+    object PaintBox: TPaintBox
+      Anchors = [akLeft, akTop, akRight, akBottom]
+      Position.X = 24.000000000000000000
+      Position.Y = 40.000000000000000000
+      Size.Width = 585.000000000000000000
+      Size.Height = 297.000000000000000000
+      Size.PlatformDefault = False
+      OnPaint = PaintBoxPaint
+      object h264SaveDialog: TSaveDialog
+        FileName = '.h264'
+        Filter = 'h264 file(*.h264)|*.h264'
+        FilterIndex = 0
+        Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
+        Left = 248
+        Top = 200
+      end
+    end
+    object ProcessButton: TButton
+      Anchors = [akLeft, akBottom]
+      Position.X = 24.000000000000000000
+      Position.Y = 536.000000000000000000
+      Size.Width = 145.000000000000000000
+      Size.Height = 49.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 5
+      Text = 'process now'
+      OnClick = ProcessButtonClick
+    end
+    object StopButton: TButton
+      Position.X = 128.000000000000000000
+      Position.Y = 8.000000000000000000
+      TabOrder = 6
+      Text = 'Stop'
+      OnClick = StopButtonClick
+    end
+  end
+  object OpenDialog: TOpenDialog
+    Filter = 'yuv for Mpeg file(*.y4m)|*.y4m'
+    Left = 360
+    Top = 128
+  end
+  object Y4MSaveDialog: TSaveDialog
+    FileName = '.y4m'
+    Filter = 'yuv for Mpeg file(*.y4m)|*.y4m'
+    FilterIndex = 0
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
+    Left = 240
+    Top = 256
+  end
+  object Timer: TTimer
+    Interval = 1
+    OnTimer = TimerTimer
+    Left = 304
+    Top = 344
+  end
+end
