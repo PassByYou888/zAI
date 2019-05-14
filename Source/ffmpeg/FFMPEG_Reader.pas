@@ -80,14 +80,14 @@ begin
   try
     if (avformat_open_input(@pFormatCtx, PAnsiChar(p), nil, nil) <> 0) then
       begin
-        DoStatus('Could not open source file %s', [FileName.Text]);
+        RaiseInfo('Could not open source file %s', [FileName.Text]);
         exit;
       end;
 
     // Retrieve stream information
     if avformat_find_stream_info(pFormatCtx, nil) < 0 then
       begin
-        DoStatus('Could not find stream information %s', [FileName.Text]);
+        RaiseInfo('Could not find stream information %s', [FileName.Text]);
         exit;
       end;
 
@@ -114,20 +114,20 @@ begin
 
     if videoStream = -1 then
       begin
-        DoStatus('Dont find a video stream');
+        RaiseInfo('Dont find a video stream');
         exit;
       end;
 
     videoCodec := avcodec_find_decoder(videoCodecCtx^.codec_id);
     if videoCodec = nil then
       begin
-        DoStatus('Unsupported codec!');
+        RaiseInfo('Unsupported codec!');
         exit;
       end;
 
     if avcodec_open2(videoCodecCtx, videoCodec, nil) < 0 then
       begin
-        DoStatus('Could not open codec');
+        RaiseInfo('Could not open codec');
         exit;
       end;
 
@@ -143,7 +143,7 @@ begin
     pFrameRGB := av_frame_alloc();
     if not assigned(pFrameRGB) then
       begin
-        DoStatus('Could not allocate AVFrame structure');
+        RaiseInfo('Could not allocate AVFrame structure');
         exit;
       end;
 

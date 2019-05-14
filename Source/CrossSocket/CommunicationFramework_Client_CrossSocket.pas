@@ -1,14 +1,21 @@
 { ****************************************************************************** }
 { * CrossSocket support                                                        * }
 { * written by QQ 600585@qq.com                                                * }
-{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
-{ * https://github.com/PassByYou888/zExpression                                * }
-{ * https://github.com/PassByYou888/zTranslate                                 * }
-{ * https://github.com/PassByYou888/zSound                                     * }
-{ * https://github.com/PassByYou888/zAnalysis                                  * }
-{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
 { * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
 { ****************************************************************************** }
 (*
   update history
@@ -156,8 +163,6 @@ end;
 destructor TCommunicationFramework_Client_CrossSocket.Destroy;
 begin
   Disconnect;
-  if (ClientIO <> nil) then
-      TCrossSocketClient_PeerIO(ClientIO).OwnerClient := nil;
   inherited Destroy;
 end;
 
@@ -319,9 +324,6 @@ begin
           if p_io = nil then
               Exit;
 
-          p_io.IOInterface := nil;
-          AConnection.UserObject := nil;
-
           if p_io.OwnerClient <> nil then
             begin
               try
@@ -329,6 +331,9 @@ begin
               except
               end;
             end;
+
+          p_io.IOInterface := nil;
+          AConnection.UserObject := nil;
         end;
     end);
 end;
@@ -471,8 +476,6 @@ begin
 
   ICrossSocket(driver).Connect(addr, Port,
     procedure(AConnection: ICrossConnection; ASuccess: Boolean)
-    var
-      t_p_io: TCrossSocketClient_PeerIO;
     begin
       if ASuccess then
         begin
