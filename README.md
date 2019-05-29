@@ -1,6 +1,12 @@
 # zAI
 
-zAI是机器视觉的人工智能方向项目
+zAI是机器视觉的人工智能方向项目 https://github.com/PassByYou888/zAI
+
+zVision偏向纯粹的机器视觉 https://github.com/PassByYou888/zVision
+
+zAnalysis偏向数据统计 https://github.com/PassByYou888/zAnalysis
+
+# 注意
 
 zAI需要高档cuda设备才能运行
 
