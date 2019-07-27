@@ -20,7 +20,6 @@
 unit h264MB_encoder;
 
 {$INCLUDE zDefine.inc}
-{$POINTERMATH ON}
 
 interface
 

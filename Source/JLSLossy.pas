@@ -37,10 +37,13 @@ uses JLSGlobal, JLSMelcode, JLSBitIO;
 
 type
   TJLSLossy = class
+  public
+  var
     FBitIO: TJLSBitIO;
     FMelcode: TJLSMelcode;
     FImageInfo: PImageInfo;
     eor_limit: Int;
+
     procedure Clip(var x: Int; alpha: Int);
   public
     constructor Create(ABitIO: TJLSBitIO; AMelcode: TJLSMelcode; AImageInfo: PImageInfo);

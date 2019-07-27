@@ -5,11 +5,11 @@ interface
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.Layouts, FMX.ExtCtrls,
-  zDrawEngineInterface_SlowFMX, MemoryRaster;
+  zDrawEngineInterface_SlowFMX, MemoryRaster, FMX.Objects;
 
 type
   TShowImageForm = class(TForm)
-    ImageViewer: TImageViewer;
+    ImageViewer: TImage;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char; Shift: TShiftState);
   private
@@ -20,7 +20,8 @@ type
     destructor Destroy; override;
   end;
 
-procedure ShowImage(img: TMemoryRaster);
+procedure ShowImage(img: TMemoryRaster); overload;
+procedure ShowImage(img: TMemoryRaster; title: string); overload;
 
 implementation
 
@@ -34,6 +35,16 @@ begin
   ShowImageForm := TShowImageForm.Create(Application);
   ShowImageForm.Show;
   MemoryBitmapToBitmap(img, ShowImageForm.ImageViewer.Bitmap);
+end;
+
+procedure ShowImage(img: TMemoryRaster; title: string);
+var
+  ShowImageForm: TShowImageForm;
+begin
+  ShowImageForm := TShowImageForm.Create(Application);
+  ShowImageForm.Show;
+  MemoryBitmapToBitmap(img, ShowImageForm.ImageViewer.Bitmap);
+  ShowImageForm.Caption := title;
 end;
 
 constructor TShowImageForm.Create(AOwner: TComponent);

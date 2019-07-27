@@ -42,6 +42,7 @@ const
 
 type
   TJLSBitIO = class
+  public var
     FInputStream: TCoreClassStream;
     FOutputStream: TCoreClassStream;
     zeroLUT: array [0 .. 255] of Int; { table to find out number of leading zeros }
@@ -61,6 +62,7 @@ type
     { (number of bits free)-8 in bit buffer (on input) }
 
     negbuff: array [0 .. BufSize + NEGBUFFSIZE - 1] of Byte; { byte I/O buffer, allowing for 4 "negative" locations }
+
     constructor Create(AInputStream: TCoreClassStream; AOutputStream: TCoreClassStream);
 
     procedure bitoinit;

@@ -112,7 +112,7 @@ begin
   // run alignment
   Alignment.Alignment(imgL);
   // Calibration face label
-  imgL.CalibrationNullDetectorDefineToken(face_label);
+  imgL.CalibrationNullDefineToken(face_label);
   imgL.FileInfo := face_label;
   // free alignment
   disposeObject(Alignment);
@@ -220,8 +220,8 @@ begin
 
                 while line.Exists(#10) do
                   begin
-                    n := umlGetFirstStr_M(line, #10).DeleteChar(#13);
-                    line := umlDeleteFirstStr_M(line, #10);
+                    n := umlGetFirstStr_Discontinuity(line, #10).DeleteChar(#13);
+                    line := umlDeleteFirstStr_Discontinuity(line, #10);
                     TThread.Synchronize(Self, procedure
                       begin
                         DoStatus(n);
@@ -374,7 +374,7 @@ begin
   if FaceDB.FoundNoTokenDetectorDefine then
       exit;
 
-  tokens := FaceDB.tokens;
+  tokens := FaceDB.DetectorTokens;
   if length(tokens) < 2 then
       exit;
   SetLength(tokens, 0);
@@ -406,7 +406,7 @@ begin
       exit;
     end;
 
-  tokens := FaceDB.tokens;
+  tokens := FaceDB.DetectorTokens;
 
   if length(tokens) < 2 then
     begin
@@ -538,10 +538,10 @@ begin
           if not FaceChanged then
             begin
               LockObject(FaceDB);
-              tokens := FaceDB.tokens;
+              tokens := FaceDB.DetectorTokens;
               DoStatus('total %d classifier', [length(tokens)]);
               for n in tokens do
-                  DoStatus('"%s" include %d of face picture', [n.Text, FaceDB.GetTokenCount(n)]);
+                  DoStatus('"%s" include %d of face picture', [n.Text, FaceDB.GetDetectorTokenCount(n)]);
               UnLockObject(FaceDB);
             end;
         end;
@@ -700,7 +700,7 @@ var
   n: TPascalString;
 begin
   LockObject(FaceDB);
-  tokens := FaceDB.tokens;
+  tokens := FaceDB.DetectorTokens;
   UnLockObject(FaceDB);
 
   for n in tokens do
@@ -816,10 +816,10 @@ begin
     begin
       FaceDB.LoadFromFile(fn);
 
-      tokens := FaceDB.tokens;
+      tokens := FaceDB.DetectorTokens;
       DoStatus('total %d classifier', [length(tokens)]);
       for n in tokens do
-          DoStatus('"%s" include %d of face picture', [n.Text, FaceDB.GetTokenCount(n)]);
+          DoStatus('"%s" include %d of face picture', [n.Text, FaceDB.GetDetectorTokenCount(n)]);
     end;
 end;
 
@@ -886,10 +886,10 @@ begin
       LockObject(FaceDB);
       FaceDB.SaveToFile(fn);
 
-      tokens := FaceDB.tokens;
+      tokens := FaceDB.DetectorTokens;
       DoStatus('total %d classifier', [length(tokens)]);
       for n in tokens do
-          DoStatus('"%s" include %d of face picture', [n.Text, FaceDB.GetTokenCount(n)]);
+          DoStatus('"%s" include %d of face picture', [n.Text, FaceDB.GetDetectorTokenCount(n)]);
 
       UnLockObject(FaceDB);
 

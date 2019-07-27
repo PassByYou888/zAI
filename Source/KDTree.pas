@@ -127,11 +127,7 @@ type
 
   PKDTreeData = ^TKDTreeData;
 
-{$IFDEF FPC}
-  TKDTreeDataList_Decl = specialize TGenericsList<TKDTreeData>;
-{$ELSE FPC}
-  TKDTreeDataList_Decl = TGenericsList<TKDTreeData>;
-{$ENDIF FPC}
+  TKDTreeDataList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TKDTreeData>;
 
   TKDTreeDataList = class(TKDTreeDataList_Decl)
   private

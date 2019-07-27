@@ -22,9 +22,8 @@
 (* ************************************************************************
   N-dimensional multiclass Fisher LDA
 
-  Subroutine finds coefficients of linear combinations which optimally separates
-  training set on classes. It returns N-dimensional basis whose vector are sorted
-  by quality of training set separation (in descending order).
+  Subroutine finds coefficients of linear combinations which optimally separates training set on classes.
+  It returns N-dimensional basis whose vector are sorted by quality of training set separation (in descending order).
 
   INPUT PARAMETERS:
   XY          -   training set, array[0..NPoints-1,0..NVars].
@@ -435,8 +434,7 @@ end;
 (* ************************************************************************
   Multiclass Fisher LDA
 
-  Subroutine finds coefficients of linear combination which optimally separates
-  training set on classes.
+  Subroutine finds coefficients of linear combination which optimally separates training set on classes.
 
   INPUT PARAMETERS:
   XY          -   training set, array[0..NPoints-1,0..NVars]. First NVars columns store values of independent variables,

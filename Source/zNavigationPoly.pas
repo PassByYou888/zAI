@@ -27,7 +27,7 @@ uses CoreClasses, Math, Geometry2DUnit;
 type
   TPolyManager = class;
 
-  TPolyManagerChildren = class(TPoly)
+  TPolyManagerChildren = class(TDeflectionPolygon)
   protected
     FOwner: TPolyManager;
     FIndex: Integer;
@@ -63,8 +63,8 @@ type
 
     function PointOk(AExpandDist: TGeoFloat; pt: TVec2): Boolean;
     function LineIntersect(AExpandDist: TGeoFloat; lb, le: TVec2): Boolean;
-    function GetMinimumFromPointToPoly(AExtandDistance: TGeoFloat; const pt: TVec2): TVec2;
-    function Collision2Circle(cp: TVec2; r: TGeoFloat; OutputList: T2DLineList): Boolean;
+    function GetNearLine(AExtandDistance: TGeoFloat; const pt: TVec2): TVec2;
+    function Collision2Circle(cp: TVec2; r: TGeoFloat; OutputList: TDeflectionPolygonLines): Boolean;
 
     procedure RebuildPoly;
     procedure Reverse;
@@ -199,10 +199,10 @@ var
   i: Integer;
 begin
   Result := False;
-  if not FScene.PointInHere(AExpandDist, pt) then
+  if not FScene.InHere(AExpandDist, pt) then
       Exit;
   for i := 0 to Count - 1 do
-    if GetPoly(i).PointInHere(AExpandDist, pt) then
+    if GetPoly(i).InHere(AExpandDist, pt) then
         Exit;
   Result := True;
 end;
@@ -225,19 +225,19 @@ begin
       Result := True;
 end;
 
-function TPolyManager.GetMinimumFromPointToPoly(AExtandDistance: TGeoFloat; const pt: TVec2): TVec2;
+function TPolyManager.GetNearLine(AExtandDistance: TGeoFloat; const pt: TVec2): TVec2;
 var
   i: Integer;
   d, d2: TGeoFloat;
   lb, le: Integer;
   r: TVec2;
 begin
-  Result := FScene.GetMinimumFromPointToPoly(AExtandDistance, pt, True, lb, le);
+  Result := FScene.GetNearLine(AExtandDistance, pt, True, lb, le);
   d := PointDistance(pt, Result);
 
   for i := 0 to Count - 1 do
     begin
-      r := Poly[i].GetMinimumFromPointToPoly(AExtandDistance, pt, True, lb, le);
+      r := Poly[i].GetNearLine(AExtandDistance, pt, True, lb, le);
       d2 := PointDistance(pt, r);
       if (d2 < d) then
         begin
@@ -247,7 +247,7 @@ begin
     end;
 end;
 
-function TPolyManager.Collision2Circle(cp: TVec2; r: TGeoFloat; OutputList: T2DLineList): Boolean;
+function TPolyManager.Collision2Circle(cp: TVec2; r: TGeoFloat; OutputList: TDeflectionPolygonLines): Boolean;
 var
   i: Integer;
 begin
@@ -342,7 +342,4 @@ begin
   RY(FScene);
 end;
 
-end. 
- 
- 
- 
+end.

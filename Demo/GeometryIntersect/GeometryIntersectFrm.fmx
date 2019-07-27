@@ -1,0 +1,19 @@
+object GeometryIntersectForm: TGeometryIntersectForm
+  Left = 0
+  Top = 0
+  Caption = 'Geometry Intersect.'
+  ClientHeight = 465
+  ClientWidth = 685
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnMouseUp = FormMouseUp
+  OnPaint = FormPaint
+  DesignerMasterStyle = 0
+  object Timer1: TTimer
+    Interval = 10
+    OnTimer = Timer1Timer
+    Left = 328
+    Top = 280
+  end
+end

@@ -1,0 +1,30 @@
+object PolygonScaleAndExtractMainForm: TPolygonScaleAndExtractMainForm
+  Left = 0
+  Top = 0
+  Caption = 'Polygon Scale And Extract'
+  ClientHeight = 369
+  ClientWidth = 777
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object pb1: TPaintBox
+    Position.X = 16.000000000000000000
+    Position.Y = 32.000000000000000000
+    Size.Width = 361.000000000000000000
+    Size.Height = 313.000000000000000000
+    Size.PlatformDefault = False
+    OnClick = pb1Click
+    OnPaint = pb1Paint
+  end
+  object pb2: TPaintBox
+    Position.X = 392.000000000000000000
+    Position.Y = 32.000000000000000000
+    Size.Width = 361.000000000000000000
+    Size.Height = 313.000000000000000000
+    Size.PlatformDefault = False
+    OnClick = pb1Click
+    OnPaint = pb2Paint
+  end
+end

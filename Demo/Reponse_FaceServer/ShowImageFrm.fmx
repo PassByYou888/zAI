@@ -2,8 +2,8 @@ object ShowImageForm: TShowImageForm
   Left = 0
   Top = 0
   Caption = 'Image.'
-  ClientHeight = 490
-  ClientWidth = 923
+  ClientHeight = 633
+  ClientWidth = 877
   Position = MainFormCenter
   FormFactor.Width = 320
   FormFactor.Height = 480
@@ -11,13 +11,14 @@ object ShowImageForm: TShowImageForm
   OnClose = FormClose
   OnKeyUp = FormKeyUp
   DesignerMasterStyle = 0
-  object ImageViewer: TImageViewer
+  object ImageViewer: TImage
+    MultiResBitmap = <
+      item
+      end>
     Align = Client
-    Size.Width = 923.000000000000000000
-    Size.Height = 490.000000000000000000
+    MarginWrapMode = Fit
+    Size.Width = 877.000000000000000000
+    Size.Height = 633.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 1
-    Viewport.Width = 919.000000000000000000
-    Viewport.Height = 486.000000000000000000
   end
 end

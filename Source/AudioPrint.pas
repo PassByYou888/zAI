@@ -164,10 +164,12 @@ end;
 
 type
   TAudioConsumer = class(TCoreClassObject)
+  public
     procedure Consume(Input: TI16Vec; AOffset: TLInt; ALength: TLInt); virtual; abstract;
   end;
 
   TAudioBuffer = class(TAudioConsumer)
+  public
     FData: TI16Vec;
     constructor Create;
     destructor Destroy; override;
@@ -177,6 +179,7 @@ type
   end;
 
   TAVResampleContext = record
+  public
     rFilterBank: TI16Vec;
     rFilterLength: TLInt;
     rIdealDstIncr: TLInt;
@@ -198,6 +201,7 @@ type
   PAVResampleContext = ^TAVResampleContext;
 
   TBitStringWriter = class(TCoreClassObject)
+  public
     FValue: TPascalString;
     FBuffer: TUInt32;
     FBufferSize: TLInt;
@@ -208,6 +212,7 @@ type
   end;
 
   TBitStringReader = class(TCoreClassObject)
+  public
     FValue: TPascalString;
     FValueIter: TLInt;
     FBuffer: TUInt32;
@@ -223,6 +228,7 @@ type
   end;
 
   TCPImage = class(TCoreClassObject)
+  public
     FColumns: TLInt;
     FRows: TLInt;
     FData: TLMatrix;
@@ -236,6 +242,7 @@ type
   end;
 
   TIntegralImage = class(TCoreClassObject)
+  public
     FImage: TCPImage;
     procedure Transform;
     { Construct the integral image. Note that will modify the original image in-place, so it will not be usable afterwards. }
@@ -250,6 +257,7 @@ type
   TComparator = function(a, b: TLFloat): TLFloat;
 
   TFilter = class(TCoreClassObject)
+  public
     FType: TLInt;
     FY: TLInt;
     FHeight: TLInt;
@@ -259,12 +267,14 @@ type
   end;
 
   TQuantizer = class(TCoreClassObject)
+  public
     FT0, FT1, FT2: TLFloat;
     constructor Create(t0: TLFloat = 0.0; t1: TLFloat = 0.0; t2: TLFloat = 0.0);
     function Quantize(Value: TLFloat): TLInt;
   end;
 
   TClassifier = class(TCoreClassObject)
+  public
     FFilter: TFilter;
     FQuantizer: TQuantizer;
     constructor Create(Filter: TFilter = nil; Quantizer: TQuantizer = nil);
@@ -275,6 +285,7 @@ type
   TClassifierArray = array of TClassifier;
 
   TCombinedBuffer = class(TCoreClassObject)
+  public
     FOffset: TLInt;
     FBuffer1, FBuffer2: TI16Vec;
     FSize1, FSize2: TLInt;
@@ -288,6 +299,7 @@ type
   end;
 
   TFFTFrame = class(TCoreClassObject)
+  public
     FSize: TLInt;
     Data: TLVec;
     constructor Create(Size: TLInt);
@@ -297,10 +309,12 @@ type
   end;
 
   TFFTFrameConsumer = class(TCoreClassObject)
+  public
     procedure Consume(frame: TFFTFrame); virtual; abstract;
   end;
 
   TFFTLib = class(TCoreClassObject)
+  public
     FWindow: TLVec;
     FFrameSize: TLInt;
     FFrameSizeH: TLInt;
@@ -310,6 +324,7 @@ type
   end;
 
   TFFT = class(TAudioConsumer)
+  public
     FBufferOffset: TLInt;
     FWindow: TLVec;
     FFFTBuffer: TI16Vec;
@@ -326,6 +341,7 @@ type
   end;
 
   TFFTLomont = class(TFFTLib)
+  public
     FInput: TLVec;
     ForwardCos: TLVec;
     ForwardSin: TLVec;
@@ -338,12 +354,14 @@ type
   end;
 
   TFeatureVectorConsumer = class(TCoreClassObject)
+  public
     constructor Create;
     destructor Destroy; override;
     procedure Consume(var features: TLVec); virtual; abstract;
   end;
 
   TImageBuilder = class(TFeatureVectorConsumer)
+  public
     FImage: TCPImage;
     constructor Create(Image: TCPImage = nil);
     destructor Destroy; override;
@@ -352,6 +370,7 @@ type
   end;
 
   TChromaFilter = class(TFeatureVectorConsumer)
+  public
     FBufferOffset: TLInt;
     FBufferSize: TLInt;
     FConsumer: TFeatureVectorConsumer;
@@ -366,6 +385,7 @@ type
   end;
 
   TChromaNormalizer = class(TFeatureVectorConsumer)
+  public
     FConsumer: TFeatureVectorConsumer;
     constructor Create(consumer: TFeatureVectorConsumer);
     destructor Destroy; override;
@@ -374,6 +394,7 @@ type
   end;
 
   TChromaResampler = class(TFeatureVectorConsumer)
+  public
     FResult: TLVec;
     FConsumer: TFeatureVectorConsumer;
     FIteration: TLInt;
@@ -385,6 +406,7 @@ type
   end;
 
   TFingerprintCalculator = class(TCoreClassObject)
+  public
     FMaxFilterWidth: TLInt;
     FClassifiers: TClassifierArray;
     constructor Create(classifiers: TClassifierArray);
@@ -394,6 +416,7 @@ type
   end;
 
   TFingerprintCompressor = class(TCoreClassObject)
+  public
     FResult: TPascalString;
     FBits: TBytes;
     procedure WriteNormalBits();
@@ -404,6 +427,7 @@ type
   end;
 
   TFingerprintDecompressor = class(TCoreClassObject)
+  public
     FResult: TU32Vec;
     FBits: TBytes;
     function ReadNormalBits(reader: TBitStringReader): boolean;
@@ -414,6 +438,7 @@ type
   end;
 
   TFingerprinterConfiguration = class(TCoreClassObject)
+  public
     FNumClassifiers: TLInt;
     FClassifiers: TClassifierArray;
     FNumFilterCoefficients: TLInt;
@@ -430,29 +455,34 @@ type
 
   // Trained on a randomly selected test data
   TFingerprinterConfigurationTest1 = class(TFingerprinterConfiguration)
+  public
     constructor Create;
     destructor Destroy; override;
   end;
 
   // Trained on 60k pairs based on eMusic samples (mp3)
   TFingerprinterConfigurationTest2 = class(TFingerprinterConfiguration)
+  public
     constructor Create;
     destructor Destroy; override;
   end;
 
   // Trained on 60k pairs based on eMusic samples with interpolation enabled (mp3)
   TFingerprinterConfigurationTest3 = class(TFingerprinterConfiguration)
+  public
     constructor Create;
     destructor Destroy; override;
   end;
 
   // Same as v2, but trims leading silence
   TFingerprinterConfigurationTest4 = class(TFingerprinterConfigurationTest2)
+  public
     constructor Create;
     destructor Destroy; override;
   end;
 
   TMovingAverage = class(TCoreClassObject)
+  public
     FBuffer: TI16Vec;
     FSize: TLInt;
     FOffset: TLInt;
@@ -465,6 +495,7 @@ type
   end;
 
   TSilenceRemover = class(TAudioConsumer)
+  public
     FThreshold: TLInt;
     FStart: boolean;
     FConsumer: TAudioConsumer;
@@ -477,6 +508,7 @@ type
   end;
 
   TAudioProcessor = class(TAudioConsumer)
+  public
     FBufferOffset: TLInt;
     FBufferSize: TLInt;
     FTargetSampleRate: TLInt;
@@ -502,6 +534,7 @@ type
   end;
 
   TChroma = class(TFFTFrameConsumer)
+  public
     FInterpolate: boolean;
     FMinIndex: TLInt;
     FMaxIndex: TLInt;
@@ -520,6 +553,7 @@ type
   end;
 
   TFingerprinter = class(TAudioConsumer)
+  public
     FSilenceRemover: TSilenceRemover;
     FImage: TCPImage;
     FImageBuilder: TImageBuilder;

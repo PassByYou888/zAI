@@ -57,7 +57,7 @@ uses GBKMediaCenter, SysUtils;
 
 function FastGBKChar(const c: USystemChar): Boolean;
 var
-  ID: Word;
+  ID: Cardinal;
   n: TUPascalString;
 begin
   ID := Ord(c);
@@ -86,7 +86,7 @@ var
   n: TUPascalString;
   c: USystemChar;
   LastGBK: Boolean;
-  ID: Word;
+  ID: Cardinal;
 begin
   Result := '';
   LastGBK := False;

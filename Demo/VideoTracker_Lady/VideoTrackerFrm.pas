@@ -132,7 +132,7 @@ begin
               TThread.Synchronize(ThSender, procedure
               begin
                 Frame.Assign(mr);
-                Frame.ReleaseFMXResource;
+                Frame.ReleaseGPUMemory;
               end);
 
           nr := NewRaster();
@@ -178,11 +178,11 @@ var
 begin
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
-  d.ViewOptions := [devpFPS];
+  d.ViewOptions := [voFPS];
   d.FPSFontColor := DEColor(0.5, 0.5, 1, 1);
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0));
 
-  LastDrawRect := d.FitDrawTexture(Frame, Frame.BoundsRectV2, d.ScreenRect, 1.0);
+  LastDrawRect := d.FitDrawPicture(Frame, Frame.BoundsRectV2, d.ScreenRect, 1.0);
   d.DrawBox(LastDrawRect, DEColor(1, 0, 0, 0.5), 1);
 
   if mouse_down then
@@ -267,7 +267,7 @@ begin
   if (idx >= 0) and (idx < imgList.Count) then
     begin
       Frame.Assign(imgList[idx]);
-      Frame.ReleaseFMXResource;
+      Frame.ReleaseGPUMemory;
       imgList[idx].RecycleMemory;
     end;
 end;

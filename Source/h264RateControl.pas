@@ -20,15 +20,14 @@
 unit h264RateControl;
 
 {$INCLUDE zDefine.inc}
-{$POINTERMATH ON}
 
 interface
 
 uses
   SysUtils,
-  {$IFDEF FPC}
+{$IFDEF FPC}
   fgl,
-  {$ENDIF FPC}
+{$ENDIF FPC}
   h264Types, h264Common, h264Util,
   CoreClasses;
 
@@ -83,10 +82,8 @@ type
     fps: Single;
     encoded_qp_avg: Single;
     rate_mult: Single;
-    stream_bits_estimated,
-      stream_bits_real: Int64_t;
-    last_buffer_check,
-      last_diff: int32_t;
+    stream_bits_estimated, stream_bits_real: Int64_t;
+    last_buffer_check, last_diff: int32_t;
     avg_target_framesize: int32_t;
     bit_reserve: int32_t;
     qp_comp: int32_t;
@@ -535,7 +532,7 @@ end;
 procedure TRatecontrol.Update(const FrameNum: int32_t; const FrameBits: int32_t; var f: TFrame);
 const
   STATECHECK_INTERVAL = 10;
-  REACTION_DELAY      = 30;
+  REACTION_DELAY = 30;
 var
   new_diff: int32_t;
   estimated_framebits: int32_t;
@@ -645,6 +642,4 @@ begin
   last_diff := new_diff;
 end;
 
-end.  
- 
- 
+end.

@@ -22,7 +22,7 @@ unit Learn;
 
 interface
 
-uses Math, CoreClasses, UnicodeMixedLib, PascalStrings, KDTree, LearnTypes, MemoryStream64, DataFrameEngine;
+uses Math, CoreClasses, UnicodeMixedLib, PascalStrings, KDTree, LearnTypes, MemoryStream64, DataFrameEngine, ListEngine;
 
 {$REGION 'Class'}
 
@@ -255,6 +255,8 @@ function LVec(const M: TLBMatrix; const veclen: TLInt): TLBVec; overload;
 function LVec(const M: TLBMatrix): TLBVec; overload;
 function LVec(const M: TLIMatrix; const veclen: TLInt): TLIVec; overload;
 function LVec(const M: TLIMatrix): TLIVec; overload;
+function ExpressionToLVec(const s: TPascalString; const_vl: THashVariantList): TLVec; overload;
+function ExpressionToLVec(const s: TPascalString): TLVec; overload;
 function LSpearmanVec(const M: TLMatrix; const veclen: TLInt): TLVec;
 function LAbsMaxVec(const v: TLVec): TLFloat;
 function LMaxVec(const v: TLVec): TLFloat; overload;
@@ -293,7 +295,14 @@ function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo:
 function LDA(const M: TLMatrix; const cv: TLVec; const Nclass: TLInt; var sInfo: SystemString; var output: TLVec): Boolean; overload;
 
 { * principal component analysis support * }
-function PCA(const buff: TLMatrix; const NPoints, NVars: TLInt; var v: TLMatrix): TLInt;
+(*
+  return code:
+  * -4, if SVD subroutine haven't converged
+  * -1, if wrong parameters has been passed (NPoints<0, NVars<1)
+  *  1, if task is solved
+*)
+function PCA(const buff: TLMatrix; const NPoints, NVars: TLInt; var v: TLVec; var M: TLMatrix): TLInt; overload;
+function PCA(const buff: TLMatrix; const NPoints, NVars: TLInt; var M: TLMatrix): TLInt; overload;
 
 { * k-means++ clusterization support * }
 function KMeans(const Source: TLMatrix; const NVars, K: TLInt; var KArray: TLMatrix; var kIndex: TLIVec): Boolean;
@@ -302,6 +311,8 @@ function KMeans(const Source: TLMatrix; const NVars, K: TLInt; var KArray: TLMat
 function LMatrix(const L1, l2: TLInt): TLMatrix; overload;
 function LBMatrix(const L1, l2: TLInt): TLBMatrix; overload;
 function LIMatrix(const L1, l2: TLInt): TLIMatrix; overload;
+function ExpressionToLMatrix(w, h: TLInt; const s: TPascalString; const_vl: THashVariantList): TLMatrix; overload;
+function ExpressionToLMatrix(w, h: TLInt; const s: TPascalString): TLMatrix; overload;
 
 {$ENDREGION 'LearnAPI'}
 
@@ -564,6 +575,45 @@ function RMatrixBDSVD(var d: TLVec; E: TLVec; n: TLInt; IsUpper: Boolean; IsFrac
 function BidiagonalSVDDecomposition(var d: TLVec; E: TLVec; n: TLInt; IsUpper: Boolean; IsFractionalAccuracyRequired: Boolean;
   var u: TLMatrix; NRU: TLInt; var c: TLMatrix; NCC: TLInt; var VT: TLMatrix; NCVT: TLInt): Boolean;
 
+(* ************************************************************************
+  Singular value decomposition of a rectangular matrix.
+
+  The algorithm calculates the singular value decomposition of a matrix of
+  size MxN: A = U * S * V^T
+
+  The algorithm finds the singular values and, optionally, matrices U and V^T.
+  The algorithm can find both first min(M,N) columns of matrix U and rows of
+  matrix V^T (singular vectors), and matrices U and V^T wholly (of sizes MxM
+  and NxN respectively).
+
+  Take into account that the subroutine does not return matrix V but V^T.
+
+  Input parameters:
+  A           -   matrix to be decomposed.
+  Array whose indexes range within [0..M-1, 0..N-1].
+  M           -   number of rows in matrix A.
+  N           -   number of columns in matrix A.
+  UNeeded     -   0, 1 or 2. See the description of the parameter U.
+  VTNeeded    -   0, 1 or 2. See the description of the parameter VT.
+
+  AdditionalMemory -
+  If the parameter:
+  * equals 0, the algorithm dont use additional memory (lower requirements, lower performance).
+  * equals 1, the algorithm uses additional memory of size min(M,N)*min(M,N) of real numbers. It often speeds up the algorithm.
+  * equals 2, the algorithm uses additional memory of size M*min(M,N) of real numbers.
+  It allows to get a maximum performance. The recommended value of the parameter is 2.
+
+  Output parameters:
+  W           -   contains singular values in descending order.
+  U           -   if UNeeded=0, U isn't changed, the left singular vectors are not calculated.
+  if Uneeded=1, U contains left singular vectors (first min(M,N) columns of matrix U). Array whose indexes range within [0..M-1, 0..Min(M,N)-1].
+  if UNeeded=2, U contains matrix U wholly. Array whose indexes range within [0..M-1, 0..M-1].
+  VT          -   if VTNeeded=0, VT isnæŠ?changed, the right singular vectors are not calculated.
+  if VTNeeded=1, VT contains right singular vectors (first min(M,N) rows of matrix V^T). Array whose indexes range within [0..min(M,N)-1, 0..N-1].
+  if VTNeeded=2, VT contains matrix V^T wholly. Array whose indexes range within [0..N-1, 0..N-1].
+  ************************************************************************ *)
+function RMatrixSVD(a: TLMatrix; const M, n, UNeeded, VTNeeded, AdditionalMemory: TLInt; var w: TLVec; var u: TLMatrix; var VT: TLMatrix): Boolean;
+
 { Eigensolvers }
 function SMatrixEVD(a: TLMatrix; n: TLInt; ZNeeded: TLInt; IsUpper: Boolean; var d: TLVec; var z: TLMatrix): Boolean;
 
@@ -762,10 +812,13 @@ procedure GaussQuadratureGenerateGaussRadauRec(const alpha, beta: TLVec; const M
 
 { Returns nodes/weights for Gauss-Legendre quadrature on [-1,1] with N nodes }
 procedure GaussQuadratureGenerateGaussLegendre(const n: TLInt; var Info: TLInt; var x: TLVec; var w: TLVec);
+
 { Returns nodes/weights for Gauss-Jacobi quadrature on [-1,1] with weight function W(x)=Power(1-x,Alpha)*Power(1+x,Beta) }
 procedure GaussQuadratureGenerateGaussJacobi(const n: TLInt; const alpha, beta: TLFloat; var Info: TLInt; var x: TLVec; var w: TLVec);
+
 { Returns nodes/weights for Gauss-Laguerre quadrature on (0,+inf) with weight function W(x)=Power(x,Alpha)*Exp(-x) }
 procedure GaussQuadratureGenerateGaussLaguerre(const n: TLInt; const alpha: TLFloat; var Info: TLInt; var x: TLVec; var w: TLVec);
+
 { Returns nodes/weights for Gauss-Hermite quadrature on (-inf,+inf) with weight function W(x)=Exp(-x*x) }
 procedure GaussQuadratureGenerateGaussHermite(const n: TLInt; var Info: TLInt; var x: TLVec; var w: TLVec);
 
@@ -785,21 +838,25 @@ procedure GaussQuadratureGenerateGaussHermite(const n: TLInt; var Info: TLInt; v
   Mu0 = integral(W(x)dx,a,b)
 }
 procedure GaussKronrodQuadratureGenerateRec(const alpha, beta: TLVec; const Mu0: TLFloat; n: TLInt; var Info: TLInt; var x, WKronrod, WGauss: TLVec);
+
 {
   Returns Gauss and Gauss-Kronrod nodes/weights for Gauss-Legendre quadrature with N points.
   GKQLegendreCalc (calculation) or GKQLegendreTbl (precomputed table) is used depending on machine precision and number of nodes.
 }
 procedure GaussKronrodQuadratureGenerateGaussLegendre(const n: TLInt; var Info: TLInt; var x, WKronrod, WGauss: TLVec);
+
 {
   Returns Gauss and Gauss-Kronrod nodes/weights for Gauss-Jacobi quadrature on [-1,1] with weight function
   W(x)=Power(1-x,Alpha)*Power(1+x,Beta).
 }
 procedure GaussKronrodQuadratureGenerateGaussJacobi(const n: TLInt; const alpha, beta: TLFloat; var Info: TLInt; var x, WKronrod, WGauss: TLVec);
+
 {
   Returns Gauss and Gauss-Kronrod nodes for quadrature with N points.
   Reduction to tridiagonal eigenproblem is used.
 }
 procedure GaussKronrodQuadratureLegendreCalc(const n: TLInt; var Info: TLInt; var x, WKronrod, WGauss: TLVec);
+
 {
   Returns Gauss and Gauss-Kronrod nodes for quadrature with N  points  using pre-calculated table. Nodes/weights were computed with accuracy up to 1.0E-32.
   In standard TLFloat  precision accuracy reduces to something about 2.0E-16 (depending  on your compiler's handling of long floating point constants).
@@ -823,7 +880,7 @@ uses KM,
 {$ELSE}
   Threading,
 {$ENDIF FPC}
-  SyncObjs, DoStatusIO;
+  SyncObjs, DoStatusIO, TextParsing, zExpression, OpCode;
 
 {$REGION 'Include'}
 {$INCLUDE learn_base.inc}

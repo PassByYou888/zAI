@@ -32,8 +32,8 @@ type
   private
     FYW: TY4MWriter;
   public
-    constructor Create(const w, h, psf: uint16_t; const FileName: SystemString); overload;
-    constructor Create(const w, h, psf: uint16_t; const stream: TCoreClassStream); overload;
+    constructor CreateOnFile(const w, h, psf: uint16_t; const FileName: SystemString); overload;
+    constructor CreateOnStream(const w, h, psf: uint16_t; const stream: TCoreClassStream); overload;
 
     destructor Destroy; override;
 
@@ -47,25 +47,25 @@ type
 
 implementation
 
-constructor TDrawEngine_YUV4MPEG.Create(const w, h, psf: uint16_t; const FileName: SystemString);
+constructor TDrawEngine_YUV4MPEG.CreateOnFile(const w, h, psf: uint16_t; const FileName: SystemString);
 var
   NW, NH: uint16_t;
 begin
   inherited Create;
   NW := w - (w mod 2);
   NH := h - (h mod 2);
-  FYW := TY4MWriter.Create(NW, NH, psf, FileName);
+  FYW := TY4MWriter.CreateOnFile(NW, NH, psf, FileName);
   Memory.SetSize(NW, NH);
 end;
 
-constructor TDrawEngine_YUV4MPEG.Create(const w, h, psf: uint16_t; const stream: TCoreClassStream);
+constructor TDrawEngine_YUV4MPEG.CreateOnStream(const w, h, psf: uint16_t; const stream: TCoreClassStream);
 var
   NW, NH: uint16_t;
 begin
   inherited Create;
   NW := w - (w mod 2);
   NH := h - (h mod 2);
-  FYW := TY4MWriter.Create(NW, NH, psf, stream);
+  FYW := TY4MWriter.CreateOnStream(NW, NH, psf, stream);
   Memory.SetSize(NW, NH);
 end;
 

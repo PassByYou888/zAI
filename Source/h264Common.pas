@@ -113,15 +113,14 @@ type
 
   PMotionvec = ^TMotionvec;
 
+  TMotionVectorList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMotionvec>;
+
 {$IFDEF FPC}
-  TMotionVectorList = specialize TGenericsList<TMotionvec>;
-  operator = (const a, b: TMotionvec): Boolean;
+operator = (const a, b: TMotionvec): Boolean;
 operator / (const a: TMotionvec; const Divisor: int32_t): TMotionvec;
 operator * (const a: TMotionvec; const multiplier: int32_t): TMotionvec;
 operator + (const a, b: TMotionvec): TMotionvec;
 operator - (const a, b: TMotionvec): TMotionvec;
-{$ELSE FPC}
-  TMotionVectorList = TGenericsList<TMotionvec>;
 {$ENDIF FPC}
 
 function XYToMVec(const x: int32_t; const y: int32_t): TMotionvec; inline;

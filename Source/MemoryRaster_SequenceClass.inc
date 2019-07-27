@@ -10,14 +10,14 @@ begin
   inherited Destroy;
 end;
 
-procedure TSequenceMemoryRaster.Clear(FillColor: TRasterColor);
+procedure TSequenceMemoryRaster.Clear(FillColor: TRColor);
 begin
   inherited Clear(FillColor);
   FTotal := 1;
   FColumn := 1;
 end;
 
-procedure TSequenceMemoryRaster.SetSize(NewWidth, NewHeight: Integer; const ClearColor: TRasterColor);
+procedure TSequenceMemoryRaster.SetSize(NewWidth, NewHeight: Integer; const ClearColor: TRColor);
 begin
   inherited SetSize(NewWidth, NewHeight, ClearColor);
   FTotal := 1;

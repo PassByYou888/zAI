@@ -10,6 +10,7 @@ uses
   System.IOUtils,
 
   CoreClasses, zAI, zAI_Common, zDrawEngineInterface_SlowFMX, zDrawEngine, MemoryRaster, MemoryStream64,
+  DoStatusIO,
   PascalStrings, UnicodeMixedLib, Geometry2DUnit, Geometry3DUnit, Cadencer, FFMPEG, FFMPEG_Reader;
 
 type
@@ -26,6 +27,7 @@ type
     procedure PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
   private
     procedure CadencerProgress(const deltaTime, newTime: Double);
+    procedure DoStatusMethod(AText: SystemString; const ID: Integer);
   public
     drawIntf: TDrawEngineInterface_FMX;
     mpeg_r: TFFMPEG_Reader;
@@ -43,8 +45,15 @@ implementation
 {$R *.fmx}
 
 
+procedure TForm1.DoStatusMethod(AText: SystemString; const ID: Integer);
+begin
+  Memo1.Lines.Add(AText);
+  Memo1.GoToTextEnd;
+end;
+
 procedure TForm1.FormCreate(Sender: TObject);
 begin
+  AddDoStatusHook(Self, DoStatusMethod);
   // ∂¡»°zAIµƒ≈‰÷√
   ReadAIConfig;
 
@@ -112,7 +121,7 @@ var
 begin
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
-  d.ViewOptions := [devpFPS];
+  d.ViewOptions := [voFPS];
   d.FPSFontColor := DEColor(0.5, 0.5, 1, 1);
 
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0));
@@ -123,11 +132,11 @@ begin
       d.LastNewTime := 0;
     end;
   Raster_DetectAndDraw(frame);
-  frame.ReleaseFMXResource;
-  d.FitDrawTexture(frame, frame.BoundsRectV2, d.ScreenRect, 1.0);
+  d.FitDrawPicture(frame, frame.BoundsRectV2, d.ScreenRect, 1.0);
 
   // ÷¥––ªÊÕº÷∏¡Ó
   d.Flush;
+  frame.ReleaseGPUMemory;
 end;
 
 procedure TForm1.CadencerProgress(const deltaTime, newTime: Double);

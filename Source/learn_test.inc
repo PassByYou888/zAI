@@ -4337,6 +4337,39 @@ begin
   Result := not WasErrors;
 end;
 
+procedure ExpressionToMatrixTest();
+const
+  c1 =
+    '1*1,1*2,1*3,' +
+    '2*1,2*2,2*3,' +
+    '3*1,3*2,3*3,' +
+    '4*4,4*5,4*6';
+
+  c2 =
+    '1,2,3,' +
+    '4,5,6,' +
+    '7,8,9,' +
+    '10,11,12';
+
+  CV1 = 'IfThen(1=1,0.1,10000),clamp(2,0.1,0.2),max(0.001,0.01,0.1)';
+  CV2 = 'sqrt(a1),clamp(a2,0.1,0.2),max(a1,a2,a3)';
+var
+  M1, M2: TLMatrix;
+  v1, v2: TLVec;
+  const_vl: THashVariantList;
+begin
+  M1 := ExpressionToLMatrix(3, 4, c1);
+  M2 := ExpressionToLMatrix(3, 4, c2);
+  v1 := ExpressionToLVec(CV1);
+
+  const_vl := THashVariantList.Create;
+  const_vl['a1'] := 3;
+  const_vl['a2'] := 3 * 0.5; // half 3
+  const_vl['a3'] := 3 * 2;
+  v2 := ExpressionToLVec(CV2, const_vl);
+  disposeObject(const_vl);
+end;
+
 procedure LearnTest();
 const
   test_InLen = 5;
@@ -4428,7 +4461,7 @@ begin
             md5_2 := umlStreamMD5(m64);
             if not umlCompareMD5(md5_1, md5_2) then
                 DoStatusNoLn('...error ');
-            DisposeObject(m64);
+            disposeObject(m64);
 
             for i := 0 to lr.Count - 1 do
               if lr.process(@lr[i]^.m_in, @f_Out) then
@@ -4450,7 +4483,7 @@ begin
         SetLength(f_In, 0);
         SetLength(f_Out, 0);
 
-        DisposeObject(lr);
+        disposeObject(lr);
       end;
 
   // classifier test
@@ -4492,7 +4525,7 @@ begin
             md5_2 := umlStreamMD5(m64);
             if not umlCompareMD5(md5_1, md5_2) then
                 DoStatusNoLn('encode error ');
-            DisposeObject(m64);
+            disposeObject(m64);
 
             for i := 0 to lr.Count - 1 do
               if lr.process(@lr[i]^.m_in, @f_Out) then
@@ -4513,8 +4546,10 @@ begin
         SetLength(f_In, 0);
         SetLength(f_Out, 0);
 
-        DisposeObject(lr);
+        disposeObject(lr);
       end;
+
+  ExpressionToMatrixTest;
 
   DoStatus('all learn test finish!');
 end;

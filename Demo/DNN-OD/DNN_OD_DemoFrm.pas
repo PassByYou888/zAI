@@ -38,6 +38,7 @@ implementation
 
 {$R *.fmx}
 
+
 procedure TDNN_OD_Form.DNN_OD_ButtonClick(Sender: TObject);
 begin
   TComputeThread.RunP(nil, nil, procedure(Sender: TComputeThread)
@@ -112,6 +113,30 @@ begin
             // 限制resnet mini batch生成的目标对象尺度,被裁剪的对象将沿着其最短边至少有49像素
             // min_object_size_y 不应该超过 min_target_size，这一步参数如果给错，ZAI内核会自动校正，但是会输出很多提示
             param^.min_object_size_y := 49;
+
+            // 目标在进入重叠处理模式以后，目标检测的非极大值抑制
+            // 它的作用是当重叠的标注框体太多，且同类，它会自动化进行一次框体的最优调整
+            // 理解非极大值抑制可参考下列文章
+            // https://zhuanlan.zhihu.com/p/50126479
+            // https://www.cnblogs.com/liekkas0626/p/5219244.html
+            // 在实际使用中，overlap_NMS_iou_thresh给出的超参数值可以比overlap_ignore_iou_thresh略大一点
+            param^.overlap_NMS_iou_thresh := 0.51;
+            param^.overlap_NMS_percent_covered_thresh := 1.0;
+
+            // 当框体重叠面积大于该尺度，框体将会被视为重叠，并且进入重叠程序处理模式
+            // 这是两个框体的重叠面积和当前进行loss张量化的尺度比，值越大，表示重叠率越大
+            // 如果样本集的重叠率大部分只是边缘，给个0.1就可以了，但是样本重叠率倒了中央，我建议给0.9以上
+            param^.overlap_ignore_iou_thresh := 0.5;
+            // 当框体进入重叠程序处理模式后，占用面积达到改，将直接忽略掉该框体
+            param^.overlap_ignore_percent_covered_thresh := 1.0;
+
+            (*
+              // 重叠样本训练时的参数范例：当我们的样本数据集有很多重叠框体，并且大小各不统一，可以尝试使用下列的超参数
+              param^.overlap_NMS_iou_thresh := 0.91;
+              param^.overlap_NMS_percent_covered_thresh := 1.0;
+              param^.overlap_ignore_iou_thresh := 0.9;
+              param^.overlap_ignore_percent_covered_thresh := 1.0;
+            *)
 
             // resnet mini batch 尺度
             // 训练中，每次step input net都会使用renet mini batch重新生成一次数据样本

@@ -63,5 +63,5 @@ begin
   MappingDemo_MemoryRaster();
   DoStatus('press return key to exit.');
   readln;
-
 end.
+

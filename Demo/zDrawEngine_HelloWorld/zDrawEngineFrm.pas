@@ -58,7 +58,7 @@ var
 begin
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
-  d.ViewOptions := [devpFPS, devpFrameEndge];
+  d.ViewOptions := [voFPS, voEdge];
 
   // draw background
   fi := 0;
@@ -67,14 +67,14 @@ begin
       fj := 0;
       while fj < d.height do
         begin
-          d.DrawTexture(background, background.BoundsRectV2,
+          d.DrawPicture(background, background.BoundsRectV2,
             RectAdd(background.BoundsRectV2, Vec2(fi, fj)), 0, 1.0);
           fj := fj + background.height - 1;
         end;
       fi := fi + background.width - 1;
     end;
 
-  d.DrawTexture(raster, raster.BoundsRectV2, raster.BoundsRectV2, angle, 1.0);
+  d.DrawPicture(raster, raster.BoundsRectV2, raster.BoundsRectV2, angle, 1.0);
   angle := NormalizeDegAngle(angle + d.LastDeltaTime * 45);
   d.Flush;
 end;

@@ -44,28 +44,13 @@ function ue_code_len(const n: int32_t): int32_t;
 
 implementation
 
-const
-  // zigzag index position table
-  zigzag_pos: array [0 .. 15] of uint8_t = (
-    0, 1, 4, 8,
-    5, 2, 3, 6,
-    9, 12, 13, 10,
-    7, 11, 14, 15
-    );
-  { zigzag16 pattern
-    0:    1  2  6  7
-    4:    3  5  8 13
-    8:    4  9 12 14
-    12:  10 11 15 16
-  }
-
 var
   ue_code_length_table: uint8_p;
   se_code_length_table: uint8_p;
 
 const
   // maximum number (in absolute value) that can be exp-golomb encoded
-  VLC_MAX_INT  = EG_MAX_ABS;
+  VLC_MAX_INT = EG_MAX_ABS;
   VLC_TAB_SIZE = VLC_MAX_INT * 2 + 1;
 
   (* ******************************************************************************
@@ -73,20 +58,20 @@ const
   *)
 procedure vlc_init();
 var
-  Bits, n, Min, Max: int32_t;
+  Bits, n, Min_, Max_: int32_t;
 begin
   ue_code_length_table := GetMemory(VLC_TAB_SIZE);
   se_code_length_table := GetMemory(VLC_TAB_SIZE);
   inc(se_code_length_table, VLC_MAX_INT);
 
-  Min := 1;
-  Max := 2;
+  Min_ := 1;
+  Max_ := 2;
   for Bits := 1 to 12 do
     begin
-      for n := Min to (Max - 1) do
+      for n := Min_ to (Max_ - 1) do
           ue_code_length_table[n - 1] := Bits * 2 - 1;
-      Min := Min shl 1;
-      Max := Max shl 1;
+      Min_ := Min_ shl 1;
+      Max_ := Max_ shl 1;
     end;
 
   for n := -VLC_MAX_INT to VLC_MAX_INT do
@@ -105,7 +90,7 @@ begin
   FreeMemory(se_code_length_table);
 end;
 
-(* ******************************************************************************
+(*
   vlc writing: signed and unsigned exp-golomb codes
 *)
 procedure write_se_code(var bs: TBitStreamWriter; n: int32_t);
@@ -132,7 +117,7 @@ begin
   Result := ue_code_length_table[n];
 end;
 
-procedure zigzag16(a, b: int16_p);
+procedure zigzag16(const a, b: int16_p);
 begin
   a[0] := b[0];
   a[1] := b[1];
@@ -152,7 +137,7 @@ begin
   a[15] := b[15];
 end;
 
-procedure zigzag15(a, b: int16_p);
+procedure zigzag15(const a, b: int16_p);
 begin
   a[0] := b[0];
   a[1] := b[3];
@@ -273,11 +258,10 @@ begin
     end;
 end;
 
-(* ******************************************************************************
+(*
   cavlc_encode
 *)
-procedure cavlc_encode
-  (const mb: TMacroblock; const blok: TBlock; const blk_idx: uint8_t; const res: residual_type_t; var bs: TBitStreamWriter);
+procedure cavlc_encode(const mb: TMacroblock; const blok: TBlock; const blk_idx: uint8_t; const res: residual_type_t; var bs: TBitStreamWriter);
 var
   i: int32_t;
   coef: int32_t;
@@ -289,7 +273,6 @@ var
   tab: uint8_t;
   suffix_length: uint8_t;
   vlc: vlc_bits_len;
-
 begin
   t0 := blok.t0;
   t1 := blok.t1;
@@ -382,7 +365,7 @@ begin
     end;
 end;
 
-{ *******************************************************************************
+{
   bitcost functions
 }
 function level_cost(const level, suflen: int32_t): int32_t;
@@ -528,7 +511,6 @@ begin
     end;
 end;
 
-// ******************************************************************************
 procedure cavlc_analyse_block(var Block: TBlock; dct_coefs: int16_p; const ncoef: int32_t);
 var
   i, t0, Zeros, n: int32_t;
@@ -604,8 +586,6 @@ begin
   Block.nlevel := n;
 end;
 
-(* ******************************************************************************
-  ****************************************************************************** *)
 initialization
 
 vlc_init();
@@ -615,5 +595,3 @@ finalization
 vlc_done();
 
 end.
- 
- 

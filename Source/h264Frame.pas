@@ -20,7 +20,6 @@
 unit h264Frame;
 
 {$INCLUDE zDefine.inc}
-{$POINTERMATH ON}
 
 interface
 

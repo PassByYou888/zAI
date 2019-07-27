@@ -259,7 +259,7 @@ begin
       for i := 0 to imgMat.Count - 1 do
         begin
           imgL := imgMat[i];
-          imgL.CalibrationNullDetectorDefineToken(imgL.FileInfo);
+          imgL.CalibrationNullDefineToken(imgL.FileInfo);
           for j := 0 to imgL.Count - 1 do
             if imgL[j].DetectorDefineList.Count = 0 then
               begin
@@ -270,10 +270,10 @@ begin
               end;
         end;
 
-      tokens := imgMat.tokens;
+      tokens := imgMat.DetectorTokens;
       DoStatus('总共有 %d 个分类', [length(tokens)]);
       for n in tokens do
-          DoStatus('"%s" 有 %d 张图片', [n.Text, imgMat.GetTokenCount(n)]);
+          DoStatus('"%s" 有 %d 张图片', [n.Text, imgMat.GetDetectorTokenCount(n)]);
 
       TThread.Synchronize(Sender, procedure
         begin

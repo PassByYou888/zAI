@@ -39,44 +39,43 @@ begin
       CheckThreadSynchronize(10);
 end;
 
-function fr_ComputeNearest(const Sender: PVertexMap; const Sampler: TMemoryRaster; const x, y: TGeoFloat): TRasterColor;
+function fr_ComputeNearest(const Sender: PVertexMap; const Sampler: TMemoryRaster; const x, y: TGeoFloat): TRColor;
 var
   FR: TFontRaster;
   tu0, tv0: Integer;
 begin
-  FR := TFontRaster.PDrawWorkData(Sender^.UserData)^.Owner;
-  tu0 := ClampInt_(Trunc(TexCoordWrapRepeat(x) * (Sampler.width)), 0, Sampler.width - 1);
-  tv0 := ClampInt_(Trunc(TexCoordWrapRepeat(y) * (Sampler.height)), 0, Sampler.height - 1);
-
-  Result := RasterColor(0, 0, 0, FR.FBitRaster^[tu0 + tv0 * Sampler.width]);
+  FR := TFontRaster.PFontDrawState(Sender^.UserData)^.Owner;
+  tu0 := ClampInt(Trunc(TexCoordWrapRepeat(x) * (Sampler.Width0)), 0, Sampler.Width0i);
+  tv0 := ClampInt(Trunc(TexCoordWrapRepeat(y) * (Sampler.Height0)), 0, Sampler.Height0i);
+  Result := RColor(0, 0, 0, FR.FBitRaster^[tu0 + tv0 * Sampler.Width]);
 end;
 
-function fr_ComputeLinear(const Sender: PVertexMap; const Sampler: TMemoryRaster; const x, y: TGeoFloat): TRasterColor;
+function fr_ComputeLinear(const Sender: PVertexMap; const Sampler: TMemoryRaster; const x, y: TGeoFloat): TRColor;
 var
   FR: TFontRaster;
   fx, fy: TGeoFloat;
   i_x, i_y: Integer;
   i_x2, i_y2: Integer;
   delta_x, delta_y: TGeoFloat;
-
-  c1, c2, c3, c4: Byte;
   k1, k2, k3, K4: TGeoFloat;
+  c1, c2, c3, c4: Byte;
   g: TGeoFloat;
 begin
-  FR := TFontRaster.PDrawWorkData(Sender^.UserData)^.Owner;
+  FR := TFontRaster.PFontDrawState(Sender^.UserData)^.Owner;
 
-  fx := TexCoordWrapRepeat(x) * (Sampler.width);
-  fy := TexCoordWrapRepeat(y) * (Sampler.height);
+  fx := TexCoordWrapRepeat(x) * (Sampler.Width0);
+  fy := TexCoordWrapRepeat(y) * (Sampler.Height0);
 
-  i_x := ClampInt_(Trunc(fx), 0, Sampler.width - 1);
-  i_y := ClampInt_(Trunc(fy), 0, Sampler.height - 1);
+  i_x := ClampInt(Trunc(fx), 0, Sampler.Width0i);
+  i_y := ClampInt(Trunc(fy), 0, Sampler.Height0i);
 
   i_x2 := i_x + 1;
-  if i_x2 > Sampler.width - 1 then
-      i_x2 := 0;
   i_y2 := i_y + 1;
-  if i_y2 > Sampler.height - 1 then
-      i_y2 := 0;
+  if (i_x2 > Sampler.Width0) or (i_y2 > Sampler.Height0) then
+    begin
+      Result := FR.FBitRaster^[i_x + i_y * Sampler.Width];
+      exit;
+    end;
 
   delta_x := Frac(fx);
   delta_y := Frac(fy);
@@ -86,10 +85,10 @@ begin
   k3 := delta_x * delta_y;
   K4 := (1 - delta_x) * delta_y;
 
-  c1 := FR.FBitRaster^[i_x + i_y * Sampler.width];
-  c2 := FR.FBitRaster^[i_x2 + i_y * Sampler.width];
-  c3 := FR.FBitRaster^[i_x2 + i_y2 * Sampler.width];
-  c4 := FR.FBitRaster^[i_x + i_y2 * Sampler.width];
+  c1 := FR.FBitRaster^[i_x + i_y * Sampler.Width];
+  c2 := FR.FBitRaster^[i_x2 + i_y * Sampler.Width];
+  c3 := FR.FBitRaster^[i_x2 + i_y2 * Sampler.Width];
+  c4 := FR.FBitRaster^[i_x + i_y2 * Sampler.Width];
 
   g := ((c1 / $FF) * k1) + ((c2 / $FF) * k2) + ((c3 / $FF) * k3) + ((c4 / $FF) * K4);
 
@@ -98,15 +97,15 @@ begin
   else if g > 1.0 then
       g := 1.0;
 
-  Result := RasterColor(0, 0, 0, Round(g * $FF));
+  Result := RColor(0, 0, 0, Round(g * $FF));
 end;
 
-procedure fr_ComputeBlend(const Sender: PVertexMap; const f, M: TRasterColor; var b: TRasterColor);
+procedure fr_ComputeBlend(const Sender: PVertexMap; const f, M: TRColor; var b: TRColor);
 var
-  c: TRasterColorEntry;
+  c: TRColorEntry;
 begin
-  c.BGRA := TFontRaster.PDrawWorkData(Sender^.UserData)^.DestColor;
-  c.a := TRasterColorEntry(f).a;
+  c.BGRA := TFontRaster.PFontDrawState(Sender^.UserData)^.DestColor;
+  c.a := TRColorEntry(f).a;
   Vertex_ComputeBlend(Sender, c.BGRA, M, b);
 end;
 
@@ -216,7 +215,7 @@ var
 
 begin
   if not FOnlyInstance then
-      Exit;
+      exit;
 
   DoStatus('build font Hash...');
   rHash := THashList.CustomCreate(8192);
@@ -231,7 +230,7 @@ begin
       raster := FFragRaster[i];
       if raster <> nil then
         begin
-          M5 := umlMD5String(@raster.Bits^[0], raster.width * raster.height * SizeOf(TRasterColor));
+          M5 := umlMD5String(@raster.Bits^[0], raster.Width * raster.Height * SizeOf(TRColor));
           HP := rHash[M5];
           if HP = nil then
             begin
@@ -247,7 +246,7 @@ begin
   if RP.Count > 0 then
     begin
       DoStatus('build font space...');
-
+      RP.Margins := 2;
       RP.Build(C_MAXWORD * 1024, C_MAXWORD * 1024);
 
       FActivtedWord := 0;
@@ -279,9 +278,9 @@ begin
           fontchar_p^.h := r.Bottom - r.Top;
 
           // write raster
-          for y := 0 to raster.height - 1 do
-            for x := 0 to raster.width - 1 do
-                FBitRaster^[(y + r.Top) * FWidth + (x + r.Left)] := raster.PixelGray[x, y];
+          for y := 0 to raster.Height - 1 do
+            for x := 0 to raster.Width - 1 do
+                FBitRaster^[(y + r.Top) * FWidth + (x + r.Left)] := RColor2Gray(raster[x, y]);
 
           inc(FActivtedWord);
         end;
@@ -312,7 +311,7 @@ var
   m64: TMemoryStream64;
 begin
   if not FOnlyInstance then
-      Exit;
+      exit;
 
   Clear;
   m64 := TMemoryStream64.Create;
@@ -356,7 +355,7 @@ var
   r: TRect;
 begin
   raster := TMemoryRaster.Create;
-  raster.SetSize(FWidth, FHeight);
+  raster.SetSize(FWidth, FHeight, RColor(0, 0, 0));
   for y := 0 to FHeight - 1 do
     for x := 0 to FWidth - 1 do
         raster.PixelGray[x, y] := FBitRaster^[y * FWidth + x];
@@ -366,7 +365,7 @@ begin
       begin
         FD := @(FFontTable^[x]);
         r := Rect(FD^.x, FD^.y, FD^.x + FD^.w, FD^.y + FD^.h);
-        raster.DrawRect(r, RasterColor(255, 0, 0, 200));
+        raster.DrawRect(r, RColor($FF, 0, 0, 200));
       end;
 
   raster.SaveToStream(stream);
@@ -446,11 +445,11 @@ begin
   Result := Round(v[1]);
 end;
 
-function TFontRaster.Draw(Text: TFontRasterString; Dst: TMemoryRaster; dstVec: TVec2; dstColor: TRasterColor;
+function TFontRaster.Draw(Text: TFontRasterString; Dst: TMemoryRaster; dstVec: TVec2; dstColor: TRColor;
   const bilinear_sampling: Boolean; const alpha: TGeoFloat; const axis: TVec2; const angle, Scale: TGeoFloat): TVec2;
 var
   bak_userData: Pointer;
-  DD: TDrawWorkData;
+  DD: TFontDrawState;
   TempSampler: TMemoryRaster;
   VM: TVertexMap;
   i: Integer;
@@ -460,7 +459,7 @@ var
   s: TRectV2;
   MH: Byte;
   vSiz: TVec2;
-  wp: TPoly;
+  wp: TDeflectionPolygon;
   vl: TVec2List;
   WI: Integer;
 begin
@@ -480,7 +479,7 @@ begin
   // compute rotate
   vl := TVec2List.Create;
   vSiz := TextSize(Text, vl);
-  wp := TPoly.Create;
+  wp := TDeflectionPolygon.Create;
   wp.Position := Vec2Mul(vSiz, axis);
   for WI := 0 to vl.Count - 1 do
       wp.AddPoint(vl[WI]^);
@@ -529,7 +528,7 @@ begin
   Result := vSiz;
 end;
 
-procedure TFontRaster.Draw(Text: TFontRasterString; Dst: TMemoryRaster; dstVec: TVec2; dstColor: TRasterColor);
+procedure TFontRaster.Draw(Text: TFontRasterString; Dst: TMemoryRaster; dstVec: TVec2; dstColor: TRColor);
 begin
   Draw(Text, Dst, dstVec, dstColor, True, 1.0, vec2(0.5, 0.5), 0, 1);
 end;

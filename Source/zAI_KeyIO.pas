@@ -35,11 +35,11 @@ uses SysUtils, Classes,
   CommunicationFramework;
 
 type
-  TAI_Key = array [0 .. 87] of Byte;
+  TAI_Key = array [0 .. 95] of Byte;
 
 function AIKey(key: TAI_Key): TAI_Key;
 procedure AIKeyState(var expire: SystemString; var OD_key, SP_key, MetricDNN_key, MMOD_key, RNIC_key: Boolean); overload;
-procedure AIKeyState(var expire: SystemString; var SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key: Boolean); overload;
+procedure AIKeyState(var expire: SystemString; var SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key, SS_key: Boolean); overload;
 
 implementation
 
@@ -55,7 +55,7 @@ type
     ResultKey: TAI_Key;
     Tunnel: TPhysicsClient;
     expire: SystemString;
-    SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key: Boolean;
+    SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key, SS_key: Boolean;
     constructor Create;
     destructor Destroy; override;
     procedure QueryAIKey;
@@ -84,6 +84,7 @@ begin
   GDCNIC_key := False;
   GNIC_key := False;
   VideoTracker_key := False;
+  SS_key := False;
 end;
 
 destructor TGetKeyServer_Remote.Destroy;
@@ -187,6 +188,7 @@ begin
         GDCNIC_key := ResultDE.Reader.ReadBool();
         GNIC_key := ResultDE.Reader.ReadBool();
         VideoTracker_key := ResultDE.Reader.ReadBool();
+        SS_key := ResultDE.Reader.ReadBool();
       end;
     Tunnel.Disconnect;
     Tunnel.Progress;
@@ -222,7 +224,7 @@ begin
   disposeObject(K_Tunnel);
 end;
 
-procedure AIKeyState(var expire: SystemString; var SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key: Boolean);
+procedure AIKeyState(var expire: SystemString; var SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key, SS_key: Boolean);
 var
   K_Tunnel: TGetKeyServer_Remote;
 begin
@@ -240,6 +242,7 @@ begin
   GDCNIC_key := K_Tunnel.GDCNIC_key;
   GNIC_key := K_Tunnel.GNIC_key;
   VideoTracker_key := K_Tunnel.VideoTracker_key;
+  SS_key := K_Tunnel.SS_key;
   disposeObject(K_Tunnel);
 end;
 

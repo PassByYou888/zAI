@@ -184,12 +184,12 @@ begin
   d := DrawPool(Sender, drawIntf);
 
   // 显示边框和帧率
-  d.ViewOptions := [devpFrameEndge];
+  d.ViewOptions := [voEdge];
 
   // 背景被填充成黑色，这里的画图指令并不是立即执行的，而是形成命令流队列存放在DrawEngine的一个容器中
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
 
-  d.DrawTexturePackingInScene(rList, 5, Vec2(0, 0), 1.0);
+  d.DrawPicturePackingInScene(rList, 5, Vec2(0, 0), 1.0);
 
   d.BeginCaptureShadow(Vec2(1, 1), 0.9);
   d.DrawText(d.LastDrawInfo + #13#10 + '按下鼠标变换坐标，滚轮可以缩放', 12, d.ScreenRect, DEColor(0.5, 1, 0.5, 1), False);

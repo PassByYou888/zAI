@@ -23,25 +23,54 @@ unit zDrawEngine;
 
 interface
 
-uses Variants, Types, CoreClasses, Geometry2DUnit, Geometry3DUnit, UnicodeMixedLib,
-  ListEngine, MemoryRaster, PascalStrings, DataFrameEngine, MemoryStream64, NotifyObjectBase;
+uses Variants, Types,
+{$IFDEF FPC}
+  FPCGenericStructlist,
+{$ENDIF FPC}
+  CoreClasses, Geometry2DUnit, Geometry3DUnit, UnicodeMixedLib,
+  ListEngine, MemoryRaster, PascalStrings, OpCode,
+  MemoryStream64, NotifyObjectBase;
 
 type
+{$REGION 'Base Define'}
   TDrawEngine = class;
   TDrawEngine_Raster = class;
-
+  TEffect = class;
   TDEColor = TVec4;
   PDEColor = ^TDEColor;
-
   TDEVec = TVec2;
   PDEVec = ^TDEVec;
-
   TDERect = TRectV2;
   PDERect = ^TRectV2;
   TDEFloat = TGeoFloat;
+  PDEFloat = ^TDEFloat;
+
+  TPolyDrawOption = record
+    LineColor: TDEColor;
+    PointColor: TDEColor;
+    LineWidth: TDEFloat;
+    PointScreenRadius: TDEFloat;
+  end;
+
+  PPolyDrawOption = ^TPolyDrawOption;
+
+  TDSegmentionText = record
+    Text: SystemString;
+    Size: TDEFloat;
+    COLOR: TDEColor;
+  end;
+
+  TDSegmentionLine = array of TDSegmentionText;
+  TDArraySegmentionText = array of TDSegmentionLine;
+
+  TDViewerOption = (voFPS, voEdge, voPictureState, voTextBox);
+  TDViewerOptions = set of TDViewerOption;
+{$ENDREGION 'Base Define'}
+{$REGION 'DrawEngine Texture Define'}
 
   TDETexture = class(TSequenceMemoryRaster)
   protected
+    LastDrawUsage: TTimeTick;
     IsStaticShadow: Boolean;
     FStaticShadow: TDETexture;
     function GetStaticShadow: TDETexture; virtual;
@@ -50,19 +79,40 @@ type
     constructor Create; override;
     destructor Destroy; override;
 
-    procedure ReleaseFMXResource; virtual;
-    procedure FastUpdateTexture; virtual;
+    procedure DrawUsage; virtual;
+    procedure ReleaseGPUMemory; virtual;
+    procedure Update; virtual;
 
     property StaticShadow: TDETexture read GetStaticShadow;
   end;
 
+  TDETextureList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TDETexture>;
+
+  TDETextureList = class(TDETextureList_Decl)
+  private
+    Critical: TCritical;
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    procedure AddTexture(tex: TDETexture);
+    procedure RemoveTexture(tex: TDETexture);
+    procedure ReleaseGPUMemory;
+    procedure ReleaseNoUsageTextureMemory;
+
+
+  end;
+
   TDETextureClass = class of TDETexture;
+  TGetTexture = procedure(TextureOfName: SystemString; var Texture: TDETexture);
+
+{$ENDREGION 'DrawEngine Texture Define'}
+{$REGION 'DrawEngine Rectangle define'}
 
   TDE4V = record
   public
     Left, Top, Right, Bottom: TDEFloat;
-    angle: TDEFloat;
-
+    Angle: TDEFloat;
     function IsZero: Boolean;
     function width: TDEFloat;
     function height: TDEFloat;
@@ -87,26 +137,32 @@ type
     class function Init(AWidth, AHeight, Ang: TDEFloat): TDE4V; overload; static;
     class function Init: TDE4V; overload; static;
   end;
+{$ENDREGION 'DrawEngine Rectangle define'}
+{$REGION 'DrawEngine Interface'}
 
   TDrawEngineInterface = class(TCoreClassObject)
   public
     procedure SetSize(r: TDERect); virtual;
     procedure SetLineWidth(w: TDEFloat); virtual;
+    procedure DrawDotLine(pt1, pt2: TDEVec; COLOR: TDEColor); virtual;
     procedure DrawLine(pt1, pt2: TDEVec; COLOR: TDEColor); virtual;
-    procedure DrawRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor); virtual;
-    procedure FillRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor); virtual;
+    procedure DrawRect(r: TDERect; Angle: TDEFloat; COLOR: TDEColor); virtual;
+    procedure FillRect(r: TDERect; Angle: TDEFloat; COLOR: TDEColor); virtual;
     procedure DrawEllipse(r: TDERect; COLOR: TDEColor); virtual;
     procedure FillEllipse(r: TDERect; COLOR: TDEColor); virtual;
-    procedure DrawText(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat); virtual;
-    procedure DrawTexture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat); virtual;
+    procedure FillPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor); virtual;
+    procedure DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat); virtual;
+    procedure DrawPicture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat); virtual;
     procedure Flush; virtual;
     procedure ResetState; virtual;
     procedure BeginDraw; virtual;
     procedure EndDraw; virtual;
     function CurrentScreenSize: TDEVec; virtual;
-    function GetTextSize(Text: SystemString; Size: TDEFloat): TDEVec; virtual;
+    function GetTextSize(const Text: SystemString; Size: TDEFloat): TDEVec; virtual;
     function ReadyOK: Boolean; virtual;
   end;
+{$ENDREGION 'DrawEngine Interface'}
+{$REGION 'draw sequence'}
 
   TDrawCommandParam_1Float = record
     f: TDEFloat;
@@ -129,27 +185,34 @@ type
 
   TDrawCommandParam_Rect_Color = record
     r: TDERect;
-    angle: TDEFloat;
+    Angle: TDEFloat;
     COLOR: TDEColor;
   end;
 
   PDrawCommandParam_Rect_Color = ^TDrawCommandParam_Rect_Color;
 
-  TDrawCommandParam_Textout = record
+  TDrawCommandParam_Polygon = record
+    PolygonBuff: TArrayVec2;
+    COLOR: TDEColor;
+  end;
+
+  PDrawCommandParam_Polygon = ^TDrawCommandParam_Polygon;
+
+  TDrawCommandParam_DrawText = record
     Text: SystemString;
     Size: TDEFloat;
     r: TDERect;
     COLOR: TDEColor;
     center: Boolean;
     RotateVec: TDEVec;
-    angle: TDEFloat;
+    Angle: TDEFloat;
     bak_r: TDERect;
     bak_color: TDEColor;
   end;
 
-  PDrawCommandParam_Textout = ^TDrawCommandParam_Textout;
+  PDrawCommandParam_DrawText = ^TDrawCommandParam_DrawText;
 
-  TDrawCommandParam_Texture = record
+  TDrawCommandParam_Picture = record
     t: TCoreClassObject;
     sour, dest: TDE4V;
     alpha: TDEFloat;
@@ -158,21 +221,22 @@ type
     bak_alpha: TDEFloat;
   end;
 
-  PDrawCommandParam_Texture = ^TDrawCommandParam_Texture;
+  PDrawCommandParam_Picture = ^TDrawCommandParam_Picture;
 
-  TCustomDrawMethod = procedure(Sender: TDrawEngine; const UserData: Pointer; const UserObject: TCoreClassObject) of object;
+  TCustomDraw_Method = procedure(Sender: TDrawEngine; DrawInterface: TDrawEngineInterface;
+    const UserData: Pointer; const UserObject: TCoreClassObject) of object;
 
-  TDrawCommandParam_UserCustom = record
-    OnDraw: TCustomDrawMethod;
+  TDrawCommandParam_Custom = record
+    OnDraw: TCustomDraw_Method;
     UserData: Pointer;
     UserObject: TCoreClassObject;
   end;
 
-  PDrawCommandParam_UserCustom = ^TDrawCommandParam_UserCustom;
+  PDrawCommandParam_Custom = ^TDrawCommandParam_Custom;
 
   TDrawCommandType = (dctSetSize, dctSetLineWidth,
-    dctLine, dctDrawRect, dctFillRect, dctDrawEllipse, dctFillEllipse,
-    dctDrawText, dctDrawTexture, dctUserCustom, dctFlush);
+    dctDotLine, dctLine, dctDrawRect, dctFillRect, dctDrawEllipse, dctFillEllipse, dctPolygon,
+    dctDrawText, dctDrawPicture, dctUserCustom, dctFlush);
 
   TDrawExecute = class;
 
@@ -216,22 +280,27 @@ type
     // post command
     procedure SetSize(r: TDERect);
     procedure SetLineWidth(w: TDEFloat);
+    procedure DrawDotLine(pt1, pt2: TDEVec; COLOR: TDEColor);
     procedure DrawLine(pt1, pt2: TDEVec; COLOR: TDEColor);
-    procedure DrawRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor);
-    procedure FillRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor);
+    procedure DrawRect(r: TDERect; Angle: TDEFloat; COLOR: TDEColor);
+    procedure FillRect(r: TDERect; Angle: TDEFloat; COLOR: TDEColor);
     procedure DrawEllipse(pt: TDEVec; radius: TDEFloat; COLOR: TDEColor); overload;
     procedure DrawEllipse(r: TDERect; COLOR: TDEColor); overload;
     procedure FillEllipse(pt: TDEVec; radius: TDEFloat; COLOR: TDEColor); overload;
     procedure FillEllipse(r: TDERect; COLOR: TDEColor); overload;
-    procedure DrawText(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat);
-    procedure DrawTexture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat);
-    procedure DrawUserCustom(const OnDraw: TCustomDrawMethod; const UserData: Pointer; const UserObject: TCoreClassObject);
+    procedure FillPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor);
+    procedure DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat);
+    procedure DrawPicture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat);
+    procedure DrawUserCustom(const OnDraw: TCustomDraw_Method; const UserData: Pointer; const UserObject: TCoreClassObject);
     procedure Flush;
     procedure BeginCaptureShadow(const OffsetVec: TDEVec; const alpha: TDEFloat);
     procedure EndCaptureShadow;
     procedure BuildTextureOutputState(var buff: TTextureOutputStateBuffer);
     property Owner: TDrawEngine read FOwner;
   end;
+
+{$ENDREGION 'draw sequence'}
+{$REGION 'draw execute'}
 
   TDrawExecute = class(TCoreClassObject)
   protected
@@ -251,18 +320,8 @@ type
     procedure Execute(Draw: TDrawEngineInterface);
     property Owner: TDrawEngine read FOwner;
   end;
-
-  TPolyDrawOption = record
-    LineColor: TDEColor;
-    PointColor: TDEColor;
-    LineWidth: TDEFloat;
-    PointScreenRadius: TDEFloat;
-  end;
-
-  PPolyDrawOption = ^TPolyDrawOption;
-
-  TDrawEngineViewOption = (devpFPS, devpFrameEndge, devpTextBox, devpTextureState);
-  TDrawEngineViewOptions = set of TDrawEngineViewOption;
+{$ENDREGION 'draw execute'}
+{$REGION 'UI base'}
 
   TDrawEngine_UIBase = class;
 
@@ -311,6 +370,9 @@ type
     procedure DoDraw; override;
   end;
 
+{$ENDREGION 'UI base'}
+{$REGION 'Scroll text'}
+
   TScrollTextSource = class(TCoreClassObject)
   public
     LifeTime: Double;
@@ -320,8 +382,8 @@ type
     Text: SystemString;
     Tag: TCoreClassObject;
   end;
-
-  TEffect = class;
+{$ENDREGION 'Scroll text'}
+{$REGION 'Sequence animation'}
 
   TSequenceAnimationPlayMode = (sapmLoop, sapmPlayOne);
 
@@ -355,12 +417,14 @@ type
     procedure LoadFromStream(stream: TCoreClassStream);
     procedure SaveToStream(stream: TCoreClassStream);
   end;
+{$ENDREGION 'Sequence animation'}
+{$REGION 'Particle'}
 
   TParticleData = record
     Source: TSequenceAnimationBase;
     Position: TDEVec;
     radius: TDEFloat;
-    angle: TDEFloat;
+    Angle: TDEFloat;
     alpha: TDEFloat;
     Acceleration: TDEFloat;
     CurrentTime: Double;
@@ -404,7 +468,8 @@ type
   end;
 
   TTParticleClass = class of TParticles;
-
+{$ENDREGION 'Particle'}
+{$REGION 'Effect'}
   TEffectMode = (emSequenceAnimation, emParticle, emNo);
 
   TEffect = class(TCoreClassObject)
@@ -429,8 +494,107 @@ type
     procedure Draw(Pos: TDEVec);
     procedure DrawInScene(Pos: TDEVec);
   end;
+{$ENDREGION 'Effect'}
+{$REGION 'DrawEngine pool'}
 
-  TGetTexture = procedure(TextureOfName: SystemString; var Texture: TDETexture);
+  PDrawEnginePoolData = ^TDrawEnginePoolData;
+
+  TDrawEnginePoolData = record
+    DrawEng: TDrawEngine;
+    workObj: TCoreClassObject;
+    LastActivted: Cardinal;
+  end;
+
+  TDrawEngineClass = class of TDrawEngine;
+
+  TDrawEnginePool = class(TCoreClassPersistent)
+  protected
+    FDefaultDrawEngineClass: TDrawEngineClass;
+    FDrawEngineList: TCoreClassList;
+    FPostProgress: TNProgressPost;
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    procedure Clear;
+    procedure ClearActivtedTimeOut(tick: Cardinal);
+
+    procedure Progress(deltaTime: Double);
+
+    property DefaultDrawEngineClass: TDrawEngineClass read FDefaultDrawEngineClass write FDefaultDrawEngineClass;
+
+    function GetEng(const workObj: TCoreClassObject; const Draw: TDrawEngineInterface): TDrawEngine; overload;
+    function GetEng(const workObj: TCoreClassObject): TDrawEngine; overload;
+
+    // delay run support
+    property ProgressEngine: TNProgressPost read FPostProgress;
+    property ProgressPost: TNProgressPost read FPostProgress;
+    property PostProgress: TNProgressPost read FPostProgress;
+    property PostRun: TNProgressPost read FPostProgress;
+    property PostExecute: TNProgressPost read FPostProgress;
+  end;
+{$ENDREGION 'DrawEngine pool'}
+{$REGION 'DrawEngine soft rasterization'}
+
+  TDrawEngine_Raster = class(TDrawEngineInterface)
+  private
+    FMemory: TDETexture;
+    FUsedAgg: Boolean;
+    FEngine: TDrawEngine;
+    FFreeEngine: Boolean;
+    function DEColor2RasterColor(const COLOR: TDEColor): TRasterColor; overload;
+    function DEColor2RasterColor(const COLOR: TDEColor; const alpha: Byte): TRasterColor; overload;
+  public
+    constructor Create; virtual;
+    destructor Destroy; override;
+    procedure SetSize(r: TDERect); override;
+    procedure SetLineWidth(w: TDEFloat); override;
+    procedure DrawDotLine(pt1, pt2: TDEVec; COLOR: TDEColor); override;
+    procedure DrawLine(pt1, pt2: TDEVec; COLOR: TDEColor); override;
+    procedure DrawRect(r: TDERect; Angle: TDEFloat; COLOR: TDEColor); override;
+    procedure FillRect(r: TDERect; Angle: TDEFloat; COLOR: TDEColor); override;
+    procedure DrawEllipse(r: TDERect; COLOR: TDEColor); override;
+    procedure FillEllipse(r: TDERect; COLOR: TDEColor); override;
+    procedure FillPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor); override;
+    procedure DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat); override;
+    procedure DrawPicture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat); override;
+    procedure Flush; override;
+    procedure ResetState; override;
+    procedure BeginDraw; override;
+    procedure EndDraw; override;
+    function CurrentScreenSize: TDEVec; override;
+    function GetTextSize(const Text: SystemString; Size: TDEFloat): TDEVec; override;
+    function ReadyOK: Boolean; override;
+  public
+    property Memory: TDETexture read FMemory;
+    property UsedAgg: Boolean read FUsedAgg write FUsedAgg;
+    function Engine: TDrawEngine;
+    procedure SetWorkMemory(m: TMemoryRaster);
+  end;
+{$ENDREGION 'DrawEngine soft rasterization'}
+{$REGION 'Expression'}
+
+  TDrawTextExpressionRunTime = class(TOpCustomRunTime)
+  private
+    function cc(v: Variant): TDEFloat;
+    function oprt_size(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+    function oprt_rgba(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+    function oprt_bgra(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+    function oprt_red(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+    function oprt_green(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+    function oprt_blue(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+    function oprt_alpha(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+  protected
+    Size: PDEFloat;
+    COLOR: PDEColor;
+    constructor CustomCreate(maxHashLen: Integer); override;
+    destructor Destroy; override;
+    procedure InternalReg; override;
+  end;
+
+  TDrawTextExpressionRunTimeClass = class of TDrawTextExpressionRunTime;
+{$ENDREGION 'Expression'}
+{$REGION 'DrawEngine core'}
 
   TDrawEngine = class(TCoreClassObject)
   protected
@@ -445,7 +609,7 @@ type
     FCommandCounterOfPerSec: Double;
     FWidth, FHeight: TDEFloat;
     FLastDeltaTime, FLastNewTime: Double;
-    FViewOptions: TDrawEngineViewOptions;
+    FViewOptions: TDViewerOptions;
     FLastDrawInfo: SystemString;
     FTextSizeCache: THashList;
     FScrollTextList: TCoreClassListForObj;
@@ -461,7 +625,6 @@ type
     FOnGetTexture: TGetTexture;
     FDefaultTexture: TDETexture;
 
-    // user
     FUserData: Pointer;
     FUserValue: Variant;
     FUserVariants: THashVariantList;
@@ -489,9 +652,9 @@ type
     constructor Create;
     destructor Destroy; override;
 
-    property ViewOptions: TDrawEngineViewOptions read FViewOptions write FViewOptions;
-    property DrawOptions: TDrawEngineViewOptions read FViewOptions write FViewOptions;
-    property Options: TDrawEngineViewOptions read FViewOptions write FViewOptions;
+    property ViewOptions: TDViewerOptions read FViewOptions write FViewOptions;
+    property DrawOptions: TDViewerOptions read FViewOptions write FViewOptions;
+    property Options: TDViewerOptions read FViewOptions write FViewOptions;
     property LastDrawInfo: SystemString read FLastDrawInfo;
 
     { coordinate }
@@ -500,11 +663,13 @@ type
     function SceneToScreen(r: TDE4V): TDE4V; overload;
     function SceneToScreen(r: TDERect): TDERect; overload;
     function SceneToScreen(r: TV2Rect4): TV2Rect4; overload;
+    function SceneToScreen(buff: TArrayVec2): TArrayVec2; overload;
     function ScreenToScene(pt: TDEVec): TDEVec; overload;
     function ScreenToScene(x, y: TDEFloat): TDEVec; overload;
     function ScreenToScene(r: TDERect): TDERect; overload;
     function ScreenToScene(r: TDE4V): TDE4V; overload;
     function ScreenToScene(r: TV2Rect4): TV2Rect4; overload;
+    function ScreenToScene(buff: TArrayVec2): TArrayVec2; overload;
     function SceneToScreenDistance(ScenePt1, ScenePt2: TDEVec): TDEFloat;
     function ScreenToSceneDistance(ScreenPt1, ScreenPt2: TDEVec): TDEFloat;
     function ScreenCenterOfWorld: TDEVec;
@@ -536,8 +701,11 @@ type
     procedure SetDrawBounds(r: TRectf); overload;
 
     { compute text }
-    function GetTextSize(Text: SystemString; Size: TDEFloat): TDEVec;
-    function GetTextSizeR(Text: SystemString; Size: TDEFloat): TDERect;
+    function GetTextSize(const t: SystemString; Size: TDEFloat): TDEVec; overload;
+    function GetTextSize(const buff: TDSegmentionLine): TDEVec; overload;
+    function GetTextSize(const buff: TDArraySegmentionText): TDEVec; overload;
+    function GetTextSizeR(const Text: SystemString; Size: TDEFloat): TDERect; overload;
+    function GetTextSizeR(const buff: TDArraySegmentionText): TDERect; overload;
 
     { scroll text and UI }
     procedure ClearScrollText;
@@ -564,54 +732,81 @@ type
     function SceneRectInScreen(r: TV2Rect4): Boolean; overload;
 
     { custom draw }
-    procedure DrawUserCustom(const OnDraw: TCustomDrawMethod; const UserData: Pointer; const UserObject: TCoreClassObject);
+    procedure DrawUserCustom(const OnDraw: TCustomDraw_Method; const UserData: Pointer; const UserObject: TCoreClassObject);
 
-    { draw line: vec2List + Poly }
+    { draw geometry }
     procedure DrawArrayVec2_Line(SmoothLevel: TDEFloat; arry: TArrayVec2; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat); overload;
     procedure DrawArrayVec2_Line(arry: TArrayVec2; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat); overload;
     procedure DrawArrayVec2_LineInScene(SmoothLevel: TDEFloat; arry: TArrayVec2; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat); overload;
     procedure DrawArrayVec2_LineInScene(arry: TArrayVec2; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+    procedure DrawPL(DotLine: Boolean; SmoothLevel: TDEFloat; pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+    procedure DrawPL(DotLine: Boolean; pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat); overload;
     procedure DrawPL(SmoothLevel: TDEFloat; pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat); overload;
     procedure DrawPL(pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat); overload;
     procedure DrawPLInScene(pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat); overload;
     procedure DrawPLInScene(SmoothLevel: TDEFloat; pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat); overload;
     procedure DrawPLInScene(pl: TVec2List; ClosedLine: Boolean; opt: TPolyDrawOption); overload;
-    procedure DrawPolyInScene(Poly: TPoly; ClosedLine: Boolean; opt: TPolyDrawOption);
-    procedure DrawPolyExpandInScene(Poly: TPoly; ExpandDistance: TDEFloat; ClosedLine: Boolean; opt: TPolyDrawOption);
+    procedure DrawPolyInScene(Poly: TDeflectionPolygon; ClosedLine: Boolean; opt: TPolyDrawOption);
+    procedure DrawPolyExpandInScene(Poly: TDeflectionPolygon; ExpandDistance: TDEFloat; ClosedLine: Boolean; opt: TPolyDrawOption);
+
+    procedure DrawTriangle(DotLine: Boolean; const t: TTriangle; COLOR: TDEColor; LineWidth: TDEFloat; DrawCentre: Boolean); overload;
+    procedure DrawTriangle(DotLine: Boolean; const t: TTriangleList; COLOR: TDEColor; LineWidth: TDEFloat; DrawCentre: Boolean); overload;
+    procedure DrawTriangleInScene(DotLine: Boolean; const t: TTriangle; COLOR: TDEColor; LineWidth: TDEFloat; DrawCentre: Boolean); overload;
+    procedure DrawTriangleInScene(DotLine: Boolean; const t: TTriangleList; COLOR: TDEColor; LineWidth: TDEFloat; DrawCentre: Boolean); overload;
+
+    { draw dotline }
+    procedure DrawDotLine(pt1, pt2: TDEVec; COLOR: TDEColor; LineWidth: TDEFloat);
+    procedure DrawDotLineInScene(pt1, pt2: TDEVec; COLOR: TDEColor; LineWidth: TDEFloat);
 
     { draw line }
     procedure DrawLine(pt1, pt2: TDEVec; COLOR: TDEColor; LineWidth: TDEFloat);
     procedure DrawLineInScene(pt1, pt2: TDEVec; COLOR: TDEColor; LineWidth: TDEFloat);
 
     { draw corner }
-    procedure DrawCorner(box: TV2Rect4; COLOR: TDEColor; BoundLineLength, LineWidth: TDEFloat);
-    procedure DrawCornerInScene(box: TV2Rect4; COLOR: TDEColor; BoundLineLength, LineWidth: TDEFloat);
+    procedure DrawCorner(box: TV2Rect4; COLOR: TDEColor; BoundLineLength, LineWidth: TDEFloat); overload;
+    procedure DrawCorner(box: TDERect; COLOR: TDEColor; BoundLineLength, LineWidth: TDEFloat); overload;
+    procedure DrawCornerInScene(box: TV2Rect4; COLOR: TDEColor; BoundLineLength, LineWidth: TDEFloat); overload;
+    procedure DrawCornerInScene(box: TDERect; COLOR: TDEColor; BoundLineLength, LineWidth: TDEFloat); overload;
 
     { draw DE4V rect }
     procedure DrawDE4V(d: TDE4V; COLOR: TDEColor; LineWidth: TDEFloat);
     procedure DrawDE4VInScene(d: TDE4V; COLOR: TDEColor; LineWidth: TDEFloat);
 
     { draw point }
-    procedure DrawArrayVec2(arry: TArrayVec2; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
-    procedure DrawArrayVec2InScene(arry: TArrayVec2; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
     procedure DrawPoint(pt: TDEVec; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
     procedure DrawPointInScene(pt: TDEVec; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
+    procedure DrawArrayVec2(arry: TArrayVec2; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
+    procedure DrawArrayVec2InScene(arry: TArrayVec2; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
 
     { draw box }
-    procedure DrawBox(r: TDERect; angle: TGeoFloat; COLOR: TDEColor; LineWidth: TDEFloat); overload;
-    procedure DrawBoxInScene(r: TDERect; angle: TGeoFloat; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+    procedure DrawBox(box: TV2Rect4; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+    procedure DrawBoxInScene(box: TV2Rect4; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+    procedure DrawBox(r: TDERect; axis: TDEVec; Angle: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+    procedure DrawBoxInScene(r: TDERect; axis: TDEVec; Angle: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+    procedure DrawBox(r: TDERect; Angle: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+    procedure DrawBoxInScene(r: TDERect; Angle: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat); overload;
     procedure DrawBox(r: TDERect; COLOR: TDEColor; LineWidth: TDEFloat); overload;
     procedure DrawBoxInScene(r: TDERect; COLOR: TDEColor; LineWidth: TDEFloat); overload;
 
+    { draw dot line box }
+    procedure DrawDotLineBox(box: TV2Rect4; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+    procedure DrawDotLineBoxInScene(box: TV2Rect4; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+    procedure DrawDotLineBox(r: TDERect; axis: TDEVec; Angle: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+    procedure DrawDotLineBoxInScene(r: TDERect; axis: TDEVec; Angle: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+
     { fill box }
-    procedure FillBox(r: TDERect; angle: TGeoFloat; COLOR: TDEColor); overload;
-    procedure FillBoxInScene(r: TDERect; angle: TGeoFloat; COLOR: TDEColor); overload;
+    procedure FillBox(box: TV2Rect4; COLOR: TDEColor); overload;
+    procedure FillBoxInScene(box: TV2Rect4; COLOR: TDEColor); overload;
+    procedure FillBox(r: TDERect; Angle: TDEFloat; COLOR: TDEColor); overload;
+    procedure FillBoxInScene(r: TDERect; Angle: TDEFloat; COLOR: TDEColor); overload;
     procedure FillBox(r: TDERect; COLOR: TDEColor); overload;
     procedure FillBoxInScene(r: TDERect; COLOR: TDEColor); overload;
 
     { draw ellipse }
+    procedure DrawEllipse(pt: TDEVec; radius: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat); overload;
     procedure DrawEllipse(pt: TDEVec; radius: TDEFloat; COLOR: TDEColor); overload;
     procedure DrawEllipse(r: TDERect; COLOR: TDEColor); overload;
+    procedure DrawEllipseInScene(pt: TDEVec; radius: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat); overload;
     procedure DrawEllipseInScene(pt: TDEVec; radius: TDEFloat; COLOR: TDEColor); overload;
     procedure DrawEllipseInScene(r: TDERect; COLOR: TDEColor); overload;
 
@@ -621,41 +816,53 @@ type
     procedure FillEllipseInScene(pt: TDEVec; radius: TDEFloat; COLOR: TDEColor); overload;
     procedure FillEllipseInScene(r: TDERect; COLOR: TDEColor); overload;
 
+    { fill and draw a polygon }
+    procedure FillPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor); overload;
+    procedure DrawPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+    procedure DrawPolygonDotLine(PolygonBuff: TArrayVec2; COLOR: TDEColor; LineWidth: TDEFloat); overload;
+
     { draw text }
-    procedure DrawText(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat); overload;
-    procedure DrawText(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean); overload;
-    procedure DrawText(Text: SystemString; Size: TDEFloat; COLOR: TDEColor; ScreenPt: TDEVec); overload;
+    function DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat): TV2Rect4; overload;
+    function DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean): TV2Rect4; overload;
+    function DrawText(const Text: SystemString; Size: TDEFloat; COLOR: TDEColor; ScreenPt: TDEVec): TV2Rect4; overload;
     { draw text in scene }
-    procedure DrawTextInScene(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat); overload;
-    procedure DrawTextInScene(Text: SystemString; Size: TDEFloat; COLOR: TDEColor; ScenePos: TDEVec); overload;
-    procedure DrawTextInScene(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean); overload;
+    function DrawTextInScene(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat): TV2Rect4; overload;
+    function DrawTextInScene(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean): TV2Rect4; overload;
+    function DrawTextInScene(const Text: SystemString; Size: TDEFloat; COLOR: TDEColor; ScenePos: TDEVec): TV2Rect4; overload;
+
+    { draw order text }
+    function DrawSegmentionText(const buff: TDArraySegmentionText; pt: TDEVec; RotateVec: TDEVec; Angle: TDEFloat): TV2Rect4; overload;
+    function DrawSegmentionText(const buff: TDArraySegmentionText; pt: TDEVec): TV2Rect4; overload;
+    { draw order text in scene }
+    function DrawSegmentionTextInScene(const buff: TDArraySegmentionText; pt: TDEVec; RotateVec: TDEVec; Angle: TDEFloat): TV2Rect4; overload;
+    function DrawSegmentionTextInScene(const buff: TDArraySegmentionText; pt: TDEVec): TV2Rect4; overload;
 
     { draw texture }
-    procedure DrawTexture(t: TCoreClassObject; sour, DestScreen: TDE4V; alpha: TDEFloat); overload;
-    procedure DrawTexture(t: TCoreClassObject; sour: TDERect; DestScreen: TDE4V; alpha: TDEFloat); overload;
-    procedure DrawTexture(t: TCoreClassObject; sour, DestScreen: TDERect; alpha: TDEFloat); overload;
-    procedure DrawTexture(t: TCoreClassObject; sour: TDERect; destScreenPt: TDEVec; angle, alpha: TDEFloat); overload;
-    procedure DrawTexture(t: TCoreClassObject; sour, DestScreen: TDERect; angle, alpha: TDEFloat); overload;
-    function DrawTexture(indentEndge: Boolean; t: TCoreClassObject; sour, DestScreen: TDERect; alpha: TDEFloat): TDERect; overload;
+    procedure DrawPicture(t: TCoreClassObject; sour, DestScreen: TDE4V; alpha: TDEFloat); overload;
+    procedure DrawPicture(t: TCoreClassObject; sour: TDERect; DestScreen: TDE4V; alpha: TDEFloat); overload;
+    procedure DrawPicture(t: TCoreClassObject; sour, DestScreen: TDERect; alpha: TDEFloat); overload;
+    procedure DrawPicture(t: TCoreClassObject; sour: TDERect; destScreenPt: TDEVec; Angle, alpha: TDEFloat); overload;
+    procedure DrawPicture(t: TCoreClassObject; sour, DestScreen: TDERect; Angle, alpha: TDEFloat); overload;
+    function DrawPicture(indentEndge: Boolean; t: TCoreClassObject; sour, DestScreen: TDERect; alpha: TDEFloat): TDERect; overload;
     { fit draw texture }
-    procedure FitDrawTexture(t: TCoreClassObject; sour, destScene: TDERect; angle, alpha: TDEFloat); overload;
-    function FitDrawTexture(t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect; overload;
-    function FitDrawTexture(indentEndge: Boolean; t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect; overload;
+    procedure FitDrawPicture(t: TCoreClassObject; sour, destScene: TDERect; Angle, alpha: TDEFloat); overload;
+    function FitDrawPicture(t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect; overload;
+    function FitDrawPicture(indentEndge: Boolean; t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect; overload;
     { draw texture in scene }
-    procedure DrawTextureInScene(t: TCoreClassObject; sour, destScene: TDE4V; alpha: TDEFloat); overload;
-    procedure DrawTextureInScene(t: TCoreClassObject; sour: TDERect; destScene: TDE4V; alpha: TDEFloat); overload;
-    procedure DrawTextureInScene(t: TCoreClassObject; destScene: TDE4V; alpha: TDEFloat); overload;
-    procedure DrawTextureInScene(t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat); overload;
-    procedure DrawTextureInScene(t: TCoreClassObject; sour: TDERect; destScenePt: TDEVec; angle, alpha: TDEFloat); overload;
-    procedure DrawTextureInScene(t: TCoreClassObject; sour, destScene: TDERect; angle, alpha: TDEFloat); overload;
-    procedure DrawTextureInScene(t: TCoreClassObject; destScenePt: TDEVec; AWidth, AHeight, angle, alpha: TDEFloat); overload;
-    function DrawTextureInScene(indentEndge: Boolean; t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect; overload;
+    procedure DrawPictureInScene(t: TCoreClassObject; sour, destScene: TDE4V; alpha: TDEFloat); overload;
+    procedure DrawPictureInScene(t: TCoreClassObject; sour: TDERect; destScene: TDE4V; alpha: TDEFloat); overload;
+    procedure DrawPictureInScene(t: TCoreClassObject; destScene: TDE4V; alpha: TDEFloat); overload;
+    procedure DrawPictureInScene(t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat); overload;
+    procedure DrawPictureInScene(t: TCoreClassObject; sour: TDERect; destScenePt: TDEVec; Angle, alpha: TDEFloat); overload;
+    procedure DrawPictureInScene(t: TCoreClassObject; sour, destScene: TDERect; Angle, alpha: TDEFloat); overload;
+    procedure DrawPictureInScene(t: TCoreClassObject; destScenePt: TDEVec; AWidth, AHeight, Angle, alpha: TDEFloat); overload;
+    function DrawPictureInScene(indentEndge: Boolean; t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect; overload;
     { fit draw texture in scene }
-    procedure FitDrawTextureInScene(t: TCoreClassObject; sour, destScene: TDERect; angle, alpha: TDEFloat); overload;
-    function FitDrawTextureInScene(t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect; overload;
-    function FitDrawTextureInScene(indentEndge: Boolean; t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect; overload;
+    procedure FitDrawPictureInScene(t: TCoreClassObject; sour, destScene: TDERect; Angle, alpha: TDEFloat); overload;
+    function FitDrawPictureInScene(t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect; overload;
+    function FitDrawPictureInScene(indentEndge: Boolean; t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect; overload;
     { draw texture packing in scene }
-    function DrawTexturePackingInScene(packing_t: TMemoryRasterList; Margins: TGeoFloat; destOffset: TDEVec; alpha: TDEFloat): TRectV2;
+    function DrawPicturePackingInScene(packing_t: TMemoryRasterList; Margins: TDEFloat; destOffset: TDEVec; alpha: TDEFloat): TDERect;
 
     { sequence animation }
     function CreateSequenceAnimation(stream: TCoreClassStream): TSequenceAnimationBase; overload;
@@ -664,8 +871,10 @@ type
     function SequenceAnimationIsOver(flag: Variant; t: TCoreClassObject): Boolean;
     function ExistsSequenceAnimation(SA: TSequenceAnimationBase): Boolean;
     function GetNewSequenceFlag: Variant;
+    { prototype: draw sequence texture }
     function ManualDrawSequenceTexture(flag: Variant; t: TCoreClassObject; TextureWidth, TextureHeight, Total, Column: Integer; CompleteTime: Double; Looped: Boolean;
       DestScreen: TDE4V; alpha: TDEFloat): TSequenceAnimationBase; virtual;
+    { draw sequence texture }
     function DrawSequenceTexture(flag: Variant; t: TCoreClassObject; TextureWidth, TextureHeight, Total, Column: Integer; CompleteTime: Double; Looped: Boolean;
       DestScreen: TDE4V; alpha: TDEFloat): TSequenceAnimationBase; overload;
     function DrawSequenceTexture(flag: Variant; t: TDETexture; CompleteTime: Double; Looped: Boolean; DestScreen: TDE4V; alpha: TDEFloat): TSequenceAnimationBase; overload;
@@ -674,6 +883,7 @@ type
     function FitDrawSequenceTexture(flag: Variant; t: TDETexture; CompleteTime: Double; Looped: Boolean; DestScreen: TDERect; alpha: TDEFloat): TDERect; overload;
     function FitDrawSequenceTexture(indentEndge: Boolean; flag: Variant; t: TDETexture; CompleteTime: Double; Looped: Boolean; DestScreen: TDERect; alpha: TDEFloat): TDERect; overload;
     procedure DrawSequenceTexture(SA: TSequenceAnimationBase; DestScreen: TDE4V; alpha: TDEFloat); overload;
+    { draw sequence texture in scene }
     function DrawSequenceTextureInScene(flag: Variant; t: TCoreClassObject; TextureWidth, TextureHeight, Total, Column: Integer; CompleteTime: Double; Looped: Boolean;
       destScene: TDE4V; alpha: TDEFloat): TSequenceAnimationBase; overload;
     function DrawSequenceTextureInScene(flag: Variant; t: TDETexture; CompleteTime: Double; Looped: Boolean; destScene: TDE4V; alpha: TDEFloat): TSequenceAnimationBase; overload;
@@ -717,7 +927,7 @@ type
     property Rasterization: TDrawEngine_Raster read FRasterization;
     { draw interface }
     property DrawInterface: TDrawEngineInterface read FDrawInterface write SetDrawInterface;
-    { preset container }
+    { draw sequence }
     property DrawCommand: TDrawQueue read FDrawCommand;
     property DrawExecute: TDrawExecute read FDrawExecute;
 
@@ -738,83 +948,18 @@ type
     property UserData: Pointer read FUserData write FUserData;
     property UserValue: Variant read FUserValue write FUserValue;
   end;
+{$ENDREGION 'DrawEngine core'}
+{$REGION 'misc'}
 
-  PDrawEnginePoolData = ^TDrawEnginePoolData;
-
-  TDrawEnginePoolData = record
-    DrawEng: TDrawEngine;
-    workObj: TCoreClassObject;
-    LastActivted: Cardinal;
-  end;
-
-  TDrawEngineClass = class of TDrawEngine;
-
-  TDrawEnginePool = class(TCoreClassPersistent)
-  protected
-    FDefaultDrawEngineClass: TDrawEngineClass;
-    FDrawEngineList: TCoreClassList;
-    FPostProgress: TNProgressPost;
-  public
-    constructor Create;
-    destructor Destroy; override;
-
-    procedure Clear;
-    procedure ClearActivtedTimeOut(tickLen: Cardinal);
-
-    procedure Progress(deltaTime: Double);
-
-    property DefaultDrawEngineClass: TDrawEngineClass read FDefaultDrawEngineClass write FDefaultDrawEngineClass;
-
-    function GetEng(const workObj: TCoreClassObject; const Draw: TDrawEngineInterface): TDrawEngine; overload;
-    function GetEng(const workObj: TCoreClassObject): TDrawEngine; overload;
-
-    // delay run support
-    property ProgressEngine: TNProgressPost read FPostProgress;
-    property ProgressPost: TNProgressPost read FPostProgress;
-    property PostProgress: TNProgressPost read FPostProgress;
-    property PostRun: TNProgressPost read FPostProgress;
-    property PostExecute: TNProgressPost read FPostProgress;
-  end;
-
-  TDrawEngine_Raster = class(TDrawEngineInterface)
-  private
-    FMemory: TDETexture;
-    FUsedAgg: Boolean;
-    FEngine: TDrawEngine;
-    FFreeEngine: Boolean;
-    function DEColor2RasterColor(const COLOR: TDEColor): TRasterColor; overload;
-    function DEColor2RasterColor(const COLOR: TDEColor; const alpha: Byte): TRasterColor; overload;
-  public
-    constructor Create; virtual;
-    destructor Destroy; override;
-    procedure SetSize(r: TDERect); override;
-    procedure SetLineWidth(w: TDEFloat); override;
-    procedure DrawLine(pt1, pt2: TDEVec; COLOR: TDEColor); override;
-    procedure DrawRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor); override;
-    procedure FillRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor); override;
-    procedure DrawEllipse(r: TDERect; COLOR: TDEColor); override;
-    procedure FillEllipse(r: TDERect; COLOR: TDEColor); override;
-    procedure DrawText(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat); override;
-    procedure DrawTexture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat); override;
-    procedure Flush; override;
-    procedure ResetState; override;
-    procedure BeginDraw; override;
-    procedure EndDraw; override;
-    function CurrentScreenSize: TDEVec; override;
-    function GetTextSize(Text: SystemString; Size: TDEFloat): TDEVec; override;
-    function ReadyOK: Boolean; override;
-  public
-    property Memory: TDETexture read FMemory;
-    property UsedAgg: Boolean read FUsedAgg write FUsedAgg;
-    function Engine: TDrawEngine;
-    procedure SetWorkMemory(m: TMemoryRaster);
-  end;
 
 const
   NULLVec: TDEVec = (0, 0);
+  ZeroVec: TDEVec = (0, 0);
 
 function DrawPool(workObj: TCoreClassObject; Draw: TDrawEngineInterface): TDrawEngine; overload;
 function DrawPool(workObj: TCoreClassObject): TDrawEngine; overload;
+function DrawEnginePool(workObj: TCoreClassObject; Draw: TDrawEngineInterface): TDrawEngine; overload;
+function DrawEnginePool(workObj: TCoreClassObject): TDrawEngine; overload;
 
 function DEVec(x, y: TDEFloat): TDEVec; overload;
 function DEVec(pt: TPointf): TDEVec; overload;
@@ -824,6 +969,10 @@ function DEColor(const r, g, b, a: TDEFloat): TDEColor; overload;
 function DEColor(const r, g, b: TDEFloat): TDEColor; overload;
 function DEColor(const c: TDEColor; const alpha: TDEFloat): TDEColor; overload;
 function DEColor2RasterColor(const c: TDEColor): TRasterColor;
+
+function DColor2RColor(const c: TDEColor): TRasterColor;
+function RColor2DColor(const c: TRasterColor): TDEColor;
+
 function DEAlpha(c: TDEColor): TDEFloat;
 function DERect(const x, y, radius: TDEFloat): TDERect; overload;
 function DERect(const x1, y1, x2, y2: TDEFloat): TDERect; overload;
@@ -840,13 +989,24 @@ procedure FitScale(const sour: TRectf; const DestWidth, DestHeight: TDEFloat; va
 procedure FitScale(const sour, dest: TRectf; var outOffset: TDEVec; var outScale: TDEFloat); overload;
 procedure FitScale(const sourWidth, sourHeight, DestWidth, DestHeight: TDEFloat; var outOffset: TDEVec; var outScale: TDEFloat); overload;
 
+function IsSegmentionText(const s: SystemString): Boolean;
+function ArraySegmentionTextToString(var buff: TDArraySegmentionText): TPascalString;
+function FillSegmentionText(const s: TPascalString; Size: TDEFloat; COLOR: TDEColor; RT: TDrawTextExpressionRunTimeClass): TDArraySegmentionText;
+procedure FreeSegmentionText(var buff: TDArraySegmentionText);
+{$ENDREGION 'misc'}
+
+
 var
   DefaultTextureClass: TDETextureClass = TDETexture;
   EnginePool: TDrawEnginePool = nil;
+  TexturePool: TDETextureList = nil;
 
 implementation
 
-uses Math;
+uses Math,
+  DataFrameEngine,
+  TextParsing, zExpression,
+  DoStatusIO;
 
 function DrawPool(workObj: TCoreClassObject; Draw: TDrawEngineInterface): TDrawEngine;
 begin
@@ -854,6 +1014,16 @@ begin
 end;
 
 function DrawPool(workObj: TCoreClassObject): TDrawEngine;
+begin
+  Result := EnginePool.GetEng(workObj);
+end;
+
+function DrawEnginePool(workObj: TCoreClassObject; Draw: TDrawEngineInterface): TDrawEngine;
+begin
+  Result := EnginePool.GetEng(workObj, Draw);
+end;
+
+function DrawEnginePool(workObj: TCoreClassObject): TDrawEngine;
 begin
   Result := EnginePool.GetEng(workObj);
 end;
@@ -910,7 +1080,17 @@ end;
 
 function DEColor2RasterColor(const c: TDEColor): TRasterColor;
 begin
-  Result := RasterColorF(c[0], c[1], c[2], c[3]);
+  Result := RColorF(c[0], c[1], c[2], c[3]);
+end;
+
+function DColor2RColor(const c: TDEColor): TRasterColor;
+begin
+  Result := RColorF(c[0], c[1], c[2], c[3]);
+end;
+
+function RColor2DColor(const c: TRasterColor): TDEColor;
+begin
+  RColor2F(c, Result[0], Result[1], Result[2], Result[3]);
 end;
 
 function DEAlpha(c: TDEColor): TDEFloat;
@@ -997,6 +1177,336 @@ begin
   FitScale(DERect(0, 0, sourWidth, sourHeight), DERect(0, 0, DestWidth, DestHeight), outOffset, outScale);
 end;
 
+function IsSegmentionText(const s: SystemString): Boolean;
+var
+  i: SystemChar;
+  cc: Integer;
+begin
+  cc := 0;
+  for i in s do
+    if i = '|' then
+        inc(cc);
+  Result := (cc >= 2) and ((cc mod 2) = 0);
+end;
+
+function ArraySegmentionTextToString(var buff: TDArraySegmentionText): TPascalString;
+var
+  i, j: Integer;
+begin
+  Result := '';
+  for j := Low(buff) to high(buff) do
+    for i := Low(buff[j]) to high(buff[j]) do
+        Result.Append(buff[j, i].Text);
+end;
+
+function FillSegmentionText(const s: TPascalString; Size: TDEFloat; COLOR: TDEColor; RT: TDrawTextExpressionRunTimeClass): TDArraySegmentionText;
+type
+  TSegmentionTextList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TDSegmentionText>;
+  TSegmentionTextLists = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TSegmentionTextList>;
+
+var
+  oprt: TDrawTextExpressionRunTime;
+
+  function FillSegmentionTextSet_(const order_s: SystemString; var o: TDSegmentionText): Boolean;
+  type
+    TFillOrderState = (fosWait, fosBeginProc, fosBeginVar);
+  var
+    t: TTextParsing;
+    i: Integer;
+    p, paramB, paramE: PTokenData;
+    state: TFillOrderState;
+    vName, vParam: TPascalString;
+    v: Variant;
+  begin
+    Result := False;
+
+    t := TTextParsing.Create(order_s, tsText);
+    try
+      i := 0;
+      state := fosWait;
+      p := nil;
+      paramB := nil;
+      paramE := nil;
+
+      while i < t.TokenCount do
+        begin
+          case state of
+            fosWait:
+              begin
+                p := t.TokenProbeR(i, [ttAscii]);
+                if p = nil then
+                    break;
+                vName := p^.Text;
+                i := p^.index + 1;
+                p := t.TokenProbeR(i, [ttSymbol]);
+                if p = nil then
+                  begin
+                    DoStatus('Illegal declaration: %s', [vName.Text]);
+                    exit;
+                  end;
+                i := p^.index;
+                if p^.Text.Same('=', ':') then
+                  begin
+                    state := fosBeginVar;
+                    paramB := p;
+                    paramE := p;
+                  end
+                else if p^.Text.Same('(') then
+                  begin
+                    state := fosBeginProc;
+                    paramB := p;
+                    paramE := p;
+                  end
+                else if p^.Text.Same(',') then
+                    inc(i)
+                else
+                  begin
+                    DoStatus('Illegal declaration: %s', [vName.Text]);
+                    exit;
+                  end;
+                continue;
+              end;
+            fosBeginProc:
+              begin
+                paramE := t.IndentSymbolEndProbeR(paramE^.index, '(', ')');
+                if paramE = nil then
+                  begin
+                    DoStatus('Illegal function indent: %s', [vName.Text]);
+                    exit;
+                  end;
+
+                vParam := t.TokenCombine(paramB^.index, paramE^.index);
+
+                if umlTrimSpace(vParam) <> '' then
+                  begin
+                    if oprt = nil then
+                        oprt := RT.Create;
+
+                    oprt.Size := @o.Size;
+                    oprt.COLOR := @o.COLOR;
+                    if VarIsNull(EvaluateExpressionValue(tsPascal, vName.Text + vParam.Text, oprt)) then
+                      begin
+                        DoStatus('Illegal Expression: %s', [vName.Text + vParam.Text]);
+                        exit;
+                      end;
+                  end;
+
+                if paramE = nil then
+                    break;
+
+                i := paramE^.index + 1;
+                state := fosWait;
+              end;
+            fosBeginVar:
+              begin
+                if paramE <> nil then
+                    paramE := t.TokenProbeR(paramE^.index + 1, [ttSymbol]);
+
+                if paramE <> nil then
+                  begin
+                    if paramE^.Text.Same('(') then
+                      begin
+                        paramE := t.IndentSymbolEndProbeR(paramE^.index, '(', ')');
+                        if paramE = nil then
+                          begin
+                            DoStatus('Illegal variant set indent: %s', [vName.Text]);
+                            exit;
+                          end;
+                        continue;
+                      end
+                    else if not paramE^.Text.Same(',', ';') then
+                        continue
+                    else
+                        vParam := t.TokenCombine(paramB^.index + 1, paramE^.index - 1);
+                  end
+                else
+                    vParam := t.TokenCombine(paramB^.index + 1, t.TokenCount - 1);
+
+                vParam := umlTrimSpace(vParam);
+                if vParam.Len > 0 then
+                  begin
+                    if oprt = nil then
+                        oprt := RT.Create;
+
+                    oprt.Size := @o.Size;
+                    oprt.COLOR := @o.COLOR;
+                    v := EvaluateExpressionValue(tsPascal, vParam.Text, oprt);
+
+                    if vName.Same('s', 'size', 'siz') then
+                        o.Size := v
+                    else if vName.Same('red', 'r') then
+                        o.COLOR[0] := v
+                    else if vName.Same('green', 'g') then
+                        o.COLOR[1] := v
+                    else if vName.Same('blue', 'b') then
+                        o.COLOR[2] := v
+                    else if vName.Same('alpha', 'a') then
+                        o.COLOR[3] := v
+                    else
+                      begin
+                        DoStatus('Invalid variable: %s', [vName.Text]);
+                        exit;
+                      end;
+                  end;
+
+                if paramE = nil then
+                    break;
+
+                i := paramE^.index + 1;
+                state := fosWait;
+              end;
+          end;
+        end;
+
+      Result := true;
+    finally
+        disposeObject(t);
+    end;
+  end;
+
+  procedure ProcessLBreak(o: TDSegmentionText; l: TSegmentionTextLists);
+  var
+    n_o: TDSegmentionText;
+    n: TPascalString;
+  begin
+    n := umlDeleteChar(o.Text, #13);
+
+    n_o.Text := umlGetFirstStr_Discontinuity(n, #10);
+    n_o.Size := o.Size;
+    n_o.COLOR := o.COLOR;
+    l.Last.Add(n_o);
+
+    while n.Exists(#10) do
+      begin
+        n := umlDeleteFirstStr_Discontinuity(n, #10);
+        n_o.Text := umlGetFirstStr_Discontinuity(n, #10);
+        n_o.Size := o.Size;
+        n_o.COLOR := o.COLOR;
+        l.Add(TSegmentionTextList.Create);
+        l.Last.Add(n_o);
+      end;
+  end;
+
+var
+  t: TTextParsing;
+  i, j: Integer;
+  l: TSegmentionTextLists;
+  o: TDSegmentionText;
+  pb, pe: PTokenData;
+  error: Boolean;
+  n: TPascalString;
+begin
+  SetLength(Result, 0);
+
+  if not IsSegmentionText(s) then
+    begin
+      SetLength(Result, 1, 1);
+      Result[0, 0].Text := s;
+      Result[0, 0].Size := Size;
+      Result[0, 0].COLOR := COLOR;
+      exit;
+    end;
+
+  t := TTextParsing.Create(s, tsText);
+  l := TSegmentionTextLists.Create;
+  l.Add(TSegmentionTextList.Create);
+  oprt := nil;
+
+  error := False;
+
+  o.Text := '';
+  o.Size := Size;
+  o.COLOR := COLOR;
+
+  i := t.FirstToken^.index;
+  while i < t.TokenCount do
+    begin
+      pb := t.TokenProbeR(i, [ttSymbol], '|');
+      if pb = nil then
+        begin
+          o.Text := t.TokenCombine(i, t.TokenCount - 1);
+          ProcessLBreak(o, l);
+          break;
+        end
+      else
+        begin
+          if pb^.index > i then
+            begin
+              o.Text := t.TokenCombine(i, pb^.index - 1);
+              ProcessLBreak(o, l);
+            end;
+          pe := t.TokenProbeR(pb^.index + 1, [ttSymbol], '|');
+          if pe = nil then
+            begin
+              DoStatus('%s There is no end sign:"|", or there should to be no "|" sign.', [s.Text]);
+              error := true;
+              break;
+            end
+          else
+            begin
+              i := pe^.index + 1;
+
+              // fill order preset
+              if pb^.index + 1 < pe^.index - 1 then
+                begin
+                  n := t.TokenCombine(pb^.index + 1, pe^.index - 1);
+                  n := umlTrimSpace(n);
+                end
+              else
+                  n := '';
+
+              if (n.Len > 0) and (not n.Same('default', 'nil', 'null', 'origin')) then
+                begin
+                  o.Size := Size;
+                  o.COLOR := COLOR;
+                  if not FillSegmentionTextSet_(n, o) then
+                    begin
+                      error := true;
+                      break;
+                    end;
+                end
+              else
+                begin
+                  o.Size := Size;
+                  o.COLOR := COLOR;
+                end;
+            end;
+        end;
+    end;
+  disposeObject(t);
+
+  if not error then
+    begin
+      SetLength(Result, l.Count);
+      for j := 0 to l.Count - 1 do
+        begin
+          SetLength(Result[j], l[j].Count);
+          for i := 0 to l[j].Count - 1 do
+              Result[j, i] := l[j][i];
+        end;
+    end;
+
+  for i := 0 to l.Count - 1 do
+      disposeObject(l[i]);
+  disposeObject(l);
+
+  if oprt <> nil then
+      disposeObject(oprt);
+end;
+
+procedure FreeSegmentionText(var buff: TDArraySegmentionText);
+var
+  i, j: Integer;
+begin
+  for j := low(buff) to high(buff) do
+    begin
+      for i := low(buff[j]) to high(buff[j]) do
+          buff[j, i].Text := '';
+      SetLength(buff[j], 0);
+    end;
+  SetLength(buff, 0);
+end;
+
 function TDETexture.GetStaticShadow: TDETexture;
 var
   i: Integer;
@@ -1007,7 +1517,7 @@ begin
       if not IsStaticShadow then
         begin
           FStaticShadow := DefaultTextureClass.Create;
-          FStaticShadow.IsStaticShadow := True;
+          FStaticShadow.IsStaticShadow := true;
           FStaticShadow.SetSize(width, height);
           for i := (width * height) - 1 downto 0 do
             begin
@@ -1025,23 +1535,97 @@ end;
 constructor TDETexture.Create;
 begin
   inherited Create;
+  LastDrawUsage := GetTimeTick();
   FStaticShadow := nil;
   IsStaticShadow := False;
+
+  if TexturePool <> nil then
+      TexturePool.AddTexture(Self);
 end;
 
 destructor TDETexture.Destroy;
 begin
   if FStaticShadow <> nil then
-      DisposeObject(FStaticShadow);
+      disposeObject(FStaticShadow);
+
+  if TexturePool <> nil then
+      TexturePool.RemoveTexture(Self);
   inherited Destroy;
 end;
 
-procedure TDETexture.ReleaseFMXResource;
+procedure TDETexture.DrawUsage;
+begin
+  LastDrawUsage := GetTimeTick();
+end;
+
+procedure TDETexture.ReleaseGPUMemory;
 begin
 end;
 
-procedure TDETexture.FastUpdateTexture;
+procedure TDETexture.Update;
 begin
+end;
+
+constructor TDETextureList.Create;
+begin
+  inherited Create;
+  Critical := TCritical.Create;
+end;
+
+destructor TDETextureList.Destroy;
+begin
+  disposeObject(Critical);
+  Critical := nil;
+  inherited Destroy;
+end;
+
+procedure TDETextureList.AddTexture(tex: TDETexture);
+begin
+  Critical.Acquire;
+  inherited Add(tex);
+  Critical.Release;
+end;
+
+procedure TDETextureList.RemoveTexture(tex: TDETexture);
+var
+  i: Integer;
+begin
+  Critical.Acquire;
+  i := Count - 1;
+  while i >= 0 do
+    begin
+      if Items[i] = tex then
+        begin
+          delete(i);
+          break;
+        end
+      else
+          dec(i);
+    end;
+  Critical.Release;
+end;
+
+procedure TDETextureList.ReleaseGPUMemory;
+var
+  i: Integer;
+begin
+  Critical.Acquire;
+  for i := 0 to Count - 1 do
+      Items[i].ReleaseGPUMemory();
+  Critical.Release;
+end;
+
+procedure TDETextureList.ReleaseNoUsageTextureMemory;
+var
+  i: Integer;
+  tk: TTimeTick;
+begin
+  Critical.Acquire;
+  tk := GetTimeTick();
+  for i := 0 to Count - 1 do
+    if tk - Items[i].LastDrawUsage > 5000 then
+        Items[i].ReleaseGPUMemory();
+  Critical.Release;
 end;
 
 function TDE4V.IsZero: Boolean;
@@ -1084,12 +1668,12 @@ end;
 
 function TDE4V.BoundRect: TDERect;
 begin
-  Result := Geometry2DUnit.TV2Rect4.Init(MakeRectV2, angle).BoundRect;
+  Result := Geometry2DUnit.TV2Rect4.Init(MakeRectV2, Angle).BoundRect;
 end;
 
 function TDE4V.Centroid: TDEVec;
 begin
-  Result := Geometry2DUnit.TV2Rect4.Init(MakeRectV2, angle).Centroid;
+  Result := Geometry2DUnit.TV2Rect4.Init(MakeRectV2, Angle).Centroid;
 end;
 
 function TDE4V.Add(v: TDEVec): TDE4V;
@@ -1099,7 +1683,7 @@ begin
   r := MakeRectV2;
   r[0] := Vec2Add(r[0], v);
   r[1] := Vec2Add(r[1], v);
-  Result := Init(r, angle);
+  Result := Init(r, Angle);
 end;
 
 function TDE4V.Add(x, y: TDEFloat): TDE4V;
@@ -1109,7 +1693,7 @@ begin
   r := MakeRectV2;
   r[0] := Vec2Add(r[0], x, y);
   r[1] := Vec2Add(r[1], x, y);
-  Result := Init(r, angle);
+  Result := Init(r, Angle);
 end;
 
 function TDE4V.Scale(f: TDEFloat): TDE4V;
@@ -1118,7 +1702,7 @@ begin
   Result.Top := Top * f;
   Result.Right := Right * f;
   Result.Bottom := Bottom * f;
-  Result.angle := angle;
+  Result.Angle := Angle;
 end;
 
 function TDE4V.GetDistance(dest: TDE4V): TDEFloat;
@@ -1128,14 +1712,14 @@ end;
 
 function TDE4V.GetAngleDistance(dest: TDE4V): TDEFloat;
 begin
-  Result := Geometry3DUnit.AngleDistance(angle, dest.angle);
+  Result := Geometry3DUnit.AngleDistance(Angle, dest.Angle);
 end;
 
 function TDE4V.MovementToLerp(dest: TDE4V; mLerp, rLerp: Double): TDE4V;
 var
   r: TDERect;
 begin
-  Result.angle := MovementLerp(angle, dest.angle, rLerp);
+  Result.Angle := MovementLerp(Angle, dest.Angle, rLerp);
 
   r := MovementLerp(MakeRectV2, dest.MakeRectV2, mLerp);
   Result.Left := r[0][0];
@@ -1148,7 +1732,7 @@ function TDE4V.MovementToDistance(dest: TDE4V; mSpeed, rSpeed: TDEFloat): TDE4V;
 var
   r: TDERect;
 begin
-  Result.angle := SmoothAngle(angle, dest.angle, rSpeed);
+  Result.Angle := SmoothAngle(Angle, dest.Angle, rSpeed);
 
   r := MovementDistance(MakeRectV2, dest.MakeRectV2, mSpeed);
   Result.Left := r[0][0];
@@ -1161,7 +1745,7 @@ function TDE4V.MovementToDistanceCompleteTime(dest: TDE4V; mSpeed, rSpeed: TDEFl
 var
   d1, d2: Double;
 begin
-  d1 := Geometry3DUnit.AngleRollDistanceDeltaTime(angle, dest.angle, rSpeed);
+  d1 := Geometry3DUnit.AngleRollDistanceDeltaTime(Angle, dest.Angle, rSpeed);
   d2 := Geometry3DUnit.MovementDistanceDeltaTime(MakeRectV2, dest.MakeRectV2, mSpeed);
   if d1 > d2 then
       Result := d1
@@ -1174,7 +1758,7 @@ var
   r: TDERect;
 begin
   r := RectFit(dest.MakeRectV2, MakeRectV2);
-  Result.angle := angle;
+  Result.Angle := Angle;
   Result.Left := r[0][0];
   Result.Top := r[0][1];
   Result.Right := r[1][0];
@@ -1186,7 +1770,7 @@ var
   r: TDERect;
 begin
   r := RectFit(dest, MakeRectV2);
-  Result.angle := angle;
+  Result.Angle := Angle;
   Result.Left := r[0][0];
   Result.Top := r[0][1];
   Result.Right := r[1][0];
@@ -1201,7 +1785,7 @@ begin
       Top := r[0][1];
       Right := r[1][0];
       Bottom := r[1][1];
-      angle := Ang;
+      Angle := Ang;
     end;
 end;
 
@@ -1246,17 +1830,22 @@ begin
 
 end;
 
+procedure TDrawEngineInterface.DrawDotLine(pt1, pt2: TDEVec; COLOR: TDEColor);
+begin
+
+end;
+
 procedure TDrawEngineInterface.DrawLine(pt1, pt2: TDEVec; COLOR: TDEColor);
 begin
 
 end;
 
-procedure TDrawEngineInterface.DrawRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor);
+procedure TDrawEngineInterface.DrawRect(r: TDERect; Angle: TDEFloat; COLOR: TDEColor);
 begin
 
 end;
 
-procedure TDrawEngineInterface.FillRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor);
+procedure TDrawEngineInterface.FillRect(r: TDERect; Angle: TDEFloat; COLOR: TDEColor);
 begin
 
 end;
@@ -1271,12 +1860,17 @@ begin
 
 end;
 
-procedure TDrawEngineInterface.DrawText(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat);
+procedure TDrawEngineInterface.FillPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor);
 begin
 
 end;
 
-procedure TDrawEngineInterface.DrawTexture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat);
+procedure TDrawEngineInterface.DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat);
+begin
+
+end;
+
+procedure TDrawEngineInterface.DrawPicture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat);
 begin
 
 end;
@@ -1306,7 +1900,7 @@ begin
   Result := NULLVec;
 end;
 
-function TDrawEngineInterface.GetTextSize(Text: SystemString; Size: TDEFloat): TDEVec;
+function TDrawEngineInterface.GetTextSize(const Text: SystemString; Size: TDEFloat): TDEVec;
 begin
   Result := NULLVec;
 end;
@@ -1320,12 +1914,17 @@ procedure TDrawCommand.DoFreeData;
 begin
   case t of
     dctSetLineWidth: Dispose(PDrawCommandParam_1Float(Data));
-    dctLine: Dispose(PDrawCommandParam_PT_Color(Data));
+    dctDotLine, dctLine: Dispose(PDrawCommandParam_PT_Color(Data));
     dctSetSize: Dispose(PDrawCommandParam_1Rect(Data));
     dctDrawRect, dctFillRect, dctDrawEllipse, dctFillEllipse: Dispose(PDrawCommandParam_Rect_Color(Data));
-    dctDrawText: Dispose(PDrawCommandParam_Textout(Data));
-    dctDrawTexture: Dispose(PDrawCommandParam_Texture(Data));
-    dctUserCustom: Dispose(PDrawCommandParam_UserCustom(Data));
+    dctPolygon:
+      begin
+        SetLength(PDrawCommandParam_Polygon(Data)^.PolygonBuff, 0);
+        Dispose(PDrawCommandParam_Polygon(Data));
+      end;
+    dctDrawText: Dispose(PDrawCommandParam_DrawText(Data));
+    dctDrawPicture: Dispose(PDrawCommandParam_Picture(Data));
+    dctUserCustom: Dispose(PDrawCommandParam_Custom(Data));
   end;
 end;
 
@@ -1336,27 +1935,33 @@ begin
           Draw.SetSize(r);
     dctSetLineWidth: with PDrawCommandParam_1Float(Data)^ do
           Draw.SetLineWidth(f);
+    dctDotLine: with PDrawCommandParam_PT_Color(Data)^ do
+          Draw.DrawDotLine(pt1, pt2, COLOR);
     dctLine: with PDrawCommandParam_PT_Color(Data)^ do
           Draw.DrawLine(pt1, pt2, COLOR);
     dctDrawRect: with PDrawCommandParam_Rect_Color(Data)^ do
-          Draw.DrawRect(r, angle, COLOR);
+          Draw.DrawRect(r, Angle, COLOR);
     dctFillRect: with PDrawCommandParam_Rect_Color(Data)^ do
-          Draw.FillRect(r, angle, COLOR);
+          Draw.FillRect(r, Angle, COLOR);
     dctDrawEllipse: with PDrawCommandParam_Rect_Color(Data)^ do
           Draw.DrawEllipse(r, COLOR);
     dctFillEllipse: with PDrawCommandParam_Rect_Color(Data)^ do
           Draw.FillEllipse(r, COLOR);
-    dctDrawText: with PDrawCommandParam_Textout(Data)^ do
-          Draw.DrawText(Text, Size, r, COLOR, center, RotateVec, angle);
-    dctDrawTexture: with PDrawCommandParam_Texture(Data)^ do
-          Draw.DrawTexture(t, sour, dest, alpha);
-    dctUserCustom: with PDrawCommandParam_UserCustom(Data)^ do
-          OnDraw(OwnerDrawExecute.FOwner, UserData, UserObject);
+    dctPolygon: with PDrawCommandParam_Polygon(Data)^ do
+          Draw.FillPolygon(PolygonBuff, COLOR);
+    dctDrawText: with PDrawCommandParam_DrawText(Data)^ do
+          Draw.DrawText(Text, Size, r, COLOR, center, RotateVec, Angle);
+    dctDrawPicture: with PDrawCommandParam_Picture(Data)^ do
+          Draw.DrawPicture(t, sour, dest, alpha);
+    dctUserCustom: with PDrawCommandParam_Custom(Data)^ do
+          OnDraw(OwnerDrawExecute.FOwner, Draw, UserData, UserObject);
     dctFlush: Draw.Flush;
   end;
 end;
 
 procedure TDrawCommand.CopyTo(var Dst: TDrawCommand);
+var
+  i: Integer;
 begin
   Dst.t := t;
   Dst.Data := nil;
@@ -1370,6 +1975,11 @@ begin
       begin
         new(PDrawCommandParam_1Float(Dst.Data));
         PDrawCommandParam_1Float(Dst.Data)^ := PDrawCommandParam_1Float(Data)^;
+      end;
+    dctDotLine:
+      begin
+        new(PDrawCommandParam_PT_Color(Dst.Data));
+        PDrawCommandParam_PT_Color(Dst.Data)^ := PDrawCommandParam_PT_Color(Data)^;
       end;
     dctLine:
       begin
@@ -1396,20 +2006,27 @@ begin
         new(PDrawCommandParam_Rect_Color(Dst.Data));
         PDrawCommandParam_Rect_Color(Dst.Data)^ := PDrawCommandParam_Rect_Color(Data)^;
       end;
+    dctPolygon:
+      begin
+        new(PDrawCommandParam_Polygon(Dst.Data));
+        PDrawCommandParam_Polygon(Dst.Data)^.COLOR := PDrawCommandParam_Polygon(Data)^.COLOR;
+        for i := 0 to length(PDrawCommandParam_Polygon(Data)^.PolygonBuff) - 1 do
+            PDrawCommandParam_Polygon(Dst.Data)^.PolygonBuff[i] := PDrawCommandParam_Polygon(Data)^.PolygonBuff[i];
+      end;
     dctDrawText:
       begin
-        new(PDrawCommandParam_Textout(Dst.Data));
-        PDrawCommandParam_Textout(Dst.Data)^ := PDrawCommandParam_Textout(Data)^;
+        new(PDrawCommandParam_DrawText(Dst.Data));
+        PDrawCommandParam_DrawText(Dst.Data)^ := PDrawCommandParam_DrawText(Data)^;
       end;
-    dctDrawTexture:
+    dctDrawPicture:
       begin
-        new(PDrawCommandParam_Texture(Dst.Data));
-        PDrawCommandParam_Texture(Dst.Data)^ := PDrawCommandParam_Texture(Data)^;
+        new(PDrawCommandParam_Picture(Dst.Data));
+        PDrawCommandParam_Picture(Dst.Data)^ := PDrawCommandParam_Picture(Data)^;
       end;
     dctUserCustom:
       begin
-        new(PDrawCommandParam_UserCustom(Dst.Data));
-        PDrawCommandParam_UserCustom(Dst.Data)^ := PDrawCommandParam_UserCustom(Data)^;
+        new(PDrawCommandParam_Custom(Dst.Data));
+        PDrawCommandParam_Custom(Dst.Data)^ := PDrawCommandParam_Custom(Data)^;
       end;
   end;
 end;
@@ -1426,8 +2043,8 @@ end;
 
 destructor TDrawQueue.Destroy;
 begin
-  Clear(True);
-  DisposeObject(FCommandList);
+  Clear(true);
+  disposeObject(FCommandList);
   inherited Destroy;
 end;
 
@@ -1499,6 +2116,29 @@ begin
   UnLockObject(FCommandList);
 end;
 
+procedure TDrawQueue.DrawDotLine(pt1, pt2: TDEVec; COLOR: TDEColor);
+var
+  p: PDrawCommand;
+  Data: PDrawCommandParam_PT_Color;
+begin
+  if DEAlpha(COLOR) > 0 then
+    begin
+      new(p);
+      new(Data);
+
+      Data^.pt1 := pt1;
+      Data^.pt2 := pt2;
+      Data^.COLOR := COLOR;
+
+      p^.t := dctDotLine;
+      p^.Data := Data;
+
+      LockObject(FCommandList);
+      FCommandList.Add(p);
+      UnLockObject(FCommandList);
+    end;
+end;
+
 procedure TDrawQueue.DrawLine(pt1, pt2: TDEVec; COLOR: TDEColor);
 var
   p: PDrawCommand;
@@ -1522,7 +2162,7 @@ begin
     end;
 end;
 
-procedure TDrawQueue.DrawRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor);
+procedure TDrawQueue.DrawRect(r: TDERect; Angle: TDEFloat; COLOR: TDEColor);
 var
   p: PDrawCommand;
   Data: PDrawCommandParam_Rect_Color;
@@ -1533,7 +2173,7 @@ begin
       new(Data);
 
       Data^.r := r;
-      Data^.angle := angle;
+      Data^.Angle := Angle;
       Data^.COLOR := COLOR;
 
       p^.t := dctDrawRect;
@@ -1545,7 +2185,7 @@ begin
     end;
 end;
 
-procedure TDrawQueue.FillRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor);
+procedure TDrawQueue.FillRect(r: TDERect; Angle: TDEFloat; COLOR: TDEColor);
 var
   p: PDrawCommand;
   Data: PDrawCommandParam_Rect_Color;
@@ -1556,7 +2196,7 @@ begin
       new(Data);
 
       Data^.r := r;
-      Data^.angle := angle;
+      Data^.Angle := Angle;
       Data^.COLOR := COLOR;
 
       p^.t := dctFillRect;
@@ -1640,11 +2280,36 @@ begin
     end;
 end;
 
-procedure TDrawQueue.DrawText(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat);
+procedure TDrawQueue.FillPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor);
+var
+  p: PDrawCommand;
+  Data: PDrawCommandParam_Polygon;
+  i: Integer;
+begin
+  if DEAlpha(COLOR) > 0 then
+    begin
+      new(p);
+      new(Data);
+
+      SetLength(Data^.PolygonBuff, length(PolygonBuff));
+      for i := 0 to length(PolygonBuff) - 1 do
+          Data^.PolygonBuff[i] := PolygonBuff[i];
+      Data^.COLOR := COLOR;
+
+      p^.t := dctPolygon;
+      p^.Data := Data;
+
+      LockObject(FCommandList);
+      FCommandList.Add(p);
+      UnLockObject(FCommandList);
+    end;
+end;
+
+procedure TDrawQueue.DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat);
 var
   PrepareDraw: Boolean;
   p: PDrawCommand;
-  Data: PDrawCommandParam_Textout;
+  Data: PDrawCommandParam_DrawText;
 begin
   if DEAlpha(COLOR) > 0 then
     begin
@@ -1664,7 +2329,7 @@ begin
           Data^.COLOR := COLOR;
           Data^.center := center;
           Data^.RotateVec := RotateVec;
-          Data^.angle := angle;
+          Data^.Angle := Angle;
 
           Data^.bak_r := Data^.r;
           Data^.bak_color := Data^.COLOR;
@@ -1685,11 +2350,11 @@ begin
     end;
 end;
 
-procedure TDrawQueue.DrawTexture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat);
+procedure TDrawQueue.DrawPicture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat);
 var
   PrepareDraw: Boolean;
   p: PDrawCommand;
-  Data: PDrawCommandParam_Texture;
+  Data: PDrawCommandParam_Picture;
   r: TDERect;
 begin
   if alpha > 0 then
@@ -1714,7 +2379,7 @@ begin
           Data^.bak_dest := dest;
           Data^.bak_alpha := alpha;
 
-          p^.t := dctDrawTexture;
+          p^.t := dctDrawPicture;
           p^.Data := Data;
 
           if (FStartDrawShadowIndex >= 0) and (Data^.t is TDETexture) and (not TDETexture(Data^.t).IsStaticShadow) then
@@ -1731,10 +2396,10 @@ begin
     end;
 end;
 
-procedure TDrawQueue.DrawUserCustom(const OnDraw: TCustomDrawMethod; const UserData: Pointer; const UserObject: TCoreClassObject);
+procedure TDrawQueue.DrawUserCustom(const OnDraw: TCustomDraw_Method; const UserData: Pointer; const UserObject: TCoreClassObject);
 var
   p: PDrawCommand;
-  Data: PDrawCommandParam_UserCustom;
+  Data: PDrawCommandParam_Custom;
 begin
   new(p);
   new(Data);
@@ -1779,8 +2444,8 @@ var
   lst: TCoreClassList;
 
   p: PDrawCommand;
-  pTextureData: PDrawCommandParam_Texture;
-  pTextData: PDrawCommandParam_Textout;
+  pTextureData: PDrawCommandParam_Picture;
+  pTextData: PDrawCommandParam_DrawText;
 begin
   if FStartDrawShadowIndex >= 0 then
     begin
@@ -1793,17 +2458,17 @@ begin
       while i < FCommandList.Count do
         begin
           p := PDrawCommand(FCommandList[i]);
-          if (p^.t = dctDrawTexture) and (PDrawCommandParam_Texture(p^.Data)^.t is TDETexture) and
-            (TDETexture(PDrawCommandParam_Texture(p^.Data)^.t).IsStaticShadow) then
+          if (p^.t = dctDrawPicture) and (PDrawCommandParam_Picture(p^.Data)^.t is TDETexture) and
+            (TDETexture(PDrawCommandParam_Picture(p^.Data)^.t).IsStaticShadow) then
             begin
               new(pTextureData);
-              pTextureData^ := PDrawCommandParam_Texture(p^.Data)^;
+              pTextureData^ := PDrawCommandParam_Picture(p^.Data)^;
               pTextureData^.t := pTextureData^.bak_t;
               pTextureData^.dest := pTextureData^.bak_dest;
               pTextureData^.alpha := pTextureData^.bak_alpha;
 
               new(p);
-              p^.t := dctDrawTexture;
+              p^.t := dctDrawPicture;
               p^.Data := pTextureData;
               lst.Add(p);
               inc(i);
@@ -1811,7 +2476,7 @@ begin
           else if (p^.t = dctDrawText) then
             begin
               new(pTextData);
-              pTextData^ := PDrawCommandParam_Textout(p^.Data)^;
+              pTextData^ := PDrawCommandParam_DrawText(p^.Data)^;
               pTextData^.r := pTextData^.bak_r;
               pTextData^.COLOR := pTextData^.bak_color;
 
@@ -1824,7 +2489,7 @@ begin
           else
             begin
               lst.Add(p);
-              FCommandList.Delete(i);
+              FCommandList.delete(i);
             end;
         end;
 
@@ -1833,7 +2498,7 @@ begin
           FCommandList.Add(lst[i]);
       UnLockObject(FCommandList);
 
-      DisposeObject(lst);
+      disposeObject(lst);
     end;
 end;
 
@@ -1841,13 +2506,13 @@ procedure TDrawQueue.BuildTextureOutputState(var buff: TTextureOutputStateBuffer
 var
   i, j: Integer;
   p: PDrawCommand;
-  ptex: PDrawCommandParam_Texture;
+  ptex: PDrawCommandParam_Picture;
 begin
   try
     j := 0;
 
     for i := 0 to FCommandList.Count - 1 do
-      if PDrawCommand(FCommandList[i])^.t = dctDrawTexture then
+      if PDrawCommand(FCommandList[i])^.t = dctDrawPicture then
           inc(j);
 
     SetLength(buff, j);
@@ -1856,9 +2521,9 @@ begin
     for i := 0 to FCommandList.Count - 1 do
       begin
         p := PDrawCommand(FCommandList[i]);
-        if p^.t = dctDrawTexture then
+        if p^.t = dctDrawPicture then
           begin
-            ptex := PDrawCommandParam_Texture(p^.Data);
+            ptex := PDrawCommandParam_Picture(p^.Data);
             buff[j].Source := ptex^.t;
             buff[j].SourceRect := ptex^.sour;
             buff[j].DestScreen := ptex^.dest;
@@ -1884,7 +2549,7 @@ destructor TDrawExecute.Destroy;
 begin
   Clear;
 
-  DisposeObject(FCommandList);
+  disposeObject(FCommandList);
   inherited Destroy;
 end;
 
@@ -1957,7 +2622,7 @@ begin
   DataVariant := Null;
   Owner := AOwner;
   OnClick := nil;
-  Visibled := True;
+  Visibled := true;
 
   Owner.FUIList.Add(Self);
 end;
@@ -1970,7 +2635,7 @@ begin
   while Owner.FUIList.Count > i do
     begin
       if Owner.FUIList[i] = Self then
-          Owner.FUIList.Delete(i)
+          Owner.FUIList.delete(i)
       else
           inc(i);
     end;
@@ -2023,11 +2688,11 @@ function TDrawEngine_RectButton.TapDown(x, y: TDEFloat): Boolean;
 begin
   if PointInRect(DEVec(x, y), Button) then
     begin
-      Downed := True;
+      Downed := true;
       DownPT := DEVec(x, y);
       MovePT := DownPT;
       UpPT := DownPT;
-      Result := True;
+      Result := true;
     end
   else
     begin
@@ -2045,7 +2710,7 @@ begin
     begin
       MovePT := DEVec(x, y);
       UpPT := MovePT;
-      Result := True;
+      Result := true;
     end
   else
     begin
@@ -2060,7 +2725,7 @@ begin
       UpPT := DEVec(x, y);
       DoClick;
       Downed := False;
-      Result := True;
+      Result := true;
     end
   else
     begin
@@ -2088,7 +2753,7 @@ begin
   Owner.FDrawCommand.FillRect(r, 0, c);
   c := DEColor(1, 1, 1, 1);
   Owner.FDrawCommand.DrawRect(r, 0, c);
-  Owner.FDrawCommand.DrawText(Text, TextSize, r, c, True, DEVec(0.5, 0.5), 0);
+  Owner.FDrawCommand.DrawText(Text, TextSize, r, c, true, DEVec(0.5, 0.5), 0);
 end;
 
 procedure TSequenceAnimationBase.Progress(deltaTime: Double);
@@ -2175,7 +2840,7 @@ var
   AWidth, AHeight: Integer;
 begin
   if Total <= 1 then
-      Exit(TDE4V.Init(width, height, 0));
+      exit(TDE4V.Init(width, height, 0));
 
   if Column > Total then
       Column := Total;
@@ -2211,9 +2876,9 @@ begin
   flag := Owner.GetNewSequenceFlag;
 
   CurrentTime := 0;
-  LastUsed := True;
+  LastUsed := true;
 
-  DisposeObject(df);
+  disposeObject(df);
 end;
 
 procedure TSequenceAnimationBase.SaveToStream(stream: TCoreClassStream);
@@ -2231,7 +2896,7 @@ begin
   df.WriteInteger(Integer(PlayMode));
 
   df.SaveToStream(stream);
-  DisposeObject(df);
+  disposeObject(df);
 end;
 
 procedure TParticles.Progress(deltaTime: Double);
@@ -2252,14 +2917,14 @@ begin
           p^.Source := Owner.GetOrCreateSequenceAnimation(Owner.GetNewSequenceFlag, SequenceTexture);
           p^.Source.CompleteTime := umlRandomRangeD(SequenceTextureCompleteTime * 0.9, SequenceTextureCompleteTime * 1.1);
           p^.Source.PlayMode := TSequenceAnimationPlayMode.sapmLoop;
-          p^.Source.LastUsed := True;
+          p^.Source.LastUsed := true;
 
           p^.Position := DEVec(
             umlRandomRangeS(GenerateRange[0][0], GenerateRange[1][0]) + LastDrawPosition[0],
             umlRandomRangeS(GenerateRange[0][1], GenerateRange[1][1]) + LastDrawPosition[1]);
 
           p^.radius := ParticleSize * umlRandomRangeS(0.4, 0.6);
-          p^.angle := 0;
+          p^.Angle := 0;
           p^.alpha := MaxAlpha;
           p^.CurrentTime := 0;
           p^.Acceleration := 0;
@@ -2272,7 +2937,7 @@ begin
     begin
       p := ParticleBuff[ParticleBuff.Count - 1];
       Dispose(p);
-      ParticleBuff.Delete(ParticleBuff.Count - 1);
+      ParticleBuff.delete(ParticleBuff.Count - 1);
     end;
 
   // particle life
@@ -2284,7 +2949,7 @@ begin
       if p^.CurrentTime > LifeTime then
         begin
           Dispose(p);
-          ParticleBuff.Delete(i);
+          ParticleBuff.delete(i);
         end
       else
         begin
@@ -2292,7 +2957,7 @@ begin
           k := Vec2Distance(ZeroPoint, Dispersion);
           p^.Position := MovementDistance(p^.Position, Vec2Add(p^.Position, Dispersion), (k + k * p^.Acceleration) * deltaTime);
           p^.alpha := Clamp(MaxAlpha - (p^.CurrentTime / LifeTime) * MaxAlpha, MinAlpha, 1.0);
-          p^.angle := p^.angle + deltaTime * RotationOfSecond;
+          p^.Angle := p^.Angle + deltaTime * RotationOfSecond;
           inc(i);
         end;
     end;
@@ -2322,8 +2987,8 @@ begin
   RotationOfSecond := 0;
   GenSpeedOfPerSecond := 50;
   LifeTime := 2.0;
-  Enabled := True;
-  Visible := True;
+  Enabled := true;
+  Visible := true;
 end;
 
 destructor TParticles.Destroy;
@@ -2337,7 +3002,7 @@ begin
 
   for i := 0 to ParticleBuff.Count - 1 do
       Dispose(PParticleData(ParticleBuff[i]));
-  DisposeObject(ParticleBuff);
+  disposeObject(ParticleBuff);
 
   inherited Destroy;
 end;
@@ -2349,7 +3014,7 @@ end;
 
 procedure TParticles.FinishAndDelayFree;
 begin
-  NoEnabledAutoFree := True;
+  NoEnabledAutoFree := true;
   Enabled := False;
 end;
 
@@ -2377,7 +3042,7 @@ begin
   Enabled := df.Reader.ReadBool;
   Visible := df.Reader.ReadBool;
 
-  DisposeObject(df);
+  disposeObject(df);
 end;
 
 procedure TParticles.SaveToStream(stream: TCoreClassStream);
@@ -2412,7 +3077,7 @@ begin
   df.WriteBool(Visible);
 
   df.SaveToStream(stream);
-  DisposeObject(df);
+  disposeObject(df);
 end;
 
 constructor TEffect.Create(AOwner: TDrawEngine);
@@ -2437,9 +3102,9 @@ end;
 procedure TEffect.Reset;
 begin
   if Particle <> nil then
-      DisposeObject(Particle);
+      disposeObject(Particle);
   if SequenceAnimation <> nil then
-      DisposeObject(SequenceAnimation);
+      disposeObject(SequenceAnimation);
 end;
 
 procedure TEffect.LoadFromStream(stream: TCoreClassStream);
@@ -2476,9 +3141,9 @@ begin
         SequenceAnimation_Alpha := 1.0;
       end;
   end;
-  DisposeObject(ms);
+  disposeObject(ms);
 
-  DisposeObject(df);
+  disposeObject(df);
 end;
 
 procedure TEffect.SaveToStream(stream: TCoreClassStream);
@@ -2507,11 +3172,11 @@ begin
         df.WriteStream(ms);
       end;
   end;
-  DisposeObject(ms);
+  disposeObject(ms);
 
   df.SaveToStream(stream);
 
-  DisposeObject(df);
+  disposeObject(df);
 end;
 
 procedure TEffect.Draw(Pos: TDEVec);
@@ -2520,7 +3185,7 @@ begin
     emSequenceAnimation:
       begin
         if SequenceAnimation = nil then
-            Exit;
+            exit;
         Owner.DrawSequenceTexture(SequenceAnimation,
           TDE4V.Init(MakeRectV2(
           Pos[0] - SequenceAnimation_Width * 0.5, Pos[1] - SequenceAnimation_Height * 0.5,
@@ -2529,7 +3194,7 @@ begin
     emParticle:
       begin
         if Particle = nil then
-            Exit;
+            exit;
         Owner.DrawParticle(Particle, Pos);
       end;
   end;
@@ -2541,7 +3206,7 @@ begin
     emSequenceAnimation:
       begin
         if SequenceAnimation = nil then
-            Exit;
+            exit;
         Owner.DrawSequenceTextureInScene(SequenceAnimation,
           TDE4V.Init(MakeRectV2(
           Pos[0] - SequenceAnimation_Width * 0.5, Pos[1] - SequenceAnimation_Height * 0.5,
@@ -2550,10 +3215,392 @@ begin
     emParticle:
       begin
         if Particle = nil then
-            Exit;
+            exit;
         Owner.DrawParticleInScene(Particle, Pos);
       end;
   end;
+end;
+
+constructor TDrawEnginePool.Create;
+begin
+  inherited Create;
+  FDefaultDrawEngineClass := TDrawEngine;
+  FDrawEngineList := TCoreClassList.Create;
+  FPostProgress := TNProgressPost.Create;
+end;
+
+destructor TDrawEnginePool.Destroy;
+begin
+  Clear;
+  disposeObject(FDrawEngineList);
+  disposeObject(FPostProgress);
+  inherited Destroy;
+end;
+
+procedure TDrawEnginePool.Clear;
+var
+  i: Integer;
+  p: PDrawEnginePoolData;
+begin
+  for i := 0 to FDrawEngineList.Count - 1 do
+    begin
+      p := FDrawEngineList[i];
+      disposeObject(p^.DrawEng);
+      Dispose(p);
+    end;
+  FDrawEngineList.Clear;
+end;
+
+procedure TDrawEnginePool.ClearActivtedTimeOut(tick: Cardinal);
+var
+  i: Integer;
+  p: PDrawEnginePoolData;
+begin
+  i := 0;
+  while i < FDrawEngineList.Count do
+    begin
+      p := FDrawEngineList[i];
+      if GetTimeTick - p^.LastActivted > tick then
+        begin
+          disposeObject(p^.workObj);
+          Dispose(p);
+          FDrawEngineList.delete(i);
+        end
+      else
+          inc(i);
+    end;
+end;
+
+procedure TDrawEnginePool.Progress(deltaTime: Double);
+var
+  i: Integer;
+begin
+  FPostProgress.Progress(deltaTime);
+
+  for i := 0 to FDrawEngineList.Count - 1 do
+      PDrawEnginePoolData(FDrawEngineList[i])^.DrawEng.Progress(deltaTime);
+end;
+
+function TDrawEnginePool.GetEng(const workObj: TCoreClassObject; const Draw: TDrawEngineInterface): TDrawEngine;
+var
+  i: Integer;
+  p: PDrawEnginePoolData;
+begin
+  for i := 0 to FDrawEngineList.Count - 1 do
+    begin
+      p := FDrawEngineList[i];
+      if p^.workObj = workObj then
+        begin
+          p^.LastActivted := GetTimeTick();
+          if p^.DrawEng.FDrawInterface <> Draw then
+              p^.DrawEng.FDrawInterface := Draw;
+
+          p^.DrawEng.SetSize;
+          exit(p^.DrawEng);
+        end;
+    end;
+  new(p);
+  p^.DrawEng := FDefaultDrawEngineClass.Create;
+  p^.DrawEng.FDrawInterface := Draw;
+  p^.DrawEng.ViewOptions := [];
+  p^.workObj := workObj;
+  p^.LastActivted := GetTimeTick;
+  p^.DrawEng.SetSize;
+  FDrawEngineList.Add(p);
+  Result := p^.DrawEng;
+end;
+
+function TDrawEnginePool.GetEng(const workObj: TCoreClassObject): TDrawEngine;
+var
+  i: Integer;
+  p: PDrawEnginePoolData;
+begin
+  for i := 0 to FDrawEngineList.Count - 1 do
+    begin
+      p := FDrawEngineList[i];
+      if p^.workObj = workObj then
+        begin
+          p^.LastActivted := GetTimeTick();
+          exit(p^.DrawEng);
+        end;
+    end;
+  new(p);
+  p^.DrawEng := FDefaultDrawEngineClass.Create;
+  p^.DrawEng.ViewOptions := [];
+  p^.workObj := workObj;
+  p^.LastActivted := GetTimeTick;
+  FDrawEngineList.Add(p);
+  Result := p^.DrawEng;
+end;
+
+function TDrawEngine_Raster.DEColor2RasterColor(const COLOR: TDEColor): TRasterColor;
+begin
+  Result := RasterColorF(COLOR[0], COLOR[1], COLOR[2], COLOR[3]);
+end;
+
+function TDrawEngine_Raster.DEColor2RasterColor(const COLOR: TDEColor; const alpha: Byte): TRasterColor;
+begin
+  Result := RasterColorF(COLOR[0], COLOR[1], COLOR[2], COLOR[3]);
+end;
+
+constructor TDrawEngine_Raster.Create;
+begin
+  inherited Create;
+  FEngine := nil;
+  FMemory := DefaultTextureClass.Create;
+  FUsedAgg := true;
+  FFreeEngine := False;
+end;
+
+destructor TDrawEngine_Raster.Destroy;
+begin
+  disposeObject(FMemory);
+  if (FFreeEngine) and (FEngine <> nil) then
+      disposeObject(FEngine);
+  inherited Destroy;
+end;
+
+procedure TDrawEngine_Raster.SetSize(r: TDERect);
+begin
+  if not FMemory.IsMemoryMap then
+      FMemory.SetSize(Round(RectWidth(r)), Round(RectHeight(r)), RasterColor(0, 0, 0, 0));
+end;
+
+procedure TDrawEngine_Raster.SetLineWidth(w: TDEFloat);
+begin
+  if not FUsedAgg then
+      exit;
+
+  FMemory.Agg.LineWidth := w
+end;
+
+procedure TDrawEngine_Raster.DrawDotLine(pt1, pt2: TDEVec; COLOR: TDEColor);
+begin
+  FMemory.LineF(pt1, pt2, DEColor2RasterColor(COLOR), true);
+end;
+
+procedure TDrawEngine_Raster.DrawLine(pt1, pt2: TDEVec; COLOR: TDEColor);
+begin
+  FMemory.LineF(pt1, pt2, DEColor2RasterColor(COLOR), true);
+end;
+
+procedure TDrawEngine_Raster.DrawRect(r: TDERect; Angle: TDEFloat; COLOR: TDEColor);
+begin
+  FMemory.DrawRect(r, Angle, DEColor2RasterColor(COLOR));
+end;
+
+procedure TDrawEngine_Raster.FillRect(r: TDERect; Angle: TDEFloat; COLOR: TDEColor);
+begin
+  FMemory.FillRect(r, Angle, DEColor2RasterColor(COLOR));
+end;
+
+procedure TDrawEngine_Raster.DrawEllipse(r: TDERect; COLOR: TDEColor);
+var
+  c: TDEVec;
+begin
+  c := RectCentre(r);
+  FMemory.DrawEllipse(c, RectWidth(r) * 0.5, RectHeight(r) * 0.5, DEColor2RasterColor(COLOR));
+end;
+
+procedure TDrawEngine_Raster.FillEllipse(r: TDERect; COLOR: TDEColor);
+var
+  c: TDEVec;
+begin
+  c := RectCentre(r);
+  FMemory.FillEllipse(c, RectWidth(r) * 0.5, RectHeight(r) * 0.5, DEColor2RasterColor(COLOR));
+end;
+
+procedure TDrawEngine_Raster.FillPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor);
+begin
+  FMemory.FillPolygon(PolygonBuff, DEColor2RasterColor(COLOR));
+end;
+
+procedure TDrawEngine_Raster.DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat);
+var
+  vSiz: TDEVec;
+  x, y: TDEFloat;
+begin
+  vSiz := FMemory.TextSize(Text, Size);
+  if center then
+    begin
+      x := r[0, 0] + (RectWidth(r) - vSiz[0]) * 0.5;
+      y := r[0, 1] + (RectHeight(r) - vSiz[1]) * 0.5;
+    end
+  else
+    begin
+      x := r[0, 0];
+      y := r[0, 1];
+    end;
+  FMemory.DrawText(Text, Round(x), Round(y), RotateVec, Angle, 1.0, Size, DEColor2RasterColor(COLOR));
+end;
+
+procedure TDrawEngine_Raster.DrawPicture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat);
+begin
+  if t is TDETexture then
+      TDETexture(t).DrawUsage;
+
+  if t is TMemoryRaster then
+      TMemoryRaster(t).ProjectionTo(FMemory, TV2Rect4.Init(sour.MakeRectV2, sour.Angle), TV2Rect4.Init(dest.MakeRectV2, dest.Angle), true, alpha)
+  else
+      DoStatus('texture error! ' + t.ClassName);
+end;
+
+procedure TDrawEngine_Raster.Flush;
+begin
+end;
+
+procedure TDrawEngine_Raster.ResetState;
+begin
+end;
+
+procedure TDrawEngine_Raster.BeginDraw;
+begin
+  if FUsedAgg then
+      FMemory.OpenAgg
+  else
+      FMemory.CloseAgg;
+end;
+
+procedure TDrawEngine_Raster.EndDraw;
+begin
+  if not FUsedAgg then
+      FMemory.CloseAgg;
+end;
+
+function TDrawEngine_Raster.CurrentScreenSize: TDEVec;
+begin
+  Result := FMemory.SizeOf2DPoint;
+end;
+
+function TDrawEngine_Raster.GetTextSize(const Text: SystemString; Size: TDEFloat): TDEVec;
+begin
+  Result := FMemory.TextSize(Text, Size);
+end;
+
+function TDrawEngine_Raster.ReadyOK: Boolean;
+begin
+  Result := true;
+end;
+
+function TDrawEngine_Raster.Engine: TDrawEngine;
+begin
+  if FEngine = nil then
+    begin
+      FEngine := TDrawEngineClass.Create;
+      FFreeEngine := true;
+    end;
+  FEngine.FDrawInterface := Self;
+  Result := FEngine;
+end;
+
+function TDrawTextExpressionRunTime.cc(v: Variant): TDEFloat;
+begin
+  if v > 1 then
+      Result := v / $FF
+  else
+      Result := v;
+end;
+
+function TDrawTextExpressionRunTime.oprt_size(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+begin
+  Result := 0;
+  if length(Param) > 0 then
+      TDrawTextExpressionRunTime(OpRunTime).Size^ := Param[0];
+end;
+
+function TDrawTextExpressionRunTime.oprt_rgba(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to Min(4, length(Param)) - 1 do
+      COLOR^[i] := cc(Param[i]);
+end;
+
+function TDrawTextExpressionRunTime.oprt_bgra(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+var
+  i: Integer;
+begin
+  Result := 0;
+  for i := 0 to Min(4, length(Param)) - 1 do
+      COLOR^[i] := cc(Param[i]);
+  Swap(COLOR^[0], COLOR^[2]);
+end;
+
+function TDrawTextExpressionRunTime.oprt_red(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+begin
+  Result := 0;
+  if length(Param) > 0 then
+      COLOR^[0] := cc(Param[0]);
+end;
+
+function TDrawTextExpressionRunTime.oprt_green(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+begin
+  Result := 0;
+  if length(Param) > 0 then
+      COLOR^[1] := cc(Param[0]);
+end;
+
+function TDrawTextExpressionRunTime.oprt_blue(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+begin
+  Result := 0;
+  if length(Param) > 0 then
+      COLOR^[2] := cc(Param[0]);
+end;
+
+function TDrawTextExpressionRunTime.oprt_alpha(OpRunTime: TOpCustomRunTime; var Param: TOpParam): Variant;
+begin
+  Result := 0;
+  if length(Param) > 0 then
+      COLOR^[3] := cc(Param[0]);
+end;
+
+constructor TDrawTextExpressionRunTime.CustomCreate(maxHashLen: Integer);
+begin
+  inherited CustomCreate(maxHashLen);
+  Size := nil;
+  COLOR := nil;
+end;
+
+destructor TDrawTextExpressionRunTime.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TDrawTextExpressionRunTime.InternalReg;
+begin
+  inherited InternalReg;
+  RegObjectOpM('size', {$IFDEF FPC}@{$ENDIF FPC}oprt_size);
+  RegObjectOpM('s', {$IFDEF FPC}@{$ENDIF FPC}oprt_size);
+  RegObjectOpM('siz', {$IFDEF FPC}@{$ENDIF FPC}oprt_size);
+
+  RegObjectOpM('c', {$IFDEF FPC}@{$ENDIF FPC}oprt_rgba);
+  RegObjectOpM('cr', {$IFDEF FPC}@{$ENDIF FPC}oprt_rgba);
+  RegObjectOpM('color', {$IFDEF FPC}@{$ENDIF FPC}oprt_rgba);
+  RegObjectOpM('setcolor', {$IFDEF FPC}@{$ENDIF FPC}oprt_rgba);
+  RegObjectOpM('rgb', {$IFDEF FPC}@{$ENDIF FPC}oprt_rgba);
+  RegObjectOpM('rgba', {$IFDEF FPC}@{$ENDIF FPC}oprt_rgba);
+
+  RegObjectOpM('bgr', {$IFDEF FPC}@{$ENDIF FPC}oprt_bgra);
+  RegObjectOpM('bgra', {$IFDEF FPC}@{$ENDIF FPC}oprt_bgra);
+
+  RegObjectOpM('red', {$IFDEF FPC}@{$ENDIF FPC}oprt_red);
+  RegObjectOpM('r', {$IFDEF FPC}@{$ENDIF FPC}oprt_red);
+
+  RegObjectOpM('green', {$IFDEF FPC}@{$ENDIF FPC}oprt_green);
+  RegObjectOpM('g', {$IFDEF FPC}@{$ENDIF FPC}oprt_green);
+
+  RegObjectOpM('blue', {$IFDEF FPC}@{$ENDIF FPC}oprt_blue);
+  RegObjectOpM('b', {$IFDEF FPC}@{$ENDIF FPC}oprt_blue);
+
+  RegObjectOpM('alpha', {$IFDEF FPC}@{$ENDIF FPC}oprt_alpha);
+  RegObjectOpM('a', {$IFDEF FPC}@{$ENDIF FPC}oprt_alpha);
+end;
+
+procedure TDrawEngine_Raster.SetWorkMemory(m: TMemoryRaster);
+begin
+  Memory.SetWorkMemory(m);
+  Engine.SetSize(m);
 end;
 
 procedure TDrawEngine.SetDrawInterface(const Value: TDrawEngineInterface);
@@ -2607,7 +3654,7 @@ end;
 function TDrawEngine.GetUserAutoFreeObjects: THashObjectList;
 begin
   if FUserAutoFreeObjects = nil then
-      FUserAutoFreeObjects := THashObjectList.Create(True);
+      FUserAutoFreeObjects := THashObjectList.Create(true);
 
   Result := FUserAutoFreeObjects;
 end;
@@ -2637,12 +3684,12 @@ begin
   FHeight := 0;
   FLastDeltaTime := 0;
   FLastNewTime := 0;
-  FViewOptions := [devpFPS, devpFrameEndge];
+  FViewOptions := [voFPS, voEdge];
   FLastDrawInfo := '';
 
   FTextSizeCache := THashList.Create;
   FTextSizeCache.SetHashBlockCount(1024);
-  FTextSizeCache.AutoFreeData := True;
+  FTextSizeCache.AutoFreeData := true;
   FTextSizeCache.IgnoreCase := False;
   FTextSizeCache.OnFreePtr := {$IFDEF FPC}@{$ENDIF FPC}TextSizeCacheDoDataFree;
   FScrollTextList := TCoreClassListForObj.Create;
@@ -2660,7 +3707,7 @@ begin
   FFPSFontColor := DEColor(1, 1, 1, 1);
   FScreenFrameColor := DEColor(0.5, 0.2, 0.2, 0.5);
 
-  FTextureLibrary := THashObjectList.Create(True);
+  FTextureLibrary := THashObjectList.Create(true);
   FOnGetTexture := nil;
 
   FDefaultTexture := DefaultTextureClass.Create;
@@ -2682,29 +3729,29 @@ begin
   ClearScrollText;
   ClearUI;
 
-  DisposeObject(FDrawCommand);
-  DisposeObject(FDrawExecute);
-  DisposeObject(FScrollTextList);
-  DisposeObject(FUIList);
-  DisposeObject(FTextSizeCache);
+  disposeObject(FDrawCommand);
+  disposeObject(FDrawExecute);
+  disposeObject(FScrollTextList);
+  disposeObject(FUIList);
+  disposeObject(FTextSizeCache);
 
   for i := 0 to FSequenceAnimationBuffer.Count - 1 do
-      DisposeObject(FSequenceAnimationBuffer[i]);
-  DisposeObject(FSequenceAnimationBuffer);
+      disposeObject(FSequenceAnimationBuffer[i]);
+  disposeObject(FSequenceAnimationBuffer);
 
   ClearParticles;
-  DisposeObject(FParticleBuffer);
-  DisposeObject(FTextureLibrary);
-  DisposeObject(FDefaultTexture);
+  disposeObject(FParticleBuffer);
+  disposeObject(FTextureLibrary);
+  disposeObject(FDefaultTexture);
 
-  DisposeObject(FRasterization);
+  disposeObject(FRasterization);
 
   if FUserVariants <> nil then
-      DisposeObject(FUserVariants);
+      disposeObject(FUserVariants);
   if FUserObjects <> nil then
-      DisposeObject(FUserObjects);
+      disposeObject(FUserObjects);
   if FUserAutoFreeObjects <> nil then
-      DisposeObject(FUserAutoFreeObjects);
+      disposeObject(FUserAutoFreeObjects);
   inherited Destroy;
 end;
 
@@ -2721,7 +3768,7 @@ end;
 
 function TDrawEngine.SceneToScreen(r: TDE4V): TDE4V;
 begin
-  Result := TDE4V.Init(SceneToScreen(r.MakeRectV2), r.angle);
+  Result := TDE4V.Init(SceneToScreen(r.MakeRectV2), r.Angle);
 end;
 
 function TDrawEngine.SceneToScreen(r: TDERect): TDERect;
@@ -2736,6 +3783,15 @@ begin
   Result.RightTop := SceneToScreen(r.RightTop);
   Result.RightBottom := SceneToScreen(r.RightBottom);
   Result.LeftBottom := SceneToScreen(r.LeftBottom);
+end;
+
+function TDrawEngine.SceneToScreen(buff: TArrayVec2): TArrayVec2;
+var
+  i: Integer;
+begin
+  SetLength(Result, length(buff));
+  for i := 0 to length(buff) - 1 do
+      Result[i] := SceneToScreen(buff[i]);
 end;
 
 function TDrawEngine.ScreenToScene(pt: TDEVec): TDEVec;
@@ -2757,7 +3813,7 @@ end;
 
 function TDrawEngine.ScreenToScene(r: TDE4V): TDE4V;
 begin
-  Result := TDE4V.Init(ScreenToScene(r.MakeRectV2), r.angle);
+  Result := TDE4V.Init(ScreenToScene(r.MakeRectV2), r.Angle);
 end;
 
 function TDrawEngine.ScreenToScene(r: TV2Rect4): TV2Rect4;
@@ -2766,6 +3822,15 @@ begin
   Result.RightTop := ScreenToScene(r.RightTop);
   Result.RightBottom := ScreenToScene(r.RightBottom);
   Result.LeftBottom := ScreenToScene(r.LeftBottom);
+end;
+
+function TDrawEngine.ScreenToScene(buff: TArrayVec2): TArrayVec2;
+var
+  i: Integer;
+begin
+  SetLength(Result, length(buff));
+  for i := 0 to length(buff) - 1 do
+      Result[i] := ScreenToScene(buff[i]);
 end;
 
 function TDrawEngine.SceneToScreenDistance(ScenePt1, ScenePt2: TDEVec): TDEFloat;
@@ -2868,36 +3933,92 @@ begin
   SetDrawBounds(DERect(r));
 end;
 
-function TDrawEngine.GetTextSize(Text: SystemString; Size: TDEFloat): TDEVec;
+function TDrawEngine.GetTextSize(const t: SystemString; Size: TDEFloat): TDEVec;
 var
+  buff: TDArraySegmentionText;
   p: PDEVec;
   n: SystemString;
 begin
-  if (FDrawInterface <> nil) and (Text <> '') and (FDrawInterface.ReadyOK) then
+  if (FDrawInterface <> nil) and (t <> '') and (FDrawInterface.ReadyOK) then
     begin
-      n := umlFloatToStr(Size).Text + '_' + Text;
-      p := FTextSizeCache[n];
-      if p = nil then
+      if IsSegmentionText(t) then
         begin
-          new(p);
-          LockObject(FDrawExecute);
-          try
-              p^ := FDrawInterface.GetTextSize(Text, Size);
-          finally
+          buff := FillSegmentionText(t, Size, DEColor(1, 1, 1, 1), TDrawTextExpressionRunTime);
+          Result := GetTextSize(buff);
+          FreeSegmentionText(buff);
+        end
+      else
+        begin
+          n := umlFloatToStr(Size) + '_' + t;
+          p := FTextSizeCache[n];
+          if p = nil then
+            begin
+              new(p);
+              LockObject(FDrawExecute);
+              try
+                  p^ := FDrawInterface.GetTextSize(t, Size);
+              except
+              end;
               UnLockObject(FDrawExecute);
-          end;
-          FTextSizeCache.Add(n, p, False);
+              FTextSizeCache.Add(n, p, False);
+            end;
+          Result := p^;
         end;
-      Result := p^;
     end
   else
       Result := NULLPoint;
 end;
 
-function TDrawEngine.GetTextSizeR(Text: SystemString; Size: TDEFloat): TDERect;
+function TDrawEngine.GetTextSize(const buff: TDSegmentionLine): TDEVec;
+var
+  i: Integer;
+  r4_siz: TDEVec;
+begin
+  Result := Vec2(0, 0);
+
+  if length(buff) = 0 then
+      exit;
+
+  for i := 0 to length(buff) - 1 do
+    begin
+      r4_siz := GetTextSize(buff[i].Text, buff[i].Size);
+
+      Result[0] := Result[0] + r4_siz[0];
+      if r4_siz[1] > Result[1] then
+          Result[1] := r4_siz[1];
+    end;
+end;
+
+function TDrawEngine.GetTextSize(const buff: TDArraySegmentionText): TDEVec;
+var
+  i: Integer;
+  r4_siz: TDEVec;
+begin
+  Result := Vec2(0, 0);
+
+  if length(buff) = 0 then
+      exit;
+
+  for i := 0 to length(buff) - 1 do
+    begin
+      r4_siz := GetTextSize(buff[i]);
+
+      Result[1] := Result[1] + r4_siz[1];
+      if r4_siz[0] > Result[0] then
+          Result[0] := r4_siz[0];
+    end;
+end;
+
+function TDrawEngine.GetTextSizeR(const Text: SystemString; Size: TDEFloat): TDERect;
 begin
   Result[0] := NULLVec;
   Result[1] := GetTextSize(Text, Size);
+end;
+
+function TDrawEngine.GetTextSizeR(const buff: TDArraySegmentionText): TDERect;
+begin
+  Result[0] := NULLVec;
+  Result[1] := GetTextSize(buff);
 end;
 
 procedure TDrawEngine.ClearScrollText;
@@ -2905,7 +4026,7 @@ var
   i: Integer;
 begin
   for i := 0 to FScrollTextList.Count - 1 do
-      DisposeObject(FScrollTextList[i]);
+      disposeObject(FScrollTextList[i]);
 
   FScrollTextList.Clear;
 end;
@@ -2915,7 +4036,7 @@ var
   sour: TScrollTextSource;
 begin
   if not ReadyOK then
-      Exit;
+      exit;
 
   sour := TScrollTextSource.Create;
   sour.LifeTime := LifeTime;
@@ -2933,7 +4054,7 @@ var
   sour: TScrollTextSource;
 begin
   if not ReadyOK then
-      Exit;
+      exit;
 
   sour := nil;
   for i := 0 to FScrollTextList.Count - 1 do
@@ -2941,7 +4062,7 @@ begin
       if TScrollTextSource(FScrollTextList[i]).Tag = Tag then
         begin
           sour := TScrollTextSource(FScrollTextList[i]);
-          Break;
+          break;
         end;
     end;
   if sour = nil then
@@ -2968,7 +4089,7 @@ end;
 procedure TDrawEngine.ClearUI;
 begin
   while FUIList.Count > 0 do
-      DisposeObject(FUIList[0]);
+      disposeObject(FUIList[0]);
 
   FLastAcceptDownUI := nil;
 end;
@@ -3004,8 +4125,8 @@ begin
       if (ui.Visibled) and (ui.TapDown(x, y)) then
         begin
           FLastAcceptDownUI := ui;
-          Result := True;
-          Exit;
+          Result := true;
+          exit;
         end;
       inc(i);
     end;
@@ -3031,8 +4152,8 @@ begin
           ui := FUIList[i] as TDrawEngine_UIBase;
           if (ui.Visibled) and (ui.TapMove(x, y)) then
             begin
-              Result := True;
-              Exit;
+              Result := true;
+              exit;
             end;
           inc(i);
         end;
@@ -3058,8 +4179,8 @@ begin
           ui := FUIList[i] as TDrawEngine_UIBase;
           if (ui.Visibled) and (ui.TapUp(x, y)) then
             begin
-              Result := True;
-              Exit;
+              Result := true;
+              exit;
             end;
           inc(i);
         end;
@@ -3115,7 +4236,7 @@ begin
   Result := ScreenRectInScreen(SceneToScreen(r));
 end;
 
-procedure TDrawEngine.DrawUserCustom(const OnDraw: TCustomDrawMethod; const UserData: Pointer; const UserObject: TCoreClassObject);
+procedure TDrawEngine.DrawUserCustom(const OnDraw: TCustomDraw_Method; const UserData: Pointer; const UserObject: TCoreClassObject);
 begin
   if Assigned(OnDraw) then
       FDrawCommand.DrawUserCustom(OnDraw, UserData, UserObject);
@@ -3128,7 +4249,7 @@ begin
   pl := TVec2List.Create;
   pl.AssignFromArrayV2(arry);
   DrawPL(SmoothLevel, pl, ClosedLine, COLOR, LineWidth);
-  DisposeObject(pl);
+  disposeObject(pl);
 end;
 
 procedure TDrawEngine.DrawArrayVec2_Line(arry: TArrayVec2; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat);
@@ -3138,7 +4259,7 @@ begin
   pl := TVec2List.Create;
   pl.AssignFromArrayV2(arry);
   DrawPL(pl, ClosedLine, COLOR, LineWidth);
-  DisposeObject(pl);
+  disposeObject(pl);
 end;
 
 procedure TDrawEngine.DrawArrayVec2_LineInScene(SmoothLevel: TDEFloat; arry: TArrayVec2; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat);
@@ -3148,7 +4269,7 @@ begin
   pl := TVec2List.Create;
   pl.AssignFromArrayV2(arry);
   DrawPLInScene(SmoothLevel, pl, ClosedLine, COLOR, LineWidth);
-  DisposeObject(pl);
+  disposeObject(pl);
 end;
 
 procedure TDrawEngine.DrawArrayVec2_LineInScene(arry: TArrayVec2; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat);
@@ -3158,10 +4279,10 @@ begin
   pl := TVec2List.Create;
   pl.AssignFromArrayV2(arry);
   DrawPLInScene(pl, ClosedLine, COLOR, LineWidth);
-  DisposeObject(pl);
+  disposeObject(pl);
 end;
 
-procedure TDrawEngine.DrawPL(SmoothLevel: TDEFloat; pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat);
+procedure TDrawEngine.DrawPL(DotLine: Boolean; SmoothLevel: TDEFloat; pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat);
 var
   n: TVec2List;
 begin
@@ -3169,14 +4290,14 @@ begin
     begin
       n := TVec2List.Create;
       pl.SplineSmooth(n, SmoothLevel);
-      DrawPL(n, ClosedLine, COLOR, LineWidth);
-      DisposeObject(n);
+      DrawPL(DotLine, n, ClosedLine, COLOR, LineWidth);
+      disposeObject(n);
     end
   else
       DrawPL(pl, ClosedLine, COLOR, LineWidth);
 end;
 
-procedure TDrawEngine.DrawPL(pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat);
+procedure TDrawEngine.DrawPL(DotLine: Boolean; pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat);
 var
   i: Integer;
   t1, t2: TDEVec;
@@ -3187,14 +4308,30 @@ begin
     begin
       t1 := pl[i - 1]^;
       t2 := pl[i]^;
-      FDrawCommand.DrawLine(t1, t2, COLOR);
+      if DotLine then
+          FDrawCommand.DrawDotLine(t1, t2, COLOR)
+      else
+          FDrawCommand.DrawLine(t1, t2, COLOR);
     end;
   if (ClosedLine) and (pl.Count > 1) then
     begin
       t1 := pl.First^;
       t2 := pl.Last^;
-      FDrawCommand.DrawLine(t1, t2, COLOR);
+      if DotLine then
+          FDrawCommand.DrawDotLine(t1, t2, COLOR)
+      else
+          FDrawCommand.DrawLine(t1, t2, COLOR);
     end;
+end;
+
+procedure TDrawEngine.DrawPL(SmoothLevel: TDEFloat; pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawPL(False, SmoothLevel, pl, ClosedLine, COLOR, LineWidth);
+end;
+
+procedure TDrawEngine.DrawPL(pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawPL(False, pl, ClosedLine, COLOR, LineWidth);
 end;
 
 procedure TDrawEngine.DrawPLInScene(pl: TVec2List; ClosedLine: Boolean; COLOR: TDEColor; LineWidth: TDEFloat);
@@ -3225,7 +4362,7 @@ begin
   n := TVec2List.Create;
   pl.SplineSmooth(n, SmoothLevel);
   DrawPLInScene(n, ClosedLine, COLOR, LineWidth);
-  DisposeObject(n);
+  disposeObject(n);
 end;
 
 procedure TDrawEngine.DrawPLInScene(pl: TVec2List; ClosedLine: Boolean; opt: TPolyDrawOption);
@@ -3259,14 +4396,14 @@ begin
     end;
 end;
 
-procedure TDrawEngine.DrawPolyInScene(Poly: TPoly; ClosedLine: Boolean; opt: TPolyDrawOption);
+procedure TDrawEngine.DrawPolyInScene(Poly: TDeflectionPolygon; ClosedLine: Boolean; opt: TPolyDrawOption);
 var
   i: Integer;
   t1, t2: TDEVec;
   r: TDERect;
 begin
-  if Poly.Count < 3 then
-      Exit;
+  if Poly.Count = 0 then
+      exit;
   FDrawCommand.SetLineWidth(opt.LineWidth * Scale);
   for i := 0 to Poly.Count - 1 do
     begin
@@ -3277,13 +4414,6 @@ begin
       r[1][1] := t1[1] + opt.PointScreenRadius;
       FDrawCommand.DrawEllipse(r, opt.PointColor);
     end;
-
-  t1 := SceneToScreen(Poly.Position);
-  r[0][0] := t1[0] - opt.PointScreenRadius;
-  r[0][1] := t1[1] - opt.PointScreenRadius;
-  r[1][0] := t1[0] + opt.PointScreenRadius;
-  r[1][1] := t1[1] + opt.PointScreenRadius;
-  FDrawCommand.DrawEllipse(r, opt.PointColor);
 
   for i := 1 to Poly.Count - 1 do
     begin
@@ -3299,15 +4429,12 @@ begin
     end;
 end;
 
-procedure TDrawEngine.DrawPolyExpandInScene(Poly: TPoly; ExpandDistance: TDEFloat; ClosedLine: Boolean; opt: TPolyDrawOption);
+procedure TDrawEngine.DrawPolyExpandInScene(Poly: TDeflectionPolygon; ExpandDistance: TDEFloat; ClosedLine: Boolean; opt: TPolyDrawOption);
 var
   i: Integer;
   t1, t2: TDEVec;
   r: TDERect;
 begin
-  if Poly.Count < 3 then
-      Exit;
-
   FDrawCommand.SetLineWidth(opt.LineWidth * Scale);
 
   for i := 0 to Poly.Count - 1 do
@@ -3334,6 +4461,69 @@ begin
     end;
 end;
 
+procedure TDrawEngine.DrawTriangle(DotLine: Boolean; const t: TTriangle; COLOR: TDEColor; LineWidth: TDEFloat; DrawCentre: Boolean);
+begin
+  if DotLine then
+    begin
+      DrawDotLine(t[0], t[1], COLOR, LineWidth);
+      DrawDotLine(t[1], t[2], COLOR, LineWidth);
+      DrawDotLine(t[2], t[0], COLOR, LineWidth);
+    end
+  else
+    begin
+      DrawLine(t[0], t[1], COLOR, LineWidth);
+      DrawLine(t[1], t[2], COLOR, LineWidth);
+      DrawLine(t[2], t[0], COLOR, LineWidth);
+    end;
+  if DrawCentre then
+      DrawPoint(TriCentre(t), COLOR, LineWidth * 2, LineWidth);
+end;
+
+procedure TDrawEngine.DrawTriangle(DotLine: Boolean; const t: TTriangleList; COLOR: TDEColor; LineWidth: TDEFloat; DrawCentre: Boolean);
+var
+  i: Integer;
+begin
+  for i := 0 to t.Count - 1 do
+      DrawTriangle(DotLine, t[i]^, COLOR, LineWidth, DrawCentre);
+end;
+
+procedure TDrawEngine.DrawTriangleInScene(DotLine: Boolean; const t: TTriangle; COLOR: TDEColor; LineWidth: TDEFloat; DrawCentre: Boolean);
+begin
+  if DotLine then
+    begin
+      DrawDotLineInScene(t[0], t[1], COLOR, LineWidth);
+      DrawDotLineInScene(t[1], t[2], COLOR, LineWidth);
+      DrawDotLineInScene(t[2], t[0], COLOR, LineWidth);
+    end
+  else
+    begin
+      DrawLineInScene(t[0], t[1], COLOR, LineWidth);
+      DrawLineInScene(t[1], t[2], COLOR, LineWidth);
+      DrawLineInScene(t[2], t[0], COLOR, LineWidth);
+    end;
+  if DrawCentre then
+      DrawPointInScene(TriCentre(t), COLOR, LineWidth * 2, LineWidth);
+end;
+
+procedure TDrawEngine.DrawTriangleInScene(DotLine: Boolean; const t: TTriangleList; COLOR: TDEColor; LineWidth: TDEFloat; DrawCentre: Boolean);
+var
+  i: Integer;
+begin
+  for i := 0 to t.Count - 1 do
+      DrawTriangleInScene(DotLine, t[i]^, COLOR, LineWidth, DrawCentre);
+end;
+
+procedure TDrawEngine.DrawDotLine(pt1, pt2: TDEVec; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  FDrawCommand.SetLineWidth(LineWidth);
+  FDrawCommand.DrawDotLine(pt1, pt2, COLOR);
+end;
+
+procedure TDrawEngine.DrawDotLineInScene(pt1, pt2: TDEVec; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawDotLine(SceneToScreen(pt1), SceneToScreen(pt2), COLOR, LineWidth * Scale);
+end;
+
 procedure TDrawEngine.DrawLine(pt1, pt2: TDEVec; COLOR: TDEColor; LineWidth: TDEFloat);
 begin
   FDrawCommand.SetLineWidth(LineWidth);
@@ -3346,7 +4536,7 @@ begin
 end;
 
 procedure TDrawEngine.DrawCorner(box: TV2Rect4; COLOR: TDEColor; BoundLineLength, LineWidth: TDEFloat);
-  procedure DrawCornerLine_(left_, cen_, right_: TVec2);
+  procedure DrawCornerLine_(left_, cen_, right_: TDEVec);
   begin
     if Vec2Distance(cen_, right_) > BoundLineLength then
         FDrawCommand.DrawLine(cen_, Vec2LerpTo(cen_, right_, BoundLineLength), COLOR);
@@ -3375,7 +4565,17 @@ begin
     end;
 end;
 
+procedure TDrawEngine.DrawCorner(box: TDERect; COLOR: TDEColor; BoundLineLength, LineWidth: TDEFloat);
+begin
+  DrawCorner(TV2Rect4.Init(box, 0), COLOR, BoundLineLength, LineWidth);
+end;
+
 procedure TDrawEngine.DrawCornerInScene(box: TV2Rect4; COLOR: TDEColor; BoundLineLength, LineWidth: TDEFloat);
+begin
+  DrawCorner(SceneToScreen(box), COLOR, BoundLineLength * Scale, LineWidth * Scale);
+end;
+
+procedure TDrawEngine.DrawCornerInScene(box: TDERect; COLOR: TDEColor; BoundLineLength, LineWidth: TDEFloat);
 begin
   DrawCorner(SceneToScreen(box), COLOR, BoundLineLength * Scale, LineWidth * Scale);
 end;
@@ -3384,7 +4584,7 @@ procedure TDrawEngine.DrawDE4V(d: TDE4V; COLOR: TDEColor; LineWidth: TDEFloat);
 var
   pr: TV2Rect4;
 begin
-  pr := TV2Rect4.Init(d.MakeRectV2, d.angle);
+  pr := TV2Rect4.Init(d.MakeRectV2, d.Angle);
   DrawLine(pr.LeftTop, pr.RightTop, COLOR, LineWidth);
   DrawLine(pr.RightTop, pr.RightBottom, COLOR, LineWidth);
   DrawLine(pr.RightBottom, pr.LeftBottom, COLOR, LineWidth);
@@ -3394,22 +4594,6 @@ end;
 procedure TDrawEngine.DrawDE4VInScene(d: TDE4V; COLOR: TDEColor; LineWidth: TDEFloat);
 begin
   DrawDE4V(SceneToScreen(d), COLOR, LineWidth * Scale);
-end;
-
-procedure TDrawEngine.DrawArrayVec2(arry: TArrayVec2; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
-var
-  i: Integer;
-begin
-  for i := low(arry) to high(arry) do
-      DrawPoint(arry[i], COLOR, LineLength, LineWidth);
-end;
-
-procedure TDrawEngine.DrawArrayVec2InScene(arry: TArrayVec2; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
-var
-  i: Integer;
-begin
-  for i := low(arry) to high(arry) do
-      DrawPointInScene(arry[i], COLOR, LineLength, LineWidth);
 end;
 
 procedure TDrawEngine.DrawPoint(pt: TDEVec; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
@@ -3436,15 +4620,54 @@ begin
   DrawPoint(SceneToScreen(pt), COLOR, LineLength * Scale, LineWidth * Scale);
 end;
 
-procedure TDrawEngine.DrawBox(r: TDERect; angle: TGeoFloat; COLOR: TDEColor; LineWidth: TDEFloat);
+procedure TDrawEngine.DrawArrayVec2(arry: TArrayVec2; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
+var
+  i: Integer;
 begin
-  FDrawCommand.SetLineWidth(LineWidth);
-  FDrawCommand.DrawRect(r, angle, COLOR);
+  for i := low(arry) to high(arry) do
+      DrawPoint(arry[i], COLOR, LineLength, LineWidth);
 end;
 
-procedure TDrawEngine.DrawBoxInScene(r: TDERect; angle: TGeoFloat; COLOR: TDEColor; LineWidth: TDEFloat);
+procedure TDrawEngine.DrawArrayVec2InScene(arry: TArrayVec2; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
+var
+  i: Integer;
 begin
-  DrawBox(SceneToScreen(r), angle, COLOR, LineWidth * Scale);
+  for i := low(arry) to high(arry) do
+      DrawPointInScene(arry[i], COLOR, LineLength, LineWidth);
+end;
+
+procedure TDrawEngine.DrawBox(box: TV2Rect4; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawLine(box.LeftTop, box.RightTop, COLOR, LineWidth);
+  DrawLine(box.RightTop, box.RightBottom, COLOR, LineWidth);
+  DrawLine(box.RightBottom, box.LeftBottom, COLOR, LineWidth);
+  DrawLine(box.LeftBottom, box.LeftTop, COLOR, LineWidth);
+end;
+
+procedure TDrawEngine.DrawBoxInScene(box: TV2Rect4; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawBox(SceneToScreen(box), COLOR, LineWidth * Scale);
+end;
+
+procedure TDrawEngine.DrawBox(r: TDERect; axis: TDEVec; Angle: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawBox(TV2Rect4.Init(r, axis, Angle), COLOR, LineWidth);
+end;
+
+procedure TDrawEngine.DrawBoxInScene(r: TDERect; axis: TDEVec; Angle: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawBox(SceneToScreen(r), SceneToScreen(axis), Angle, COLOR, LineWidth * Scale);
+end;
+
+procedure TDrawEngine.DrawBox(r: TDERect; Angle: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  FDrawCommand.SetLineWidth(LineWidth);
+  FDrawCommand.DrawRect(r, Angle, COLOR);
+end;
+
+procedure TDrawEngine.DrawBoxInScene(r: TDERect; Angle: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawBox(SceneToScreen(r), Angle, COLOR, LineWidth * Scale);
 end;
 
 procedure TDrawEngine.DrawBox(r: TDERect; COLOR: TDEColor; LineWidth: TDEFloat);
@@ -3457,14 +4680,51 @@ begin
   DrawBox(SceneToScreen(r), COLOR, LineWidth * Scale);
 end;
 
-procedure TDrawEngine.FillBox(r: TDERect; angle: TGeoFloat; COLOR: TDEColor);
+procedure TDrawEngine.DrawDotLineBox(box: TV2Rect4; COLOR: TDEColor; LineWidth: TDEFloat);
 begin
-  FDrawCommand.FillRect(r, angle, COLOR);
+  DrawDotLine(box.LeftTop, box.RightTop, COLOR, LineWidth);
+  DrawDotLine(box.RightTop, box.RightBottom, COLOR, LineWidth);
+  DrawDotLine(box.RightBottom, box.LeftBottom, COLOR, LineWidth);
+  DrawDotLine(box.LeftBottom, box.LeftTop, COLOR, LineWidth);
 end;
 
-procedure TDrawEngine.FillBoxInScene(r: TDERect; angle: TGeoFloat; COLOR: TDEColor);
+procedure TDrawEngine.DrawDotLineBoxInScene(box: TV2Rect4; COLOR: TDEColor; LineWidth: TDEFloat);
 begin
-  FillBox(SceneToScreen(r), angle, COLOR);
+  DrawDotLineBox(SceneToScreen(box), COLOR, LineWidth * Scale);
+end;
+
+procedure TDrawEngine.DrawDotLineBox(r: TDERect; axis: TDEVec; Angle: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawDotLineBox(TV2Rect4.Init(r, axis, Angle), COLOR, LineWidth);
+end;
+
+procedure TDrawEngine.DrawDotLineBoxInScene(r: TDERect; axis: TDEVec; Angle: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawDotLineBox(SceneToScreen(r), SceneToScreen(axis), Angle, COLOR, LineWidth * Scale);
+end;
+
+procedure TDrawEngine.FillBox(box: TV2Rect4; COLOR: TDEColor);
+var
+  buff: TArrayVec2;
+begin
+  buff := box.GetArrayVec2();
+  FillPolygon(buff, COLOR);
+  SetLength(buff, 0);
+end;
+
+procedure TDrawEngine.FillBoxInScene(box: TV2Rect4; COLOR: TDEColor);
+begin
+  FillBox(SceneToScreen(box), COLOR);
+end;
+
+procedure TDrawEngine.FillBox(r: TDERect; Angle: TDEFloat; COLOR: TDEColor);
+begin
+  FDrawCommand.FillRect(r, Angle, COLOR);
+end;
+
+procedure TDrawEngine.FillBoxInScene(r: TDERect; Angle: TDEFloat; COLOR: TDEColor);
+begin
+  FillBox(SceneToScreen(r), Angle, COLOR);
 end;
 
 procedure TDrawEngine.FillBox(r: TDERect; COLOR: TDEColor);
@@ -3477,6 +4737,12 @@ begin
   FillBox(SceneToScreen(r), COLOR);
 end;
 
+procedure TDrawEngine.DrawEllipse(pt: TDEVec; radius: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  FDrawCommand.SetLineWidth(LineWidth);
+  FDrawCommand.DrawEllipse(pt, radius, COLOR);
+end;
+
 procedure TDrawEngine.DrawEllipse(pt: TDEVec; radius: TDEFloat; COLOR: TDEColor);
 begin
   FDrawCommand.DrawEllipse(pt, radius, COLOR);
@@ -3485,6 +4751,11 @@ end;
 procedure TDrawEngine.DrawEllipse(r: TDERect; COLOR: TDEColor);
 begin
   FDrawCommand.DrawEllipse(r, COLOR);
+end;
+
+procedure TDrawEngine.DrawEllipseInScene(pt: TDEVec; radius: TDEFloat; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawEllipse(SceneToScreen(pt), radius * Scale, COLOR, LineWidth);
 end;
 
 procedure TDrawEngine.DrawEllipseInScene(pt: TDEVec; radius: TDEFloat; COLOR: TDEColor);
@@ -3517,41 +4788,82 @@ begin
   FillEllipse(SceneToScreen(r), COLOR);
 end;
 
-procedure TDrawEngine.DrawText(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat);
+procedure TDrawEngine.FillPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor);
 begin
-  FDrawCommand.DrawText(Text, Size, r, COLOR, center, RotateVec, angle);
+  FDrawCommand.FillPolygon(PolygonBuff, COLOR);
 end;
 
-procedure TDrawEngine.DrawText(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean);
+procedure TDrawEngine.DrawPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor; LineWidth: TDEFloat);
 var
-  siz: TDEVec;
-  box: TDERect;
+  l, i: Integer;
+  t1, t2: TDEVec;
 begin
-  DrawText(Text, Size, r, COLOR, center, DEVec(0.5, 0.5), 0);
+  l := length(PolygonBuff);
+  FDrawCommand.SetLineWidth(LineWidth);
 
-  if devpTextBox in FViewOptions then
+  for i := 1 to l - 1 do
     begin
-      siz := GetTextSize(Text, Size);
-      if center then
-        begin
-          box[0][0] := (RectWidth(r) - siz[0]) * 0.5;
-          box[0][1] := (RectHeight(r) - siz[1]) * 0.5;
-          box[0] := Vec2Add(box[0], r[0]);
-          box[1] := Vec2Add(box[0], siz);
-          DrawBox(box, COLOR, 1);
-        end
-      else
-        begin
-          box[0][0] := 0;
-          box[0][1] := (RectHeight(r) - siz[1]) * 0.5;
-          box[0] := Vec2Add(box[0], r[0]);
-          box[1] := Vec2Add(box[0], siz);
-          DrawBox(box, COLOR, 1);
-        end;
+      t1 := PolygonBuff[i - 1];
+      t2 := PolygonBuff[i];
+      FDrawCommand.DrawLine(t1, t2, COLOR);
+    end;
+  if (l > 1) then
+    begin
+      t1 := PolygonBuff[0];
+      t2 := PolygonBuff[l - 1];
+      FDrawCommand.DrawLine(t1, t2, COLOR);
     end;
 end;
 
-procedure TDrawEngine.DrawText(Text: SystemString; Size: TDEFloat; COLOR: TDEColor; ScreenPt: TDEVec);
+procedure TDrawEngine.DrawPolygonDotLine(PolygonBuff: TArrayVec2; COLOR: TDEColor; LineWidth: TDEFloat);
+var
+  l, i: Integer;
+  t1, t2: TDEVec;
+begin
+  l := length(PolygonBuff);
+  FDrawCommand.SetLineWidth(LineWidth);
+
+  for i := 1 to l - 1 do
+    begin
+      t1 := PolygonBuff[i - 1];
+      t2 := PolygonBuff[i];
+      FDrawCommand.DrawDotLine(t1, t2, COLOR);
+    end;
+  if (l > 1) then
+    begin
+      t1 := PolygonBuff[0];
+      t2 := PolygonBuff[l - 1];
+      FDrawCommand.DrawDotLine(t1, t2, COLOR);
+    end;
+end;
+
+function TDrawEngine.DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat): TV2Rect4;
+var
+  nr: TDERect;
+  buff: TDArraySegmentionText;
+  siz, order_pt: TDEVec;
+begin
+  nr := ForwardRect(r);
+  buff := FillSegmentionText(Text, Size, COLOR, TDrawTextExpressionRunTime);
+  siz := GetTextSize(buff);
+  if center then
+    begin
+      order_pt[0] := nr[0, 0] + (RectWidth(nr) - siz[0]) * 0.5;
+      order_pt[1] := nr[0, 1] + (RectHeight(nr) - siz[1]) * 0.5;
+    end
+  else
+      order_pt := nr[0];
+
+  Result := DrawSegmentionText(buff, order_pt, RotateVec, Angle);
+  FreeSegmentionText(buff);
+end;
+
+function TDrawEngine.DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean): TV2Rect4;
+begin
+  Result := DrawText(Text, Size, r, COLOR, center, DEVec(0.5, 0.5), 0);
+end;
+
+function TDrawEngine.DrawText(const Text: SystemString; Size: TDEFloat; COLOR: TDEColor; ScreenPt: TDEVec): TV2Rect4;
 var
   siz: TDEVec;
   r: TDERect;
@@ -3559,170 +4871,248 @@ begin
   siz := GetTextSize(Text, Size);
   r[0] := ScreenPt;
   r[1] := Vec2Add(ScreenPt, siz);
-  DrawText(Text, Size, r, COLOR, False);
+  Result := DrawText(Text, Size, r, COLOR, False);
 end;
 
-procedure TDrawEngine.DrawTextInScene(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat);
+function TDrawEngine.DrawTextInScene(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat): TV2Rect4;
 begin
-  DrawText(Text, Size * Scale, SceneToScreen(r), COLOR, center, RotateVec, angle);
+  Result := DrawText(Text, Size * Scale, SceneToScreen(r), COLOR, center, RotateVec, Angle);
 end;
 
-procedure TDrawEngine.DrawTextInScene(Text: SystemString; Size: TDEFloat; COLOR: TDEColor; ScenePos: TDEVec);
+function TDrawEngine.DrawTextInScene(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean): TV2Rect4;
 begin
-  DrawText(Text, Size * Scale, COLOR, SceneToScreen(ScenePos));
+  Result := DrawTextInScene(Text, Size, r, COLOR, center, DEVec(0.5, 0.5), 0);
 end;
 
-procedure TDrawEngine.DrawTextInScene(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean);
+function TDrawEngine.DrawTextInScene(const Text: SystemString; Size: TDEFloat; COLOR: TDEColor; ScenePos: TDEVec): TV2Rect4;
+var
+  siz: TDEVec;
+  r: TDERect;
 begin
-  DrawText(Text, Size * Scale, SceneToScreen(r), COLOR, center);
+  siz := GetTextSize(Text, Size);
+  r[0] := ScenePos;
+  r[1] := Vec2Add(ScenePos, siz);
+  Result := DrawTextInScene(Text, Size, r, COLOR, False);
 end;
 
-procedure TDrawEngine.DrawTexture(t: TCoreClassObject; sour, DestScreen: TDE4V; alpha: TDEFloat);
+function TDrawEngine.DrawSegmentionText(const buff: TDArraySegmentionText; pt: TDEVec; RotateVec: TDEVec; Angle: TDEFloat): TV2Rect4;
+var
+  r4_x, r4_y: TDEFloat;
+  lsiz, siz, rotAxis, r4_centre, r4_siz: TDEVec;
+  r4_rect: TDERect;
+  r4: TV2Rect4;
+  j, i: Integer;
 begin
-  FDrawCommand.DrawTexture(t, sour, DestScreen, alpha);
+  Result := TV2Rect4.Init();
+  if length(buff) = 0 then
+      exit;
+  // order text size
+  siz := GetTextSize(buff);
+  // rectangle axis
+  rotAxis := Vec2Add(pt, Vec2Mul(siz, RotateVec));
+  r4_x := pt[0];
+  r4_y := pt[1];
+  for j := low(buff) to high(buff) do
+    begin
+      lsiz := GetTextSize(buff[j]);
+      for i := low(buff[j]) to high(buff[j]) do
+        begin
+          // compute segmentation text size
+          r4_siz := GetTextSize(buff[j, i].Text, buff[j, i].Size);
+          // right offset
+          r4_rect[0, 0] := r4_x;
+          r4_rect[0, 1] := r4_y + (lsiz[1] - r4_siz[1]) * 0.5;
+          r4_rect[1] := Vec2Add(r4_rect[0], r4_siz);
+          r4_x := r4_rect[1, 0];
+          // segmentation transform to local
+          r4 := TV2Rect4.Init(ForwardRect(r4_rect));
+          r4 := r4.Rotation(rotAxis, Angle);
+          r4_centre := Vec2Middle(r4.LeftTop, r4.RightBottom);
+
+          // now draw!
+          FDrawCommand.DrawText(
+            buff[j, i].Text,
+            buff[j, i].Size,                                            // text size
+            RectV2(r4_centre, r4_siz[0], r4_siz[1]),                    // compute new rectangle
+            buff[j, i].COLOR,                                           // color
+            False,                                                      // centre
+            Vec2(0.5, 0.5),                                             // rotation axis coordinate
+            Vec2Angle(r4_centre, Vec2Middle(r4.LeftTop, r4.LeftBottom)) // transform angle
+            );
+
+          // draw box
+          if voTextBox in FViewOptions then
+              DrawBox(r4, DEColor(1, 0, 0, 0.5), 1);
+        end;
+      // next line
+      r4_x := pt[0];
+      r4_y := r4_y + lsiz[1];
+    end;
+
+  Result := TV2Rect4.Init(RectV2(pt, Vec2Add(pt, siz)), rotAxis, Angle);
 end;
 
-procedure TDrawEngine.DrawTexture(t: TCoreClassObject; sour: TDERect; DestScreen: TDE4V; alpha: TDEFloat);
+function TDrawEngine.DrawSegmentionText(const buff: TDArraySegmentionText; pt: TDEVec): TV2Rect4;
 begin
-  DrawTexture(t, TDE4V.Init(sour, 0), DestScreen, alpha);
+  Result := DrawSegmentionText(buff, pt, Vec2(0.5, 0.5), 0);
 end;
 
-procedure TDrawEngine.DrawTexture(t: TCoreClassObject; sour, DestScreen: TDERect; alpha: TDEFloat);
+function TDrawEngine.DrawSegmentionTextInScene(const buff: TDArraySegmentionText; pt: TDEVec; RotateVec: TDEVec; Angle: TDEFloat): TV2Rect4;
 begin
-  DrawTexture(t, TDE4V.Init(sour, 0), TDE4V.Init(DestScreen, 0), alpha);
+  Result := DrawSegmentionText(buff, SceneToScreen(pt), Vec2(0.5, 0.5), 0);
 end;
 
-procedure TDrawEngine.DrawTexture(t: TCoreClassObject; sour: TDERect; destScreenPt: TDEVec; angle, alpha: TDEFloat);
+function TDrawEngine.DrawSegmentionTextInScene(const buff: TDArraySegmentionText; pt: TDEVec): TV2Rect4;
+begin
+  Result := DrawSegmentionTextInScene(buff, pt, Vec2(0.5, 0.5), 0);
+end;
+
+procedure TDrawEngine.DrawPicture(t: TCoreClassObject; sour, DestScreen: TDE4V; alpha: TDEFloat);
+begin
+  FDrawCommand.DrawPicture(t, sour, DestScreen, alpha);
+end;
+
+procedure TDrawEngine.DrawPicture(t: TCoreClassObject; sour: TDERect; DestScreen: TDE4V; alpha: TDEFloat);
+begin
+  DrawPicture(t, TDE4V.Init(sour, 0), DestScreen, alpha);
+end;
+
+procedure TDrawEngine.DrawPicture(t: TCoreClassObject; sour, DestScreen: TDERect; alpha: TDEFloat);
+begin
+  DrawPicture(t, TDE4V.Init(sour, 0), TDE4V.Init(DestScreen, 0), alpha);
+end;
+
+procedure TDrawEngine.DrawPicture(t: TCoreClassObject; sour: TDERect; destScreenPt: TDEVec; Angle, alpha: TDEFloat);
 var
   w, h: TDEFloat;
 begin
   w := sour[1][0] - sour[0][0];
   h := sour[1][1] - sour[0][1];
-  DrawTexture(t, TDE4V.Init(sour, 0), TDE4V.Init(destScreenPt, w, h, angle), alpha);
+  DrawPicture(t, TDE4V.Init(sour, 0), TDE4V.Init(destScreenPt, w, h, Angle), alpha);
 end;
 
-procedure TDrawEngine.DrawTexture(t: TCoreClassObject; sour, DestScreen: TDERect; angle, alpha: TDEFloat);
+procedure TDrawEngine.DrawPicture(t: TCoreClassObject; sour, DestScreen: TDERect; Angle, alpha: TDEFloat);
 begin
-  DrawTexture(t, TDE4V.Init(sour, 0), TDE4V.Init(DestScreen, angle), alpha);
+  DrawPicture(t, TDE4V.Init(sour, 0), TDE4V.Init(DestScreen, Angle), alpha);
 end;
 
-function TDrawEngine.DrawTexture(indentEndge: Boolean; t: TCoreClassObject; sour, DestScreen: TDERect; alpha: TDEFloat): TDERect;
+function TDrawEngine.DrawPicture(indentEndge: Boolean; t: TCoreClassObject; sour, DestScreen: TDERect; alpha: TDEFloat): TDERect;
 begin
   if indentEndge then
-      Result := RectEndge(DestScreen, Vec2Mul(RectSize(DestScreen), -0.05))
+      Result := RectEdge(DestScreen, Vec2Mul(RectSize(DestScreen), -0.05))
   else
       Result := DestScreen;
 
-  DrawTexture(t, sour, Result, alpha);
+  DrawPicture(t, sour, Result, alpha);
 end;
 
-procedure TDrawEngine.FitDrawTexture(t: TCoreClassObject; sour, destScene: TDERect; angle, alpha: TDEFloat);
+procedure TDrawEngine.FitDrawPicture(t: TCoreClassObject; sour, destScene: TDERect; Angle, alpha: TDEFloat);
 begin
-  DrawTexture(t, sour, RectFit(sour, destScene), angle, alpha);
+  DrawPicture(t, sour, RectFit(sour, destScene), Angle, alpha);
 end;
 
-function TDrawEngine.FitDrawTexture(t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect;
+function TDrawEngine.FitDrawPicture(t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect;
 begin
   Result := RectFit(sour, destScene);
-  DrawTexture(t, sour, Result, alpha);
+  DrawPicture(t, sour, Result, alpha);
 end;
 
-function TDrawEngine.FitDrawTexture(indentEndge: Boolean; t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect;
+function TDrawEngine.FitDrawPicture(indentEndge: Boolean; t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect;
 begin
   if indentEndge then
-      Result := RectEndge(destScene, Vec2Mul(RectSize(destScene), -0.05))
+      Result := RectEdge(destScene, Vec2Mul(RectSize(destScene), -0.05))
   else
       Result := destScene;
 
-  FitDrawTexture(t, sour, Result, alpha);
+  FitDrawPicture(t, sour, Result, alpha);
 end;
 
-procedure TDrawEngine.DrawTextureInScene(t: TCoreClassObject; sour, destScene: TDE4V; alpha: TDEFloat);
+procedure TDrawEngine.DrawPictureInScene(t: TCoreClassObject; sour, destScene: TDE4V; alpha: TDEFloat);
 begin
-  DrawTexture(t, sour, SceneToScreen(destScene), alpha);
+  DrawPicture(t, sour, SceneToScreen(destScene), alpha);
 end;
 
-procedure TDrawEngine.DrawTextureInScene(t: TCoreClassObject; sour: TDERect; destScene: TDE4V; alpha: TDEFloat);
+procedure TDrawEngine.DrawPictureInScene(t: TCoreClassObject; sour: TDERect; destScene: TDE4V; alpha: TDEFloat);
 begin
-  DrawTextureInScene(t, TDE4V.Init(sour, 0), destScene, alpha);
+  DrawPictureInScene(t, TDE4V.Init(sour, 0), destScene, alpha);
 end;
 
-procedure TDrawEngine.DrawTextureInScene(t: TCoreClassObject; destScene: TDE4V; alpha: TDEFloat);
+procedure TDrawEngine.DrawPictureInScene(t: TCoreClassObject; destScene: TDE4V; alpha: TDEFloat);
 begin
-  DrawTextureInScene(t, TDE4V.Init, destScene, alpha);
+  DrawPictureInScene(t, TDE4V.Init, destScene, alpha);
 end;
 
-procedure TDrawEngine.DrawTextureInScene(t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat);
+procedure TDrawEngine.DrawPictureInScene(t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat);
 begin
-  DrawTextureInScene(t, TDE4V.Init(sour, 0), TDE4V.Init(destScene, 0), alpha);
+  DrawPictureInScene(t, TDE4V.Init(sour, 0), TDE4V.Init(destScene, 0), alpha);
 end;
 
-procedure TDrawEngine.DrawTextureInScene(t: TCoreClassObject; sour: TDERect; destScenePt: TDEVec; angle, alpha: TDEFloat);
+procedure TDrawEngine.DrawPictureInScene(t: TCoreClassObject; sour: TDERect; destScenePt: TDEVec; Angle, alpha: TDEFloat);
 var
   w, h: TDEFloat;
 begin
   w := sour[1][0] - sour[0][0];
   h := sour[1][1] - sour[0][1];
-  DrawTextureInScene(t, TDE4V.Init(sour, 0), TDE4V.Init(destScenePt, w, h, angle), alpha);
+  DrawPictureInScene(t, TDE4V.Init(sour, 0), TDE4V.Init(destScenePt, w, h, Angle), alpha);
 end;
 
-procedure TDrawEngine.DrawTextureInScene(t: TCoreClassObject; sour, destScene: TDERect; angle, alpha: TDEFloat);
+procedure TDrawEngine.DrawPictureInScene(t: TCoreClassObject; sour, destScene: TDERect; Angle, alpha: TDEFloat);
 begin
-  DrawTextureInScene(t, TDE4V.Init(sour, 0), TDE4V.Init(destScene, angle), alpha);
+  DrawPictureInScene(t, TDE4V.Init(sour, 0), TDE4V.Init(destScene, Angle), alpha);
 end;
 
-procedure TDrawEngine.DrawTextureInScene(t: TCoreClassObject; destScenePt: TDEVec; AWidth, AHeight, angle, alpha: TDEFloat);
+procedure TDrawEngine.DrawPictureInScene(t: TCoreClassObject; destScenePt: TDEVec; AWidth, AHeight, Angle, alpha: TDEFloat);
 begin
-  DrawTextureInScene(t, TDE4V.Init, TDE4V.Init(destScenePt, AWidth, AHeight, angle), alpha);
+  DrawPictureInScene(t, TDE4V.Init, TDE4V.Init(destScenePt, AWidth, AHeight, Angle), alpha);
 end;
 
-function TDrawEngine.DrawTextureInScene(indentEndge: Boolean; t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect;
+function TDrawEngine.DrawPictureInScene(indentEndge: Boolean; t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect;
 begin
   if indentEndge then
-      Result := RectEndge(destScene, Vec2Mul(RectSize(destScene), -0.05))
+      Result := RectEdge(destScene, Vec2Mul(RectSize(destScene), -0.05))
   else
       Result := destScene;
 
-  DrawTextureInScene(t, sour, Result, alpha);
+  DrawPictureInScene(t, sour, Result, alpha);
 end;
 
-procedure TDrawEngine.FitDrawTextureInScene(t: TCoreClassObject; sour, destScene: TDERect; angle, alpha: TDEFloat);
+procedure TDrawEngine.FitDrawPictureInScene(t: TCoreClassObject; sour, destScene: TDERect; Angle, alpha: TDEFloat);
 begin
-  DrawTextureInScene(t, sour, RectFit(sour, destScene), angle, alpha);
+  DrawPictureInScene(t, sour, RectFit(sour, destScene), Angle, alpha);
 end;
 
-function TDrawEngine.FitDrawTextureInScene(t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect;
+function TDrawEngine.FitDrawPictureInScene(t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect;
 begin
   Result := RectFit(sour, destScene);
-  DrawTextureInScene(t, sour, Result, alpha);
+  DrawPictureInScene(t, sour, Result, alpha);
 end;
 
-function TDrawEngine.FitDrawTextureInScene(indentEndge: Boolean; t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect;
+function TDrawEngine.FitDrawPictureInScene(indentEndge: Boolean; t: TCoreClassObject; sour, destScene: TDERect; alpha: TDEFloat): TDERect;
 begin
   if indentEndge then
-      Result := RectEndge(destScene, Vec2Mul(RectSize(destScene), -0.05))
+      Result := RectEdge(destScene, Vec2Mul(RectSize(destScene), -0.05))
   else
       Result := destScene;
 
-  Result := FitDrawTextureInScene(t, sour, Result, alpha);
+  Result := FitDrawPictureInScene(t, sour, Result, alpha);
 end;
 
-function TDrawEngine.DrawTexturePackingInScene(packing_t: TMemoryRasterList; Margins: TGeoFloat; destOffset: TDEVec; alpha: TDEFloat): TRectV2;
+function TDrawEngine.DrawPicturePackingInScene(packing_t: TMemoryRasterList; Margins: TDEFloat; destOffset: TDEVec; alpha: TDEFloat): TDERect;
 var
   rp: TRectPacking;
   i: Integer;
   t: TMemoryRaster;
-  r: TRectV2;
+  r: TDERect;
 begin
   Result := NULLRect;
   if packing_t.Count = 0 then
-      Exit;
+      exit;
   rp := TRectPacking.Create;
+  rp.Margins := Margins;
 
   for i := 0 to packing_t.Count - 1 do
       rp.Add(nil, packing_t[i], packing_t[i].BoundsRectV2);
 
-  rp.MaxWidth := Margins;
   rp.Build();
 
   for i := 0 to rp.Count - 1 do
@@ -3733,10 +5123,12 @@ begin
           Result := r
       else
           Result := BoundRect(Result, r);
-      DrawTextureInScene(t, t.BoundsRectV2, r, alpha);
+      DrawPictureInScene(t, t.BoundsRectV2, r, alpha);
+      DrawDotLineBox(SceneToScreen(r), Vec2(0.5, 0.5), 0, DEColor(1, 1, 1, 1), 1);
+      DrawText(PFormat('%d|s:10| %d*%d', [i + 1, t.width, t.height]), 12, SceneToScreen(r), DEColor(1, 1, 1, 1), False);
     end;
 
-  DisposeObject(rp);
+  disposeObject(rp);
 end;
 
 function TDrawEngine.CreateSequenceAnimation(stream: TCoreClassStream): TSequenceAnimationBase;
@@ -3755,7 +5147,7 @@ begin
       Result := FSequenceAnimationBuffer[i] as TSequenceAnimationBase;
       try
         if (Result.Source = t) and (VarType(Result.flag) = VarType(flag)) and (umlSameVarValue(Result.flag, flag)) then
-            Exit;
+            exit;
       except
       end;
     end;
@@ -3774,7 +5166,7 @@ begin
   Result.CompleteTime := 1.0;
   Result.PlayMode := TSequenceAnimationPlayMode.sapmPlayOne;
 
-  Result.LastUsed := True;
+  Result.LastUsed := true;
   FSequenceAnimationBuffer.Add(Result);
 end;
 
@@ -3789,10 +5181,10 @@ begin
     begin
       SA := FSequenceAnimationBuffer[i] as TSequenceAnimationBase;
       if (SA.Source = t) and (VarType(SA.flag) = VarType(flag)) and (umlSameVarValue(SA.flag, flag)) then
-          Break;
+          break;
     end;
   if SA = nil then
-      Exit;
+      exit;
   Result := SA.SequenceAnimationPlaying;
 end;
 
@@ -3801,16 +5193,16 @@ var
   i: Integer;
   SA: TSequenceAnimationBase;
 begin
-  Result := True;
+  Result := true;
   SA := nil;
   for i := 0 to FSequenceAnimationBuffer.Count - 1 do
     begin
       SA := FSequenceAnimationBuffer[i] as TSequenceAnimationBase;
       if (SA.Source = t) and (VarType(SA.flag) = VarType(flag)) and (umlSameVarValue(SA.flag, flag)) then
-          Break;
+          break;
     end;
   if SA = nil then
-      Exit;
+      exit;
   Result := SA.IsOver;
 end;
 
@@ -3821,7 +5213,7 @@ begin
   Result := False;
   for i := 0 to FSequenceAnimationBuffer.Count - 1 do
     if FSequenceAnimationBuffer[i] = SA then
-        Exit(True);
+        exit(true);
 end;
 
 function TDrawEngine.GetNewSequenceFlag: Variant;
@@ -3837,9 +5229,9 @@ var
 begin
   Result := nil;
   if Total = 0 then
-      Exit;
+      exit;
   if Column = 0 then
-      Exit;
+      exit;
 
   SA := GetOrCreateSequenceAnimation(flag, t);
   SA.width := TextureWidth;
@@ -3852,8 +5244,8 @@ begin
   else
       SA.PlayMode := TSequenceAnimationPlayMode.sapmPlayOne;
 
-  SA.LastUsed := True;
-  DrawTexture(SA.Source, SA.SequenceFrameRect, DestScreen, SA.GetOverAnimationSmoothAlpha(alpha));
+  SA.LastUsed := true;
+  DrawPicture(SA.Source, SA.SequenceFrameRect, DestScreen, SA.GetOverAnimationSmoothAlpha(alpha));
   Result := SA;
 end;
 
@@ -3889,7 +5281,7 @@ var
   d: TDERect;
 begin
   if indentEndge then
-      d := RectEndge(DestScreen, Vec2Mul(RectSize(DestScreen), -0.05))
+      d := RectEdge(DestScreen, Vec2Mul(RectSize(DestScreen), -0.05))
   else
       d := DestScreen;
 
@@ -3899,8 +5291,8 @@ end;
 
 procedure TDrawEngine.DrawSequenceTexture(SA: TSequenceAnimationBase; DestScreen: TDE4V; alpha: TDEFloat);
 begin
-  SA.LastUsed := True;
-  DrawTexture(SA.Source, SA.SequenceFrameRect, DestScreen, SA.GetOverAnimationSmoothAlpha(alpha));
+  SA.LastUsed := true;
+  DrawPicture(SA.Source, SA.SequenceFrameRect, DestScreen, SA.GetOverAnimationSmoothAlpha(alpha));
 end;
 
 function TDrawEngine.DrawSequenceTextureInScene(flag: Variant; t: TCoreClassObject; TextureWidth, TextureHeight, Total, Column: Integer; CompleteTime: Double; Looped: Boolean;
@@ -3935,7 +5327,7 @@ var
   d: TDERect;
 begin
   if indentEndge then
-      d := RectEndge(destScene, Vec2Mul(RectSize(destScene), -0.05))
+      d := RectEdge(destScene, Vec2Mul(RectSize(destScene), -0.05))
   else
       d := destScene;
 
@@ -3968,7 +5360,7 @@ begin
   i := 0;
   while i < FParticleBuffer.Count do
     if FParticleBuffer[i] = p then
-        FParticleBuffer.Delete(i)
+        FParticleBuffer.delete(i)
     else
         inc(i);
 end;
@@ -3980,11 +5372,11 @@ begin
   i := 0;
   while i < FParticleBuffer.Count do
     if FParticleBuffer[i] = p then
-        FParticleBuffer.Delete(i)
+        FParticleBuffer.delete(i)
     else
         inc(i);
   p.Owner := nil;
-  DisposeObject(p);
+  disposeObject(p);
 end;
 
 procedure TDrawEngine.ClearParticles;
@@ -3994,7 +5386,7 @@ begin
   for i := 0 to FParticleBuffer.Count - 1 do
     begin
       TParticles(FParticleBuffer[i]).Owner := nil;
-      DisposeObject(FParticleBuffer[i]);
+      disposeObject(FParticleBuffer[i]);
     end;
   FParticleBuffer.Clear;
 end;
@@ -4006,7 +5398,7 @@ begin
   Result := False;
   for i := 0 to FParticleBuffer.Count - 1 do
     if FParticleBuffer[i] = p then
-        Exit(True);
+        exit(true);
 end;
 
 function TDrawEngine.TotalParticleData: Integer;
@@ -4050,7 +5442,7 @@ begin
         for i := 0 to Particle.ParticleBuff.Count - 1 do
           begin
             p := Particle.ParticleBuff[i];
-            DrawSequenceTexture(p^.Source, TDE4V.Init(p^.Position, p^.radius * 2, p^.radius * 2, p^.angle), p^.alpha);
+            DrawSequenceTexture(p^.Source, TDE4V.Init(p^.Position, p^.radius * 2, p^.radius * 2, p^.Angle), p^.alpha);
           end;
       except
       end;
@@ -4132,11 +5524,11 @@ begin
       begin
         pr := rl[i];
         ptex := pr^.Data1;
-        DrawTextureInScene(ptex^.Source, ptex^.SourceRect, TDE4V.Init(pr^.Rect, 0), 0.5);
+        DrawPictureInScene(ptex^.Source, ptex^.SourceRect, TDE4V.Init(pr^.Rect, 0), 0.5);
       end;
     DrawText('Texture:' + umlIntToStr(rl.Count).Text + ' Area:' + umlIntToStr(Round(rl.MaxWidth)).Text + ' x ' + umlIntToStr(Round(rl.MaxHeight)).Text,
       10, DEColor(1, 1, 1, 1), r[0]);
-    DisposeObject(rl);
+    disposeObject(rl);
   except
   end;
   Scale := bakScale;
@@ -4184,7 +5576,7 @@ begin
       inc(i);
     end;
 
-  if devpFrameEndge in FViewOptions then
+  if voEdge in FViewOptions then
     begin
       FDrawCommand.SetLineWidth(1);
       FDrawCommand.DrawRect(MakeRect(1, 1, width - 1, height - 1), 0, FScreenFrameColor);
@@ -4195,7 +5587,7 @@ begin
   if Round(FrameCounterOfPerSec) > 0 then
       FLastDrawInfo := FLastDrawInfo + ' fps: ' + umlIntToStr(Round(FrameCounterOfPerSec)).Text + ' pipe: ' + umlIntToStr(Round(CommandCounterOfPerSec)).Text;
 
-  if devpFPS in FViewOptions then
+  if voFPS in FViewOptions then
     begin
       BeginCaptureShadow(Vec2(1, 1), 1.0);
       DrawText(FLastDrawInfo, 12, FFPSFontColor, DEVec(5, 5));
@@ -4217,26 +5609,26 @@ begin
       SA := FSequenceAnimationBuffer[i] as TSequenceAnimationBase;
       if not SA.LastUsed then
         begin
-          DisposeObject(SA);
-          FSequenceAnimationBuffer.Delete(i);
+          disposeObject(SA);
+          FSequenceAnimationBuffer.delete(i);
         end
       else
           inc(i);
     end;
 
-  if devpTextureState in FViewOptions then
+  if voPictureState in FViewOptions then
       PrepareTextureOutputState;
 end;
 
 procedure TDrawEngine.ClearFlush;
 begin
-  FDrawCommand.Clear(True);
+  FDrawCommand.Clear(true);
   FDrawExecute.Clear;
 end;
 
 procedure TDrawEngine.Flush;
 begin
-  Flush(True);
+  Flush(true);
 end;
 
 procedure TDrawEngine.Flush(Prepare: Boolean);
@@ -4291,8 +5683,8 @@ begin
       st := FScrollTextList[i] as TScrollTextSource;
       if st.LifeTime - deltaTime < 0 then
         begin
-          DisposeObject(st);
-          FScrollTextList.Delete(i);
+          disposeObject(st);
+          FScrollTextList.delete(i);
         end
       else
         begin
@@ -4316,8 +5708,8 @@ begin
             ((not p.Enabled) and (not p.Visible))) then
             begin
               p.Owner := nil;
-              DisposeObject(p);
-              FParticleBuffer.Delete(i);
+              disposeObject(p);
+              FParticleBuffer.delete(i);
             end
           else
             begin
@@ -4333,280 +5725,21 @@ begin
   FLastNewTime := FLastNewTime + FLastDeltaTime;
 end;
 
-constructor TDrawEnginePool.Create;
-begin
-  inherited Create;
-  FDefaultDrawEngineClass := TDrawEngine;
-  FDrawEngineList := TCoreClassList.Create;
-  FPostProgress := TNProgressPost.Create;
-end;
-
-destructor TDrawEnginePool.Destroy;
-begin
-  Clear;
-  DisposeObject(FDrawEngineList);
-  DisposeObject(FPostProgress);
-  inherited Destroy;
-end;
-
-procedure TDrawEnginePool.Clear;
-var
-  i: Integer;
-  p: PDrawEnginePoolData;
-begin
-  for i := 0 to FDrawEngineList.Count - 1 do
-    begin
-      p := FDrawEngineList[i];
-      DisposeObject(p^.DrawEng);
-      Dispose(p);
-    end;
-  FDrawEngineList.Clear;
-end;
-
-procedure TDrawEnginePool.ClearActivtedTimeOut(tickLen: Cardinal);
-var
-  i: Integer;
-  p: PDrawEnginePoolData;
-begin
-  i := 0;
-  while i < FDrawEngineList.Count do
-    begin
-      p := FDrawEngineList[i];
-      if GetTimeTick - p^.LastActivted > tickLen then
-        begin
-          DisposeObject(p^.workObj);
-          Dispose(p);
-          FDrawEngineList.Delete(i);
-        end
-      else
-          inc(i);
-    end;
-end;
-
-procedure TDrawEnginePool.Progress(deltaTime: Double);
-var
-  i: Integer;
-begin
-  FPostProgress.Progress(deltaTime);
-
-  for i := 0 to FDrawEngineList.Count - 1 do
-      PDrawEnginePoolData(FDrawEngineList[i])^.DrawEng.Progress(deltaTime);
-end;
-
-function TDrawEnginePool.GetEng(const workObj: TCoreClassObject; const Draw: TDrawEngineInterface): TDrawEngine;
-var
-  i: Integer;
-  p: PDrawEnginePoolData;
-begin
-  for i := 0 to FDrawEngineList.Count - 1 do
-    begin
-      p := FDrawEngineList[i];
-      if p^.workObj = workObj then
-        begin
-          p^.LastActivted := GetTimeTick();
-          if p^.DrawEng.FDrawInterface <> Draw then
-              p^.DrawEng.FDrawInterface := Draw;
-
-          p^.DrawEng.SetSize;
-          Exit(p^.DrawEng);
-        end;
-    end;
-  new(p);
-  p^.DrawEng := FDefaultDrawEngineClass.Create;
-  p^.DrawEng.FDrawInterface := Draw;
-  p^.DrawEng.ViewOptions := [];
-  p^.workObj := workObj;
-  p^.LastActivted := GetTimeTick;
-  p^.DrawEng.SetSize;
-  FDrawEngineList.Add(p);
-  Result := p^.DrawEng;
-end;
-
-function TDrawEnginePool.GetEng(const workObj: TCoreClassObject): TDrawEngine;
-var
-  i: Integer;
-  p: PDrawEnginePoolData;
-begin
-  for i := 0 to FDrawEngineList.Count - 1 do
-    begin
-      p := FDrawEngineList[i];
-      if p^.workObj = workObj then
-        begin
-          p^.LastActivted := GetTimeTick();
-          Exit(p^.DrawEng);
-        end;
-    end;
-  new(p);
-  p^.DrawEng := FDefaultDrawEngineClass.Create;
-  p^.DrawEng.ViewOptions := [];
-  p^.workObj := workObj;
-  p^.LastActivted := GetTimeTick;
-  FDrawEngineList.Add(p);
-  Result := p^.DrawEng;
-end;
-
-function TDrawEngine_Raster.DEColor2RasterColor(const COLOR: TDEColor): TRasterColor;
-begin
-  Result := RasterColorF(COLOR[0], COLOR[1], COLOR[2], COLOR[3]);
-end;
-
-function TDrawEngine_Raster.DEColor2RasterColor(const COLOR: TDEColor; const alpha: Byte): TRasterColor;
-begin
-  Result := RasterColorF(COLOR[0], COLOR[1], COLOR[2], COLOR[3]);
-end;
-
-constructor TDrawEngine_Raster.Create;
-begin
-  inherited Create;
-  FEngine := nil;
-  FMemory := DefaultTextureClass.Create;
-  FUsedAgg := True;
-  FFreeEngine := False;
-end;
-
-destructor TDrawEngine_Raster.Destroy;
-begin
-  DisposeObject(FMemory);
-  if (FFreeEngine) and (FEngine <> nil) then
-      DisposeObject(FEngine);
-  inherited Destroy;
-end;
-
-procedure TDrawEngine_Raster.SetSize(r: TDERect);
-begin
-  if not FMemory.IsMemoryMap then
-      FMemory.SetSize(Round(RectWidth(r)), Round(RectHeight(r)), RasterColor(0, 0, 0, 0));
-end;
-
-procedure TDrawEngine_Raster.SetLineWidth(w: TDEFloat);
-begin
-  if not FUsedAgg then
-      Exit;
-
-  FMemory.Agg.LineWidth := w
-end;
-
-procedure TDrawEngine_Raster.DrawLine(pt1, pt2: TDEVec; COLOR: TDEColor);
-begin
-  FMemory.LineF(pt1, pt2, DEColor2RasterColor(COLOR), True);
-end;
-
-procedure TDrawEngine_Raster.DrawRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor);
-begin
-  FMemory.DrawRect(r, angle, DEColor2RasterColor(COLOR));
-end;
-
-procedure TDrawEngine_Raster.FillRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor);
-begin
-  FMemory.FillRect(r, angle, DEColor2RasterColor(COLOR));
-end;
-
-procedure TDrawEngine_Raster.DrawEllipse(r: TDERect; COLOR: TDEColor);
-var
-  c: TDEVec;
-begin
-  c := RectCentre(r);
-  FMemory.DrawEllipse(c, RectWidth(r) * 0.5, RectHeight(r) * 0.5, DEColor2RasterColor(COLOR));
-end;
-
-procedure TDrawEngine_Raster.FillEllipse(r: TDERect; COLOR: TDEColor);
-var
-  c: TDEVec;
-begin
-  c := RectCentre(r);
-  FMemory.FillEllipse(c, RectWidth(r) * 0.5, RectHeight(r) * 0.5, DEColor2RasterColor(COLOR));
-end;
-
-procedure TDrawEngine_Raster.DrawText(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat);
-var
-  vSiz: TDEVec;
-  x, y: TDEFloat;
-begin
-  vSiz := FMemory.TextSize(Text, Size);
-  if center then
-    begin
-      x := r[0, 0] + (RectWidth(r) - vSiz[0]) * 0.5;
-      y := r[0, 1] + (RectHeight(r) - vSiz[1]) * 0.5;
-    end
-  else
-    begin
-      x := r[0, 0];
-      y := r[0, 1];
-    end;
-  FMemory.DrawText(Text, Round(x), Round(y), RotateVec, angle, 1.0, Size, DEColor2RasterColor(COLOR));
-end;
-
-procedure TDrawEngine_Raster.DrawTexture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat);
-begin
-  if t is TMemoryRaster then
-      TMemoryRaster(t).ProjectionTo(FMemory, TV2Rect4.Init(sour.MakeRectV2, sour.angle), TV2Rect4.Init(dest.MakeRectV2, dest.angle), True, alpha);
-end;
-
-procedure TDrawEngine_Raster.Flush;
-begin
-end;
-
-procedure TDrawEngine_Raster.ResetState;
-begin
-end;
-
-procedure TDrawEngine_Raster.BeginDraw;
-begin
-  if FUsedAgg then
-      FMemory.OpenAgg
-  else
-      FMemory.CloseAgg;
-end;
-
-procedure TDrawEngine_Raster.EndDraw;
-begin
-  if not FUsedAgg then
-      FMemory.CloseAgg;
-end;
-
-function TDrawEngine_Raster.CurrentScreenSize: TDEVec;
-begin
-  Result := FMemory.SizeOf2DPoint;
-end;
-
-function TDrawEngine_Raster.GetTextSize(Text: SystemString; Size: TDEFloat): TDEVec;
-begin
-  Result := FMemory.TextSize(Text, Size);
-end;
-
-function TDrawEngine_Raster.ReadyOK: Boolean;
-begin
-  Result := True;
-end;
-
-function TDrawEngine_Raster.Engine: TDrawEngine;
-begin
-  if FEngine = nil then
-    begin
-      FEngine := TDrawEngineClass.Create;
-      FFreeEngine := True;
-    end;
-  FEngine.FDrawInterface := Self;
-  Result := FEngine;
-end;
-
-procedure TDrawEngine_Raster.SetWorkMemory(m: TMemoryRaster);
-begin
-  Memory.SetWorkMemory(m);
-  Engine.SetSize(m);
-end;
-
 initialization
 
 DefaultTextureClass := TDETexture;
 EnginePool := TDrawEnginePool.Create;
+TexturePool := TDETextureList.Create;
 
 finalization
 
 if EnginePool <> nil then
   begin
-    DisposeObject(EnginePool);
+    disposeObject(EnginePool);
     EnginePool := nil;
   end;
+
+disposeObject(TexturePool);
+TexturePool := nil;
 
 end.

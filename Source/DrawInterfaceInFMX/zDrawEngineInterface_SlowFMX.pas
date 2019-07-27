@@ -23,7 +23,7 @@ unit zDrawEngineInterface_SlowFMX;
 
 interface
 
-uses System.Math.Vectors, System.Math,
+uses System.Math.Vectors, System.Math, System.Threading,
   FMX.Forms,
   FMX.Graphics, System.UITypes, System.Types, FMX.Types, FMX.Controls,
   FMX.Types3D, FMX.Surfaces, System.UIConsts, Geometry3DUnit, ListEngine,
@@ -44,19 +44,21 @@ type
   public
     procedure SetSize(r: TDERect); override;
     procedure SetLineWidth(w: TDEFloat); override;
+    procedure DrawDotLine(pt1, pt2: TDEVec; COLOR: TDEColor); override;
     procedure DrawLine(pt1, pt2: TDEVec; COLOR: TDEColor); override;
     procedure DrawRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor); override;
     procedure FillRect(r: TDERect; angle: TDEFloat; COLOR: TDEColor); override;
     procedure DrawEllipse(r: TDERect; COLOR: TDEColor); override;
     procedure FillEllipse(r: TDERect; COLOR: TDEColor); override;
-    procedure DrawText(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat); override;
-    procedure DrawTexture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat); override;
+    procedure FillPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor); override;
+    procedure DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat); override;
+    procedure DrawPicture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat); override;
     procedure Flush; override;
     procedure ResetState; override;
     procedure BeginDraw; override;
     procedure EndDraw; override;
     function CurrentScreenSize: TDEVec; override;
-    function GetTextSize(Text: SystemString; Size: TDEFloat): TDEVec; override;
+    function GetTextSize(const Text: SystemString; Size: TDEFloat): TDEVec; override;
     function ReadyOK: Boolean; override;
   public
     constructor Create;
@@ -80,8 +82,8 @@ type
     constructor Create; override;
     destructor Destroy; override;
 
-    procedure ReleaseFMXResource; override;
-    procedure FastUpdateTexture; override;
+    procedure ReleaseGPUMemory; override;
+    procedure Update; override;
 
     property Texture: TBitmap read GetTexture;
   end;
@@ -131,9 +133,9 @@ function DEColor(c: TAlphaColor): TDEColor; inline; overload;
 function PrepareColor(const SrcColor: TAlphaColor; const Opacity: TDEFloat): TAlphaColor; inline;
 procedure MakeMatrixRotation(angle, width, height, x, y, RotationCenter_X, RotationCenter_Y: TDEFloat; var OutputMatrix: TMatrix; var OutputRect: TRectf); inline;
 
-procedure MemoryBitmapToSurface(bmp: TMemoryRaster; Surface: TBitmapSurface); overload; inline;
-procedure MemoryBitmapToSurface(bmp: TMemoryRaster; sourRect: TRect; Surface: TBitmapSurface); overload; inline;
-procedure SurfaceToMemoryBitmap(Surface: TBitmapSurface; bmp: TMemoryRaster); inline;
+procedure MemoryBitmapToSurface(bmp: TMemoryRaster; Surface: TBitmapSurface); overload;
+procedure MemoryBitmapToSurface(bmp: TMemoryRaster; sourRect: TRect; Surface: TBitmapSurface); overload;
+procedure SurfaceToMemoryBitmap(Surface: TBitmapSurface; bmp: TMemoryRaster);
 procedure MemoryBitmapToBitmap(b: TMemoryRaster; bmp: TBitmap); overload;
 procedure MemoryBitmapToBitmap(b: TMemoryRaster; sourRect: TRect; bmp: TBitmap); overload;
 procedure BitmapToMemoryBitmap(bmp: TBitmap; b: TMemoryRaster);
@@ -156,7 +158,7 @@ uses
 {$IF Defined(ANDROID) or Defined(IOS)}
   FMX.Canvas.GPU, FMX.TextLayout.GPU, FMX.StrokeBuilder, FMX.Canvas.GPU.Helpers,
 {$ENDIF}
-  MemoryStream64, MediaCenter;
+  DoStatusIO, MemoryStream64, MediaCenter;
 
 function c2c(c: TDEColor): TAlphaColor;
 begin
@@ -291,14 +293,16 @@ begin
 end;
 
 procedure SurfaceToMemoryBitmap(Surface: TBitmapSurface; bmp: TMemoryRaster);
-var
-  x, y: Integer;
 begin
   bmp.SetSize(Surface.width, Surface.height);
-  for y := 0 to Surface.height - 1 do
-    for x := 0 to Surface.width - 1 do
-      with TAlphaColorRec(Surface.pixels[x, y]) do
-          bmp.Pixel[x, y] := RasterColor(r, g, b, a)
+  TParallel.For(0, Surface.height - 1, procedure(y: Integer)
+    var
+      x: Integer;
+    begin
+      for x := 0 to Surface.width - 1 do
+        with TAlphaColorRec(Surface.pixels[x, y]) do
+            bmp.Pixel[x, y] := RasterColor(r, g, b, a)
+    end);
 end;
 
 procedure MemoryBitmapToBitmap(b: TMemoryRaster; bmp: TBitmap);
@@ -382,7 +386,7 @@ end;
 procedure LoadMemoryBitmap(f: SystemString; b: TDETexture);
 begin
   LoadMemoryBitmap(f, TSequenceMemoryRaster(b));
-  b.ReleaseFMXResource;
+  b.ReleaseGPUMemory;
 end;
 
 procedure SaveMemoryBitmap(f: SystemString; b: TMemoryRaster);
@@ -469,8 +473,17 @@ begin
     end;
 end;
 
+procedure TDrawEngineInterface_FMX.DrawDotLine(pt1, pt2: TDEVec; COLOR: TDEColor);
+begin
+  FCanvas.Stroke.Dash := TStrokeDash.Dot;
+  FCanvas.Stroke.COLOR := c2c(COLOR);
+  FCanvas.fill.COLOR := FCanvas.Stroke.COLOR;
+  FCanvas.DrawLine(p2p(pt1), p2p(pt2), COLOR[3]);
+end;
+
 procedure TDrawEngineInterface_FMX.DrawLine(pt1, pt2: TDEVec; COLOR: TDEColor);
 begin
+  FCanvas.Stroke.Dash := TStrokeDash.Solid;
   FCanvas.Stroke.COLOR := c2c(COLOR);
   FCanvas.fill.COLOR := FCanvas.Stroke.COLOR;
   FCanvas.DrawLine(p2p(pt1), p2p(pt2), COLOR[3]);
@@ -489,6 +502,7 @@ begin
       FCanvas.MultiplyMatrix(M);
     end;
 
+  FCanvas.Stroke.Dash := TStrokeDash.Solid;
   FCanvas.Stroke.COLOR := c2c(COLOR);
   FCanvas.fill.COLOR := FCanvas.Stroke.COLOR;
   FCanvas.DrawRect(r2r(r), 0, 0, [], COLOR[3]);
@@ -510,6 +524,7 @@ begin
       FCanvas.MultiplyMatrix(M);
     end;
 
+  FCanvas.Stroke.Dash := TStrokeDash.Solid;
   FCanvas.Stroke.COLOR := c2c(COLOR);
   FCanvas.fill.COLOR := FCanvas.Stroke.COLOR;
   FCanvas.FillRect(r2r(r), 0, 0, [], COLOR[3]);
@@ -520,6 +535,7 @@ end;
 
 procedure TDrawEngineInterface_FMX.DrawEllipse(r: TDERect; COLOR: TDEColor);
 begin
+  FCanvas.Stroke.Dash := TStrokeDash.Solid;
   FCanvas.Stroke.COLOR := c2c(COLOR);
   FCanvas.fill.COLOR := FCanvas.Stroke.COLOR;
   FCanvas.DrawEllipse(r2r(r), COLOR[3]);
@@ -527,12 +543,29 @@ end;
 
 procedure TDrawEngineInterface_FMX.FillEllipse(r: TDERect; COLOR: TDEColor);
 begin
+  FCanvas.Stroke.Dash := TStrokeDash.Solid;
   FCanvas.Stroke.COLOR := c2c(COLOR);
   FCanvas.fill.COLOR := FCanvas.Stroke.COLOR;
   FCanvas.FillEllipse(r2r(r), COLOR[3]);
 end;
 
-procedure TDrawEngineInterface_FMX.DrawText(Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat);
+procedure TDrawEngineInterface_FMX.FillPolygon(PolygonBuff: TArrayVec2; COLOR: TDEColor);
+var
+  polygon_: TPolygon;
+  i: Integer;
+begin
+  FCanvas.Stroke.Dash := TStrokeDash.Solid;
+  FCanvas.Stroke.COLOR := c2c(COLOR);
+  FCanvas.fill.COLOR := FCanvas.Stroke.COLOR;
+
+  SetLength(polygon_, length(PolygonBuff));
+  for i := 0 to length(PolygonBuff) - 1 do
+      polygon_[i] := p2p(PolygonBuff[i]);
+
+  FCanvas.FillPolygon(polygon_, COLOR[3]);
+end;
+
+procedure TDrawEngineInterface_FMX.DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; angle: TDEFloat);
 var
   M, bak: TMatrix;
   rf: TRectf;
@@ -546,6 +579,7 @@ begin
       FCanvas.MultiplyMatrix(M);
     end;
 
+  FCanvas.Stroke.Dash := TStrokeDash.Solid;
   FCanvas.Stroke.COLOR := c2c(COLOR);
   FCanvas.fill.COLOR := FCanvas.Stroke.COLOR;
   FCanvas.Font.Size := Size;
@@ -561,7 +595,7 @@ begin
       FCanvas.SetMatrix(bak);
 end;
 
-procedure TDrawEngineInterface_FMX.DrawTexture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat);
+procedure TDrawEngineInterface_FMX.DrawPicture(t: TCoreClassObject; sour, dest: TDE4V; alpha: TDEFloat);
 var
   newSour, newDest: TDE4V;
   M, bak: TMatrix;
@@ -610,10 +644,11 @@ begin
           FCanvas.DrawBitmap(TBitmap(t), newSour.MakeRectf, newDest.MakeRectf, alpha, False);
     end
   else
-      RaiseInfo('no interface texture! ' + t.ClassName);
+      DoStatus('no interface texture! ' + t.ClassName);
 
   if FDebug then
     begin
+      FCanvas.Stroke.Dash := TStrokeDash.Solid;
       FCanvas.Stroke.COLOR := c2c(DEColor(1, 0.5, 0.5, 1));
       FCanvas.fill.COLOR := FCanvas.Stroke.COLOR;
       FCanvas.DrawLine(Point2Pointf(newDest.Centroid), Point2Pointf(PointRotation(newDest.Centroid, (newDest.width + newDest.height) * 0.5, (newDest.angle))), 0.5);
@@ -657,7 +692,7 @@ begin
   Result := FCurrSiz;
 end;
 
-function TDrawEngineInterface_FMX.GetTextSize(Text: SystemString; Size: TDEFloat): TDEVec;
+function TDrawEngineInterface_FMX.GetTextSize(const Text: SystemString; Size: TDEFloat): TDEVec;
 var
   r: TRectf;
 begin
@@ -704,6 +739,11 @@ begin
       FOwnerCanvasScale := 1.0;
       FCurrSiz := DEVec(TCustomForm(OwnerCtrl).ClientWidth, TCustomForm(OwnerCtrl).ClientHeight);
     end
+  else if OwnerCtrl is TBitmap then
+    begin
+      FOwnerCanvasScale := 1.0;
+      FCurrSiz := DEVec(TBitmap(OwnerCtrl).width, TBitmap(OwnerCtrl).height);
+    end
   else
     begin
       FOwnerCanvasScale := 1.0;
@@ -714,7 +754,8 @@ end;
 function TDETexture_FMX.GetTexture: TBitmap;
 begin
   if FTexture = nil then
-      FastUpdateTexture;
+      Update;
+  DrawUsage;
   Result := FTexture;
 end;
 
@@ -726,20 +767,20 @@ end;
 
 destructor TDETexture_FMX.Destroy;
 begin
-  ReleaseFMXResource;
+  ReleaseGPUMemory;
   inherited Destroy;
 end;
 
-procedure TDETexture_FMX.ReleaseFMXResource;
+procedure TDETexture_FMX.ReleaseGPUMemory;
 begin
   if FTexture <> nil then
       DisposeObject(FTexture);
   FTexture := nil;
 end;
 
-procedure TDETexture_FMX.FastUpdateTexture;
+procedure TDETexture_FMX.Update;
 begin
-  ReleaseFMXResource;
+  ReleaseGPUMemory;
   FTexture := TBitmap.Create;
   MemoryBitmapToBitmap(Self, FTexture);
 end;
@@ -864,7 +905,7 @@ begin
     procedure(const Name: PSystemString; Obj: TCoreClassObject)
     begin
       if Obj is TDETexture_FMX then
-          TDETexture_FMX(Obj).ReleaseFMXResource;
+          TDETexture_FMX(Obj).ReleaseGPUMemory;
     end);
 end;
 

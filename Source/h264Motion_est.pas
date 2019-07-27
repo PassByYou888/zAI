@@ -20,7 +20,6 @@
 unit h264Motion_est;
 
 {$INCLUDE zDefine.inc}
-{$POINTERMATH ON}
 
 interface
 

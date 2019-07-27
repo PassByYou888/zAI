@@ -1,0 +1,54 @@
+object TriangleOptimizationMainForm: TTriangleOptimizationMainForm
+  Left = 0
+  Top = 0
+  Caption = 'Triangle Optimization Demo. create by.qq600585'
+  ClientHeight = 348
+  ClientWidth = 1508
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object Timer1: TTimer
+    Interval = 1
+    OnTimer = Timer1Timer
+    Left = 224
+    Top = 80
+  end
+  object pb1: TPaintBox
+    Position.X = 16.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 361.000000000000000000
+    Size.Height = 313.000000000000000000
+    Size.PlatformDefault = False
+    OnClick = pbClick
+    OnPaint = pb1Paint
+  end
+  object pb2: TPaintBox
+    Position.X = 392.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 361.000000000000000000
+    Size.Height = 313.000000000000000000
+    Size.PlatformDefault = False
+    OnClick = pbClick
+    OnPaint = pb2Paint
+  end
+  object pb3: TPaintBox
+    Position.X = 760.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 361.000000000000000000
+    Size.Height = 313.000000000000000000
+    Size.PlatformDefault = False
+    OnClick = pbClick
+    OnPaint = pb3Paint
+  end
+  object pb4: TPaintBox
+    Position.X = 1128.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 361.000000000000000000
+    Size.Height = 313.000000000000000000
+    Size.PlatformDefault = False
+    OnClick = pbClick
+    OnPaint = pb4Paint
+  end
+end

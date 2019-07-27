@@ -7,7 +7,7 @@ uses
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.TabControl, FMX.Controls.Presentation, FMX.StdCtrls,
   FMX.Objects, FMX.Layouts, FMX.ExtCtrls,
 
-  zDrawEngine, zDrawEngineInterface_FMX, CoreClasses, MemoryRaster, Geometry2DUnit;
+  zDrawEngine, zDrawEngineInterface_SlowFMX, CoreClasses, MemoryRaster, Geometry2DUnit;
 
 type
   TForm1 = class(TForm)
@@ -15,6 +15,7 @@ type
     Timer1: TTimer;
     PaintBox: TPaintBox;
     Image: TImage;
+    usedAggCheckBox: TCheckBox;
     procedure FormDestroy(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure PaintBoxPaint(Sender: TObject; Canvas: TCanvas);
@@ -25,6 +26,7 @@ type
   public
     { Public declarations }
     fmxIntf: TDrawEngineInterface_FMX;
+    procedure Render(Draw: TDrawEngine);
   end;
 
 var
@@ -35,18 +37,24 @@ implementation
 {$R *.fmx}
 
 
-procedure Render(Draw: TDrawEngine);
-var
-  d: TTimeTick;
+procedure TForm1.Render(Draw: TDrawEngine);
 begin
   if not Draw.ReadyOK then
-      exit;
+      Exit;
+  Draw.ViewOptions := [voEdge];
   Draw.SetSize;
-  Draw.FillBox(Draw.ScreenRect, DEColor(0, 0, 0, 1));
-  Draw.DrawText('Hello world', 18, Draw.ScreenRect, DEColor(1, 0, 0, 0.8), True, DEVec(0.5, 0.5), -15);
-  Draw.FillBox(RectV2(100, 100, 150, 150), 15, DEColor(1, 1, 1, 0.8));
-  Draw.DrawBox(RectV2(100, 100, 150, 150), -15, DEColor(1, 0.5, 0.5, 0.8), 5);
-  Draw.DrawEllipse(DEVec(200, 100), 70, DEColor(1, 0, 0, 0.8));
+  Draw.FillBox(Draw.ScreenRect, DEColor(0.5, 0.5, 0.5, 1));
+
+  Draw.FillBox(RectV2(100, 100, 250, 250), -180, DEColor(1, 1, 1, 0.2));
+  Draw.DrawBox(RectV2(49, 100, 151, 151), -15, DEColor(1, 0.5, 0.5, 0.9), 2);
+  Draw.FillEllipse(DERect(50, 100, 300, 250), DEColor(1, 1, 1, 0.5));
+
+  Draw.BeginCaptureShadow(Vec2(4, 4), 0.9);
+  Draw.DrawText('|s:10,color(1,1,1,1)|Hello|color(1,1,1,1)| world' + #13#10 +
+    '||' + #13#10 + 'default text |s:22,color(0,1,0,1)| big green' + #13#10 + 'big green line 2' + #13#10 + 'big green line 3',
+    18, Draw.ScreenRect, DEColor(1, 0, 0, 0.8), True, DEVec(0.5, 0.5), -22);
+  Draw.EndCaptureShadow;
+
   Draw.Flush;
 end;
 
@@ -66,7 +74,7 @@ var
   d: TDrawEngine;
 begin
   if fmxIntf = nil then
-      exit;
+      Exit;
   fmxIntf.SetSurface(Canvas, Sender);
   d := TDrawEngine.Create;
   d.DrawInterface := fmxIntf;
@@ -80,8 +88,8 @@ var
   d: TDrawEngine;
 begin
   d := TDrawEngine.Create;
-  d.Rasterization.SetSize(RectV2(0, 0, Image.Width, Image.Height));
-  d.Rasterization.UsedAgg := True;
+  d.Rasterization.UsedAgg := usedAggCheckBox.IsChecked;
+  d.Rasterization.SetSize(RectV2(0, 0, Image.width, Image.height));
   Render(d);
   MemoryBitmapToBitmap(d.Rasterization.Memory, Image.Bitmap);
   DisposeObject(d);

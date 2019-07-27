@@ -218,7 +218,7 @@ procedure TMovementEngine.Start(APaths: TVec2List);
 var
   i: Integer;
 begin
-  APaths.FixedSameError;
+  APaths.RemoveSame;
 
   if not FActive then
     begin

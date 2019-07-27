@@ -154,8 +154,8 @@ object GaussPyramidsForm: TGaussPyramidsForm
     Size.Height = 198.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
-    Viewport.Width = 1018.000000000000000000
-    Viewport.Height = 198.000000000000000000
+    Viewport.Width = 1014.000000000000000000
+    Viewport.Height = 194.000000000000000000
   end
   object Layout1: TLayout
     Align = Top

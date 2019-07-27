@@ -58,6 +58,7 @@ type
     procedure Write(name: SystemString; data: THashStringList); overload;
     procedure Write(name: SystemString; data: TPascalStringList); overload;
     procedure Write(name: SystemString; data: TCoreClassStrings); overload;
+    procedure Write(name: SystemString; data: TSegmentationColorList); overload;
     procedure Write(name: SystemString; data: TMemoryRaster); overload;
     procedure Write(name: SystemString; data: TAI_ImageList); overload;
     procedure Write(name: SystemString; data: TAI_ImageMatrix; SaveImg: Boolean); overload;
@@ -68,6 +69,7 @@ type
     procedure Read(name: SystemString; data: THashStringList); overload;
     procedure Read(name: SystemString; data: TPascalStringList); overload;
     procedure Read(name: SystemString; data: TCoreClassStrings); overload;
+    procedure Read(name: SystemString; data: TSegmentationColorList); overload;
     procedure Read(name: SystemString; data: TMemoryRaster); overload;
     procedure Read(name: SystemString; data: TAI_ImageList); overload;
     procedure Read(name: SystemString; data: TAI_ImageMatrix); overload;
@@ -220,6 +222,16 @@ begin
   DisposeObject(m64);
 end;
 
+procedure TTrainingTask.Write(name: SystemString; data: TSegmentationColorList);
+var
+  m64: TMemoryStream64;
+begin
+  m64 := TMemoryStream64.Create;
+  data.SaveToStream(m64);
+  Write(Name, m64);
+  DisposeObject(m64);
+end;
+
 procedure TTrainingTask.Write(name: SystemString; data: TMemoryRaster);
 var
   m64: TMemoryStream64;
@@ -308,6 +320,17 @@ begin
 end;
 
 procedure TTrainingTask.Read(name: SystemString; data: TCoreClassStrings);
+var
+  m64: TMemoryStream64;
+begin
+  data.Clear;
+  m64 := TMemoryStream64.Create;
+  read(name, m64);
+  data.LoadFromStream(m64);
+  DisposeObject(m64);
+end;
+
+procedure TTrainingTask.Read(name: SystemString; data: TSegmentationColorList);
 var
   m64: TMemoryStream64;
 begin
@@ -490,6 +513,13 @@ begin
       if not Result then
           report := PFormat('error training source: %s', [inputfile1])
     end
+  else if umlMultipleMatch(['TrainSS', 'TrainingSS'], ComputeFunc) then
+    begin
+      inputfile1 := Param.GetDefaultValue('source', '');
+      Result := Exists(inputfile1);
+      if not Result then
+          report := PFormat('error training source: %s', [inputfile1])
+    end
   else
     begin
       report := 'illegal ComputeFunc.';
@@ -661,6 +691,19 @@ begin
       else
           report := PFormat('error training sync file: %s', [outputfile]);
     end
+  else if umlMultipleMatch(['TrainSS', 'TrainingSS'], ComputeFunc) then
+    begin
+      outputfile := Param.GetDefaultValue('output.sync', 'output' + C_SS_Ext + '.sync');
+      if Exists(outputfile) then
+        begin
+          outputfile := Param.GetDefaultValue('output', 'output' + C_SS_Ext);
+          Result := Exists(outputfile);
+          if not Result then
+              report := PFormat('error training output: %s', [outputfile]);
+        end
+      else
+          report := PFormat('error training sync file: %s', [outputfile]);
+    end
   else
     begin
       report := 'illegal ComputeFunc.';
@@ -677,7 +720,7 @@ var
   ResultValues: THashVariantList;
   ComputeFunc: TPascalString;
   inputfile1, inputfile2: SystemString;
-  outputfile, syncfile: SystemString;
+  outputfile1, syncfile: SystemString;
 
   m1, m2: TMemoryStream64;
 begin
@@ -691,9 +734,9 @@ begin
   Result := False;
   Param := THashVariantList.Create;
   Read(paramFile, Param);
-  outputfile := Param.GetDefaultValue('Result', 'Result.txt');
+  outputfile1 := Param.GetDefaultValue('Result', 'Result.txt');
   ResultValues := THashVariantList.Create;
-  Read(outputfile, ResultValues);
+  Read(outputfile1, ResultValues);
 
   if Param.Exists('func') then
       ComputeFunc := Param['func']
@@ -708,7 +751,7 @@ begin
     begin
       inputfile1 := Param.GetDefaultValue('source', '');
       inputfile2 := Param.GetDefaultValue('dest', '');
-      outputfile := Param.GetDefaultValue('output', 'output.bmp');
+      outputfile1 := Param.GetDefaultValue('output', 'output.bmp');
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(inputfile2, dest, inputfile2);
@@ -717,7 +760,7 @@ begin
   else if umlMultipleMatch(['TrainOD', 'TrainingOD', 'TrainObjectDetector'], ComputeFunc) then
     begin
       inputfile1 := Param.GetDefaultValue('source', '');
-      outputfile := Param.GetDefaultValue('output', 'output' + C_OD_Ext);
+      outputfile1 := Param.GetDefaultValue('output', 'output' + C_OD_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       Result := True;
@@ -725,7 +768,7 @@ begin
   else if umlMultipleMatch(['TrainOD_Marshal', 'TrainingOD_Marshal', 'TrainObjectDetectorMarshal'], ComputeFunc) then
     begin
       inputfile1 := Param.GetDefaultValue('source', '');
-      outputfile := Param.GetDefaultValue('output', 'output' + C_OD_Marshal_Ext);
+      outputfile1 := Param.GetDefaultValue('output', 'output' + C_OD_Marshal_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       Result := True;
@@ -733,7 +776,7 @@ begin
   else if umlMultipleMatch(['TrainSP', 'TrainingSP', 'TrainShapePredictor'], ComputeFunc) then
     begin
       inputfile1 := Param.GetDefaultValue('source', '');
-      outputfile := Param.GetDefaultValue('output', 'output' + C_SP_Ext);
+      outputfile1 := Param.GetDefaultValue('output', 'output' + C_SP_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       Result := True;
@@ -743,7 +786,7 @@ begin
       inputfile1 := Param.GetDefaultValue('source', '');
       inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_Metric_Ext + '.sync');
       syncfile := Param.GetDefaultValue('output.sync', 'output' + C_Metric_Ext + '.sync');
-      outputfile := Param.GetDefaultValue('output', 'output' + C_Metric_Ext);
+      outputfile1 := Param.GetDefaultValue('output', 'output' + C_Metric_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(syncfile, dest, inputfile2);
@@ -754,7 +797,7 @@ begin
       inputfile1 := Param.GetDefaultValue('source', '');
       inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_LMetric_Ext + '.sync');
       syncfile := Param.GetDefaultValue('output.sync', 'output' + C_LMetric_Ext + '.sync');
-      outputfile := Param.GetDefaultValue('output', 'output' + C_LMetric_Ext);
+      outputfile1 := Param.GetDefaultValue('output', 'output' + C_LMetric_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(syncfile, dest, inputfile2);
@@ -765,7 +808,7 @@ begin
       inputfile1 := Param.GetDefaultValue('source', '');
       inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_MMOD_Ext + '.sync');
       syncfile := Param.GetDefaultValue('output.sync', 'output' + C_MMOD_Ext + '.sync');
-      outputfile := Param.GetDefaultValue('output', 'output' + C_MMOD_Ext);
+      outputfile1 := Param.GetDefaultValue('output', 'output' + C_MMOD_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(syncfile, dest, inputfile2);
@@ -776,7 +819,7 @@ begin
       inputfile1 := Param.GetDefaultValue('source', '');
       inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_RNIC_Ext + '.sync');
       syncfile := Param.GetDefaultValue('output.sync', 'output' + C_RNIC_Ext + '.sync');
-      outputfile := Param.GetDefaultValue('output', 'output' + C_RNIC_Ext);
+      outputfile1 := Param.GetDefaultValue('output', 'output' + C_RNIC_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(syncfile, dest, inputfile2);
@@ -787,7 +830,7 @@ begin
       inputfile1 := Param.GetDefaultValue('source', '');
       inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_LRNIC_Ext + '.sync');
       syncfile := Param.GetDefaultValue('output.sync', 'output' + C_LRNIC_Ext + '.sync');
-      outputfile := Param.GetDefaultValue('output', 'output' + C_LRNIC_Ext);
+      outputfile1 := Param.GetDefaultValue('output', 'output' + C_LRNIC_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(syncfile, dest, inputfile2);
@@ -798,7 +841,7 @@ begin
       inputfile1 := Param.GetDefaultValue('source', '');
       inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_GDCNIC_Ext + '.sync');
       syncfile := Param.GetDefaultValue('output.sync', 'output' + C_GDCNIC_Ext + '.sync');
-      outputfile := Param.GetDefaultValue('output', 'output' + C_GDCNIC_Ext);
+      outputfile1 := Param.GetDefaultValue('output', 'output' + C_GDCNIC_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(syncfile, dest, inputfile2);
@@ -809,7 +852,18 @@ begin
       inputfile1 := Param.GetDefaultValue('source', '');
       inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_GNIC_Ext + '.sync');
       syncfile := Param.GetDefaultValue('output.sync', 'output' + C_GNIC_Ext + '.sync');
-      outputfile := Param.GetDefaultValue('output', 'output' + C_GNIC_Ext);
+      outputfile1 := Param.GetDefaultValue('output', 'output' + C_GNIC_Ext);
+      CopyTo(paramFile, dest, paramFile);
+      CopyTo(inputfile1, dest, inputfile1);
+      CopyTo(syncfile, dest, inputfile2);
+      Result := True;
+    end
+  else if umlMultipleMatch(['TrainSS', 'TrainingSS'], ComputeFunc) then
+    begin
+      inputfile1 := Param.GetDefaultValue('source', '');
+      inputfile2 := Param.GetDefaultValue('syncfile', 'output' + C_SS_Ext + '.sync');
+      syncfile := Param.GetDefaultValue('output.sync', 'output' + C_SS_Ext + '.sync');
+      outputfile1 := Param.GetDefaultValue('output', 'output' + C_SS_Ext);
       CopyTo(paramFile, dest, paramFile);
       CopyTo(inputfile1, dest, inputfile1);
       CopyTo(syncfile, dest, inputfile2);

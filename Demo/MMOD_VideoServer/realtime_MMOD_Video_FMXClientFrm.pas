@@ -87,11 +87,11 @@ var
 begin
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
-  d.ViewOptions := [devpFPS];
+  d.ViewOptions := [voFPS];
   d.FPSFontColor := DEColor(0.5, 0.5, 1, 1);
 
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
-  d.FitDrawTexture(mpeg_frame, mpeg_frame.BoundsRectV2, d.ScreenRect, 1.0);
+  d.FitDrawPicture(mpeg_frame, mpeg_frame.BoundsRectV2, d.ScreenRect, 1.0);
 
   // ÷¥––ªÊÕº÷∏¡Ó
   d.Flush;
@@ -117,7 +117,7 @@ procedure Trealtime_MMOD_Video_FMXClientForm.OD_Result(Sender: TRealTime_MMOD_Vi
 begin
   video_stream.Position := 0;
   mpeg_frame.LoadFromStream(video_stream);
-  mpeg_frame.FastUpdateTexture;
+  mpeg_frame.Update;
   cadencer_eng.Progress;
 end;
 

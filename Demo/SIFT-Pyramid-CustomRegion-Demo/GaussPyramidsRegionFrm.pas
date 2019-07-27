@@ -82,7 +82,7 @@ begin
 
   LoadMemoryBitmap(OpenDialog1.FileName, ort1);
   t1.Assign(ort1);
-  t1.ReleaseFMXResource;
+  t1.ReleaseGPUMemory;
 
   TabControl1.ActiveTab := TabItem1;
 end;
@@ -97,7 +97,7 @@ begin
 
   LoadMemoryBitmap(OpenDialog1.FileName, ort2);
   t2.Assign(ort2);
-  t2.ReleaseFMXResource;
+  t2.ReleaseGPUMemory;
 
   TabControl1.ActiveTab := TabItem2;
 end;
@@ -163,7 +163,7 @@ end;
 procedure TGaussPyramidsForm.Button5Click(Sender: TObject);
 begin
   t1.Assign(ort1);
-  t1.ReleaseFMXResource;
+  t1.ReleaseGPUMemory;
   vl1.Clear;
   DisposeObject(ft1);
   ft1 := nil;
@@ -172,7 +172,7 @@ end;
 procedure TGaussPyramidsForm.Button6Click(Sender: TObject);
 begin
   t2.Assign(ort2);
-  t2.ReleaseFMXResource;
+  t2.ReleaseGPUMemory;
   vl2.Clear;
   DisposeObject(ft2);
   ft2 := nil;
@@ -242,9 +242,9 @@ var
 begin
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
-  d.DrawOptions := [devpFPS];
+  d.DrawOptions := [voFPS];
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
-  b1 := d.FitDrawTexture(t1, t1.BoundsRectV2, d.ScreenRect, 1.0);
+  b1 := d.FitDrawPicture(t1, t1.BoundsRectV2, d.ScreenRect, 1.0);
 
   pd.LineColor := DEColor(1, 0, 0, 1);
   pd.PointColor := DEColor(1, 0.5, 0.5, 1);
@@ -273,9 +273,9 @@ var
 begin
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
-  d.DrawOptions := [devpFPS];
+  d.DrawOptions := [voFPS];
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
-  b2 := d.FitDrawTexture(t2, t2.BoundsRectV2, d.ScreenRect, 1.0);
+  b2 := d.FitDrawPicture(t2, t2.BoundsRectV2, d.ScreenRect, 1.0);
 
   pd.LineColor := DEColor(1, 0, 0, 1);
   pd.PointColor := DEColor(1, 0.5, 0.5, 1);

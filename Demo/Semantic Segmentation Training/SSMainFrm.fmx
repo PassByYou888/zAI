@@ -1,0 +1,64 @@
+object SSMainForm: TSSMainForm
+  Left = 0
+  Top = 0
+  Caption = 'Semantic Segmentation Training demo  create by.qq600585'
+  ClientHeight = 497
+  ClientWidth = 813
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Anchors = [akLeft, akTop, akRight, akBottom]
+    Position.X = 32.000000000000000000
+    Position.Y = 72.000000000000000000
+    Size.Width = 745.000000000000000000
+    Size.Height = 401.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Viewport.Width = 741.000000000000000000
+    Viewport.Height = 397.000000000000000000
+  end
+  object TrainingButton: TButton
+    Position.X = 32.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 145.000000000000000000
+    Size.Height = 41.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    Text = #35757#32451#35821#20041#20998#21106#27169#22411
+    OnClick = TrainingButtonClick
+  end
+  object Timer1: TTimer
+    OnTimer = Timer1Timer
+    Left = 344
+    Top = 168
+  end
+  object ResetButton: TButton
+    Anchors = [akTop, akRight]
+    StyledSettings = [Family, Size]
+    Position.X = 536.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 241.000000000000000000
+    Size.Height = 41.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Text = #37325#32622#27169#22411
+    TextSettings.Font.StyleExt = {00070000000000000004000000}
+    TextSettings.FontColor = claRed
+    OnClick = ResetButtonClick
+  end
+  object TestButton: TButton
+    Position.X = 184.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 145.000000000000000000
+    Size.Height = 41.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    Text = #27979#35797#35757#32451#20998#21106
+    OnClick = TestButtonClick
+  end
+end

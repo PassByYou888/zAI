@@ -87,12 +87,63 @@ const
     );
 
 procedure DoStatus(v: TLVec); overload;
+procedure DoStatus(v: TLIVec); overload;
+procedure DoStatus(v: TLBVec); overload;
+procedure DoStatus(v: TLMatrix); overload;
+procedure DoStatus(v: TLIMatrix); overload;
+procedure DoStatus(v: TLBMatrix); overload;
 
 implementation
 
 procedure DoStatus(v: TLVec);
+var
+  i: NativeInt;
 begin
-  DoStatus(TKDTree.KDTreeVec(v));
+  for i := 0 to length(v) - 1 do
+      DoStatusNoLn(umlFloatToStr(v[i]) + ' ');
+  DoStatusNoLn;
+end;
+
+procedure DoStatus(v: TLIVec);
+var
+  i: NativeInt;
+begin
+  for i := 0 to length(v) - 1 do
+      DoStatusNoLn(umlIntToStr(v[i]) + ' ');
+  DoStatusNoLn;
+end;
+
+procedure DoStatus(v: TLBVec);
+var
+  i: NativeInt;
+begin
+  for i := 0 to length(v) - 1 do
+      DoStatusNoLn(umlBoolToStr(v[i]) + ' ');
+  DoStatusNoLn;
+end;
+
+procedure DoStatus(v: TLMatrix);
+var
+  i: Integer;
+begin
+  for i := 0 to high(v) do
+      DoStatus(v[i]);
+end;
+
+procedure DoStatus(v: TLIMatrix);
+var
+  i: Integer;
+begin
+  for i := 0 to high(v) do
+      DoStatus(v[i]);
+end;
+
+procedure DoStatus(v: TLBMatrix);
+var
+  i: Integer;
+begin
+  for i := 0 to high(v) do
+      DoStatus(v[i]);
 end;
 
 end.

@@ -9,7 +9,7 @@ uses
   System.IOUtils, Vcl.ExtCtrls,
 
   CoreClasses, PascalStrings, UnicodeMixedLib, zAI, zAI_Common, zAI_TrainingTask,
-  ListEngine, zDrawEngineInterface_SlowFMX, MemoryRaster, DoStatusIO, MemoryStream64;
+  ListEngine, MemoryRaster, DoStatusIO, MemoryStream64;
 
 type
   TForm2 = class(TForm)
@@ -107,14 +107,14 @@ begin
       // step_mini_batch_target_num等同于真实的人脸分类数量时，拟合度学习质量将会是最好的
       // 但是由于gpu和物理内存限制，step_mini_batch_target_num很难达到非常大的数量，因此，我们需要step做对齐人脸的裁剪迭代工作
       // 这里，我们每次step迭代做100个分类的face批次，这个数值根据已配置好的内存体积而定（包括gpu内存和物理内存）
-      // 如果内存配置到128G+4张sli，这个数值可以写500
+      // 如果内存配置到128G+4张桥，这个数值可以写500
       // 作者的配置为12G显存，16G高速物理内存，这个数值我写的100，在学习过程中，它几乎逼近硬件极限
       // 假如step_mini_batch_target_num的值过大，或则过小，zAI内核会自动调整该值，大多数时候，不需要专门对其设定
       // 当我们训练很大的数据集时，也许我们不会一次完成，我们需要修改数据集以后反复训练，所以这些值才会需要固定下来
       param^.step_mini_batch_target_num := 100;
 
       // resnet深度学习技术，每次step迭代时，在每个face里面做的光栅生成数量，这个数值根据已配置好的内存体积而定（包括gpu内存和物理内存）
-      // 如果内存配置到128G+4张sli，这个数值可以写20以上，这个数值我写的5，在学习过程中，它几乎逼近硬件极限
+      // 如果内存配置到128G+4张桥，这个数值可以写20以上，这个数值我写的5，在学习过程中，它几乎逼近硬件极限
       // 假如step_mini_batch_raster_num的值过大，或则过小，zAI内核会自动调整该值，大多数时候，不需要专门对其设定
       // 当我们训练很大的数据集时，也许我们不会一次完成，我们需要修改数据集以后反复训练，所以这些值才会需要固定下来
       param^.step_mini_batch_raster_num := 5;
@@ -133,7 +133,7 @@ begin
 
       // 满负荷GPU训练，如果关闭，就是呼吸式训练
       // 如果机器配置不好，或则需要正常工作+训练同步进行，建议关闭
-      // 假如配置了sli or fire，建议打开
+      // 假如配置了桥 or fire，建议打开
       // 因为我的配置偏中高，所以这里是打开状态
       param^.fullGPU_Training := True;
 

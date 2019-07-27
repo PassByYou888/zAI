@@ -102,12 +102,12 @@ begin
   d := DrawPool(Sender, drawIntf);
 
   // 显示边框和帧率
-  d.ViewOptions := [devpFPS, devpFrameEndge];
+  d.ViewOptions := [voFPS, voEdge];
 
   // 背景被填充成黑色，这里的画图指令并不是立即执行的，而是形成命令流队列存放在DrawEngine的一个容器中
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
 
-  d.FitDrawTexture(surf_out, surf_out.BoundsRectV2, d.ScreenRect, 1.0);
+  d.FitDrawPicture(surf_out, surf_out.BoundsRectV2, d.ScreenRect, 1.0);
   d.Flush;
 end;
 

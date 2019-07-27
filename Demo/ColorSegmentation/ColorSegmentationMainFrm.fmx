@@ -1,0 +1,44 @@
+object ColorSegmentationMainForm: TColorSegmentationMainForm
+  Left = 0
+  Top = 0
+  Caption = #20687#32032#20998#21106#22120'Demo, create by qq.600585'
+  ClientHeight = 467
+  ClientWidth = 1464
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object segListPB: TPaintBox
+    Align = Right
+    Position.X = 848.000000000000000000
+    Size.Width = 616.000000000000000000
+    Size.Height = 467.000000000000000000
+    Size.PlatformDefault = False
+    OnPaint = segListPBPaint
+  end
+  object segPB: TPaintBox
+    Align = Client
+    Size.Width = 840.000000000000000000
+    Size.Height = 467.000000000000000000
+    Size.PlatformDefault = False
+    OnMouseUp = segPBMouseUp
+    OnPaint = segPBPaint
+  end
+  object Timer1: TTimer
+    Interval = 10
+    OnTimer = Timer1Timer
+    Left = 640
+    Top = 168
+  end
+  object Splitter1: TSplitter
+    Align = Right
+    Cursor = crHSplit
+    MinSize = 20.000000000000000000
+    Position.X = 840.000000000000000000
+    ShowGrip = False
+    Size.Width = 8.000000000000000000
+    Size.Height = 467.000000000000000000
+    Size.PlatformDefault = False
+  end
+end

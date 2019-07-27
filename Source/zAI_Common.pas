@@ -36,20 +36,36 @@ uses Types,
   zDrawEngine, Geometry2DUnit, MemoryRaster, TextParsing, zExpression, OpCode;
 
 type
+{$REGION 'base define'}
   TAI_DetectorDefine = class;
   TAI_Image = class;
   TAI_ImageList = class;
 
-{$IFDEF FPC}
-  TImageList_Decl = specialize TGenericsList<TAI_Image>;
-  TDetectorDefineList = specialize TGenericsList<TAI_DetectorDefine>;
-{$ELSE FPC}
-  TImageList_Decl = TGenericsObjectList<TAI_Image>;
-  TDetectorDefineList = TGenericsObjectList<TAI_DetectorDefine>;
-{$ENDIF FPC}
+  TSegmentationMask = record
+    BackgroundColor, FrontColor: TRColor;
+    Token: TPascalString;
+    Raster: TMemoryRaster;
+  end;
+
+  PSegmentationMask = ^TSegmentationMask;
+
+  TSegmentationColor = record
+    Token: TPascalString;
+    Color: TRColor;
+    ID: WORD;
+  end;
+
+  PSegmentationColor = ^TSegmentationColor;
+
+  TImageList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TAI_Image>;
+  TEditorDetectorDefineList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TAI_DetectorDefine>;
+  TSegmentationMasks_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<PSegmentationMask>;
+  TSegmentationColorList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<PSegmentationColor>;
+{$ENDREGION 'base define'}
+{$REGION 'detector'}
 
   TAI_DetectorDefine = class(TCoreClassObject)
-  private
+  protected
     FOP_RT_RunDeleted: Boolean;
   public
     Owner: TAI_Image;
@@ -65,6 +81,77 @@ type
     procedure SaveToStream(stream: TMemoryStream64); overload;
     procedure LoadFromStream(stream: TMemoryStream64);
   end;
+{$ENDREGION 'detector'}
+{$REGION 'SegmentationColorPool'}
+
+  TSegmentationColorList = class(TSegmentationColorList_Decl)
+  private
+    procedure DoSegColor(Color: TRColor; var Classify: TSegClassify);
+  public
+    constructor Create;
+    destructor Destroy; override;
+
+    procedure BuildBorderColor;
+    procedure Delete(index: Integer);
+    procedure Clear;
+    procedure AddColor(const Token: TPascalString; const Color: TRColor);
+
+    function IsIgnoredBorder(const c: TRColor): Boolean; overload;
+    function IsIgnoredBorder(const ID: WORD): Boolean; overload;
+    function IsIgnoredBorder(const Token: TPascalString): Boolean; overload;
+
+    function ExistsColor(const c: TRColor): Boolean;
+    function ExistsID(const ID: WORD): Boolean;
+
+    function GetColorID(const c: TRColor; const def: WORD; var output: WORD): Boolean;
+    function GetIDColor(const ID: WORD; const def: TRColor; var output: TRColor): Boolean;
+    function GetIDColorAndToken(const ID: WORD; const def_color: TRColor; const def_token: TPascalString;
+      var output_color: TRColor; var output_token: TPascalString): Boolean;
+
+    function GetColorToken(const c: TRColor; const def: TPascalString): TPascalString; overload;
+    function GetColorToken(const c: TRColor): TPascalString; overload;
+
+    function GetTokenColor(const Token: TPascalString; const def: TRColor): TRColor; overload;
+    function GetTokenColor(const Token: TPascalString): TRColor; overload;
+
+    procedure BuildLabelViewer(input, output: TMemoryRaster; LabColor, BoxColor: TRColor);
+
+    procedure SaveToStream(stream: TCoreClassStream);
+    procedure LoadFromStream(stream: TCoreClassStream);
+    procedure SaveToFile(fileName: TPascalString);
+    procedure LoadFromFile(fileName: TPascalString);
+  end;
+
+  PSegmentationColorList = ^TSegmentationColorList;
+{$ENDREGION 'SegmentationColorPool'}
+{$REGION 'segmentation mask'}
+
+  TSegmentationMasks = class(TSegmentationMasks_Decl)
+  private
+    procedure MergePixelToRaster(segMask: PSegmentationMask; colors: TSegmentationColorList);
+  public
+    OwnerImage: TAI_Image;
+    MaskMergeRaster: TMemoryRaster;
+    constructor Create(OwnerImage_: TAI_Image);
+    destructor Destroy; override;
+
+    procedure Remove(p: PSegmentationMask);
+    procedure Delete(index: Integer);
+    procedure Clear;
+
+    procedure SaveToStream(stream: TCoreClassStream);
+    procedure LoadFromStream(stream: TCoreClassStream);
+
+    procedure BuildSegmentationMask(Width, Height: Integer; polygon: T2DPolygon; buildBG_color, buildFG_color: TRColor; Token: TPascalString); overload;
+    procedure BuildSegmentationMask(Width, Height: Integer; polygon: T2DPolygonGraph; buildBG_color, buildFG_color: TRColor; Token: TPascalString); overload;
+    procedure BuildSegmentationMask(Width, Height: Integer; sour: TMemoryRaster; sampler_FG_Color, buildBG_color, buildFG_color: TRColor; Token: TPascalString); overload;
+
+    procedure BuildMaskMerge(colors: TSegmentationColorList);
+
+    procedure SegmentationTokens(output: TPascalStringList);
+  end;
+{$ENDREGION 'segmentation mask'}
+{$REGION 'image'}
 
   TAI_Image_Script_Register = procedure(Sender: TAI_Image; opRT: TOpCustomRunTime) of object;
 
@@ -97,7 +184,8 @@ type
     function OP_Detector_DeleteDetector(var Param: TOpParam): Variant;
   public
     Owner: TAI_ImageList;
-    DetectorDefineList: TDetectorDefineList;
+    DetectorDefineList: TEditorDetectorDefineList;
+    SegmentationMaskList: TSegmentationMasks;
     Raster: TMemoryRaster;
 
     constructor Create(AOwner: TAI_ImageList);
@@ -107,12 +195,13 @@ type
     function RunExpProcess(RSeri: TRasterSerialized; ScriptStyle: TTextStyle; exp: SystemString): Boolean;
     function GetExpFunctionList: TPascalStringList;
 
-    procedure Clear;
+    procedure ClearDetector;
+    procedure ClearSegmentation;
     procedure ClearPrepareRaster;
 
     procedure DrawTo(output: TMemoryRaster);
 
-    function FoundNoTokenDetectorDefine(output: TMemoryRaster; color: TDEColor): Boolean; overload;
+    function FoundNoTokenDetectorDefine(output: TMemoryRaster; Color: TDEColor): Boolean; overload;
     function FoundNoTokenDetectorDefine: Boolean; overload;
 
     procedure SaveToStream(stream: TMemoryStream64; SaveImg: Boolean; RasterSave_: TRasterSave); overload;
@@ -126,13 +215,15 @@ type
 
     procedure Scale(f: TGeoFloat);
 
-    function ExistsToken(Token: TPascalString): Boolean;
-    function GetTokenCount(Token: TPascalString): Integer;
+    function ExistsDetectorToken(Token: TPascalString): Boolean;
+    function GetDetectorTokenCount(Token: TPascalString): Integer;
 
     // Serialized And Recycle Memory
     procedure SerializedAndRecycleMemory(Serializ: TRasterSerialized);
     procedure UnserializedMemory(Serializ: TRasterSerialized);
   end;
+{$ENDREGION 'image'}
+{$REGION 'image list'}
 
   TAI_ImageList = class(TImageList_Decl)
   public
@@ -177,6 +268,7 @@ type
     procedure SaveToStream(stream: TCoreClassStream); overload;
     procedure SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean); overload;
     procedure SaveToStream(stream: TCoreClassStream; SaveImg, Compressed: Boolean; RasterSave_: TRasterSave); overload;
+
     procedure LoadFromStream(stream: TCoreClassStream; LoadImg: Boolean); overload;
     procedure LoadFromStream(stream: TCoreClassStream); overload;
 
@@ -187,9 +279,7 @@ type
 
     procedure Import(imgList: TAI_ImageList);
 
-    procedure CalibrationNullDetectorDefineToken(Token: SystemString);
-    procedure CalibrationDetectorDefineTokenPrefix(Prefix: SystemString);
-    procedure CalibrationDetectorDefineTokenSuffix(Suffix: SystemString);
+    procedure CalibrationNullDefineToken(Token: SystemString);
 
     procedure Scale(f: TGeoFloat);
 
@@ -211,21 +301,24 @@ type
     function FoundNoTokenDetectorDefine(output: TMemoryRaster): Boolean; overload;
     function FoundNoTokenDetectorDefine: Boolean; overload;
 
-    function Tokens: TArrayPascalString;
-    function ExistsToken(Token: TPascalString): Boolean;
-    function GetTokenCount(Token: TPascalString): Integer;
+    function DetectorTokens: TArrayPascalString;
+    function ExistsDetectorToken(Token: TPascalString): Boolean;
+    function GetDetectorTokenCount(Token: TPascalString): Integer;
+    procedure SegmentationTokens(output: TPascalStringList);
+    function BuildSegmentationColorBuffer: TSegmentationColorList;
+    procedure BuildMaskMerge(colors: TSegmentationColorList); overload;
+    procedure BuildMaskMerge; overload;
+    procedure LargeScale_BuildMaskMerge(RSeri: TRasterSerialized; colors: TSegmentationColorList);
+    procedure ClearMaskMerge;
 
     // Serialized And Recycle Memory
     procedure SerializedAndRecycleMemory(Serializ: TRasterSerialized);
     procedure UnserializedMemory(Serializ: TRasterSerialized);
   end;
+{$ENDREGION 'image list'}
+{$REGION 'image matrix'}
 
-{$IFDEF FPC}
-
-  TAI_ImageMatrix_Decl = specialize TGenericsList<TAI_ImageList>;
-{$ELSE FPC}
-  TAI_ImageMatrix_Decl = TGenericsObjectList<TAI_ImageList>;
-{$ENDIF FPC}
+  TAI_ImageMatrix_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TAI_ImageList>;
 
   TAI_ImageMatrix = class(TAI_ImageMatrix_Decl)
   private
@@ -284,12 +377,18 @@ type
     function DetectorDefinePartCount: Integer;
     function FoundNoTokenDetectorDefine(output: TMemoryRaster): Boolean; overload;
     function FoundNoTokenDetectorDefine: Boolean; overload;
-    function Tokens: TArrayPascalString;
-    function ExistsToken(Token: TPascalString): Boolean;
-    function GetTokenCount(Token: TPascalString): Integer;
+    function DetectorTokens: TArrayPascalString;
+    function ExistsDetectorToken(Token: TPascalString): Boolean;
+    function GetDetectorTokenCount(Token: TPascalString): Integer;
     function FindImageList(FileInfo: TPascalString): TAI_ImageList;
+    procedure SegmentationTokens(output: TPascalStringList);
+    function BuildSegmentationColorBuffer: TSegmentationColorList;
+    procedure BuildMaskMerge(colors: TSegmentationColorList); overload;
+    procedure BuildMaskMerge; overload;
+    procedure LargeScale_BuildMaskMerge(RSeri: TRasterSerialized; colors: TSegmentationColorList);
+    procedure ClearMaskMerge;
 
-    // parallel image matrix extract
+    // parallel extract image matrix
     function ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height: Integer): TMemoryRaster2DArray;
     function ExtractDetectorDefineAsSnapshot: TMemoryRaster2DArray;
     function ExtractDetectorDefineAsPrepareRaster(SS_width, SS_height: Integer): TMemoryRaster2DArray;
@@ -315,6 +414,9 @@ type
     procedure SerializedAndRecycleMemory(Serializ: TRasterSerialized);
     procedure UnserializedMemory(Serializ: TRasterSerialized);
   end;
+{$ENDREGION 'image matrix'}
+{$REGION 'global variant'}
+
 
 var
   AI_Configure_Path: U_String;
@@ -323,7 +425,7 @@ var
   AI_ProductID: U_String;
   AI_UserKey: U_String;
   AI_Key_Server_Host: U_String;
-  AI_Key_Server_Port: Word;
+  AI_Key_Server_Port: WORD;
 
   AI_Engine_Library: U_String;
   AI_Parallel_Count: Integer;
@@ -336,6 +438,9 @@ var
   AI_Configure_ReadyDone: Boolean;
 
   On_Script_RegisterProc: TAI_Image_Script_Register;
+{$ENDREGION 'global variant'}
+{$REGION 'global const'}
+
 
 const
   // ext define
@@ -353,17 +458,21 @@ const
   C_LRNIC_Ext: SystemString = '.LRNIC';
   C_GDCNIC_Ext: SystemString = '.GDCNIC';
   C_GNIC_Ext: SystemString = '.GNIC';
-
+  C_SS_Ext: SystemString = '.SS';
+{$ENDREGION 'global const'}
+{$REGION 'zAI configure api'}
 procedure ReadAIConfig; overload;
 procedure ReadAIConfig(ini: THashTextEngine); overload;
 procedure WriteAIConfig;
-
-procedure Build_XML_Dataset(xslFile, name, comment, body: SystemString; build_output: TMemoryStream64);
+{$ENDREGION 'zAI configure api'}
+{$REGION 'misc api'}
+procedure Build_XML_Dataset(xslFile, Name, comment, body: SystemString; build_output: TMemoryStream64);
 procedure Build_XML_Style(build_output: TMemoryStream64);
-procedure DrawSPLine(sp_desc: TVec2List; bp, ep: Integer; closeLine: Boolean; color: TDEColor; d: TDrawEngine); overload;
-procedure DrawSPLine(sp_desc: TArrayVec2; bp, ep: Integer; closeLine: Boolean; color: TDEColor; d: TDrawEngine); overload;
-procedure DrawFaceSP(sp_desc: TVec2List; color: TDEColor; d: TDrawEngine); overload;
-procedure DrawFaceSP(sp_desc: TArrayVec2; color: TDEColor; d: TDrawEngine); overload;
+procedure DrawSPLine(sp_desc: TVec2List; bp, ep: Integer; closeLine: Boolean; Color: TDEColor; d: TDrawEngine); overload;
+procedure DrawSPLine(sp_desc: TArrayVec2; bp, ep: Integer; closeLine: Boolean; Color: TDEColor; d: TDrawEngine); overload;
+procedure DrawFaceSP(sp_desc: TVec2List; Color: TDEColor; d: TDrawEngine); overload;
+procedure DrawFaceSP(sp_desc: TArrayVec2; Color: TDEColor; d: TDrawEngine); overload;
+{$ENDREGION 'misc api'}
 
 implementation
 
@@ -427,7 +536,7 @@ begin
 end;
 
 procedure ReadAIConfig(ini: THashTextEngine);
-  function r_ai(name, fn: U_String): U_String;
+  function r_ai(Name, fn: U_String): U_String;
   begin
     Result := ini.GetDefaultValue('AI', Name, fn);
     if not umlExistsChar(Result, '/\') then
@@ -454,7 +563,7 @@ end;
 procedure WriteAIConfig;
 var
   ini: THashTextEngine;
-  procedure w_ai(name, fn: U_String);
+  procedure w_ai(Name, fn: U_String);
   begin
     if fn.Same(umlCombineFileName(AI_Configure_Path, umlGetFileName(fn))) then
         ini.SetDefaultValue('AI', Name, umlGetFileName(fn))
@@ -488,7 +597,7 @@ begin
   disposeObject(ini);
 end;
 
-procedure Build_XML_Dataset(xslFile, name, comment, body: SystemString; build_output: TMemoryStream64);
+procedure Build_XML_Dataset(xslFile, Name, comment, body: SystemString; build_output: TMemoryStream64);
 const
   XML_Dataset =
     '<?xml version='#39'1.0'#39' encoding='#39'UTF-8'#39'?>'#13#10 +
@@ -606,7 +715,7 @@ begin
   disposeObject(l);
 end;
 
-procedure DrawSPLine(sp_desc: TVec2List; bp, ep: Integer; closeLine: Boolean; color: TDEColor; d: TDrawEngine);
+procedure DrawSPLine(sp_desc: TVec2List; bp, ep: Integer; closeLine: Boolean; Color: TDEColor; d: TDrawEngine);
 var
   i: Integer;
   vl: TVec2List;
@@ -615,11 +724,11 @@ begin
   for i := bp to ep do
       vl.Add(sp_desc[i]^);
 
-  d.DrawPL(20, vl, closeLine, color, 2);
+  d.DrawPL(20, vl, closeLine, Color, 2);
   disposeObject(vl);
 end;
 
-procedure DrawSPLine(sp_desc: TArrayVec2; bp, ep: Integer; closeLine: Boolean; color: TDEColor; d: TDrawEngine);
+procedure DrawSPLine(sp_desc: TArrayVec2; bp, ep: Integer; closeLine: Boolean; Color: TDEColor; d: TDrawEngine);
 var
   i: Integer;
   vl: TVec2List;
@@ -628,46 +737,46 @@ begin
   for i := bp to ep do
       vl.Add(sp_desc[i]);
 
-  d.DrawPL(20, vl, closeLine, color, 2);
+  d.DrawPL(20, vl, closeLine, Color, 2);
   disposeObject(vl);
 end;
 
-procedure DrawFaceSP(sp_desc: TVec2List; color: TDEColor; d: TDrawEngine);
+procedure DrawFaceSP(sp_desc: TVec2List; Color: TDEColor; d: TDrawEngine);
 begin
   if sp_desc.Count <> 68 then
       exit;
-  DrawSPLine(sp_desc, 0, 16, False, color, d);
-  DrawSPLine(sp_desc, 17, 21, False, color, d);
-  DrawSPLine(sp_desc, 22, 26, False, color, d);
-  DrawSPLine(sp_desc, 27, 30, False, color, d);
-  DrawSPLine(sp_desc, 31, 35, False, color, d);
-  d.DrawLine(sp_desc[31]^, sp_desc[27]^, color, 1);
-  d.DrawLine(sp_desc[35]^, sp_desc[27]^, color, 1);
-  d.DrawLine(sp_desc[31]^, sp_desc[30]^, color, 1);
-  d.DrawLine(sp_desc[35]^, sp_desc[30]^, color, 1);
-  DrawSPLine(sp_desc, 36, 41, True, color, d);
-  DrawSPLine(sp_desc, 42, 47, True, color, d);
-  DrawSPLine(sp_desc, 48, 59, True, color, d);
-  DrawSPLine(sp_desc, 60, 67, True, color, d);
+  DrawSPLine(sp_desc, 0, 16, False, Color, d);
+  DrawSPLine(sp_desc, 17, 21, False, Color, d);
+  DrawSPLine(sp_desc, 22, 26, False, Color, d);
+  DrawSPLine(sp_desc, 27, 30, False, Color, d);
+  DrawSPLine(sp_desc, 31, 35, False, Color, d);
+  d.DrawLine(sp_desc[31]^, sp_desc[27]^, Color, 1);
+  d.DrawLine(sp_desc[35]^, sp_desc[27]^, Color, 1);
+  d.DrawLine(sp_desc[31]^, sp_desc[30]^, Color, 1);
+  d.DrawLine(sp_desc[35]^, sp_desc[30]^, Color, 1);
+  DrawSPLine(sp_desc, 36, 41, True, Color, d);
+  DrawSPLine(sp_desc, 42, 47, True, Color, d);
+  DrawSPLine(sp_desc, 48, 59, True, Color, d);
+  DrawSPLine(sp_desc, 60, 67, True, Color, d);
 end;
 
-procedure DrawFaceSP(sp_desc: TArrayVec2; color: TDEColor; d: TDrawEngine);
+procedure DrawFaceSP(sp_desc: TArrayVec2; Color: TDEColor; d: TDrawEngine);
 begin
   if length(sp_desc) <> 68 then
       exit;
-  DrawSPLine(sp_desc, 0, 16, False, color, d);
-  DrawSPLine(sp_desc, 17, 21, False, color, d);
-  DrawSPLine(sp_desc, 22, 26, False, color, d);
-  DrawSPLine(sp_desc, 27, 30, False, color, d);
-  DrawSPLine(sp_desc, 31, 35, False, color, d);
-  d.DrawLine(sp_desc[31], sp_desc[27], color, 1);
-  d.DrawLine(sp_desc[35], sp_desc[27], color, 1);
-  d.DrawLine(sp_desc[31], sp_desc[30], color, 1);
-  d.DrawLine(sp_desc[35], sp_desc[30], color, 1);
-  DrawSPLine(sp_desc, 36, 41, True, color, d);
-  DrawSPLine(sp_desc, 42, 47, True, color, d);
-  DrawSPLine(sp_desc, 48, 59, True, color, d);
-  DrawSPLine(sp_desc, 60, 67, True, color, d);
+  DrawSPLine(sp_desc, 0, 16, False, Color, d);
+  DrawSPLine(sp_desc, 17, 21, False, Color, d);
+  DrawSPLine(sp_desc, 22, 26, False, Color, d);
+  DrawSPLine(sp_desc, 27, 30, False, Color, d);
+  DrawSPLine(sp_desc, 31, 35, False, Color, d);
+  d.DrawLine(sp_desc[31], sp_desc[27], Color, 1);
+  d.DrawLine(sp_desc[35], sp_desc[27], Color, 1);
+  d.DrawLine(sp_desc[31], sp_desc[30], Color, 1);
+  d.DrawLine(sp_desc[35], sp_desc[30], Color, 1);
+  DrawSPLine(sp_desc, 36, 41, True, Color, d);
+  DrawSPLine(sp_desc, 42, 47, True, Color, d);
+  DrawSPLine(sp_desc, 48, 59, True, Color, d);
+  DrawSPLine(sp_desc, 60, 67, True, Color, d);
 end;
 
 constructor TAI_DetectorDefine.Create(AOwner: TAI_Image);
@@ -748,6 +857,644 @@ begin
   disposeObject(de);
 end;
 
+procedure TSegmentationColorList.DoSegColor(Color: TRColor; var Classify: TSegClassify);
+var
+  ID: WORD;
+begin
+  Classify := 0;
+  if IsIgnoredBorder(Color) then
+      exit;
+  if Color = RColor(0, 0, 0, $FF) then
+      exit;
+  if GetColorID(Color, 0, ID) then
+      Classify := ID;
+end;
+
+constructor TSegmentationColorList.Create;
+begin
+  inherited Create;
+  BuildBorderColor;
+end;
+
+destructor TSegmentationColorList.Destroy;
+begin
+  Clear;
+  inherited Destroy;
+end;
+
+procedure TSegmentationColorList.BuildBorderColor;
+var
+  p: PSegmentationColor;
+begin
+  new(p);
+  p^.Token := 'ignored border';
+  // border color
+  p^.Color := RColor($FF, $FF, $FF, $FF);
+  // $FFFF index to pixel will be ignored when computing gradients.
+  p^.ID := $FFFF;
+  inherited Add(p);
+end;
+
+procedure TSegmentationColorList.Delete(index: Integer);
+var
+  p: PSegmentationColor;
+begin
+  p := Items[index];
+  p^.Token := '';
+  dispose(p);
+  inherited Delete(index);
+end;
+
+procedure TSegmentationColorList.Clear;
+var
+  i: Integer;
+  p: PSegmentationColor;
+begin
+  for i := 0 to Count - 1 do
+    begin
+      p := Items[i];
+      p^.Token := '';
+      dispose(p);
+    end;
+  inherited Clear;
+end;
+
+procedure TSegmentationColorList.AddColor(const Token: TPascalString; const Color: TRColor);
+var
+  p: PSegmentationColor;
+begin
+  if ExistsColor(Color) then
+      exit;
+  new(p);
+  p^.Token := Token;
+  p^.Color := Color;
+  p^.ID := Count;
+  while (p^.ID = 0) or (ExistsID(p^.ID)) do
+      inc(p^.ID);
+  inherited Add(p);
+end;
+
+function TSegmentationColorList.IsIgnoredBorder(const c: TRColor): Boolean;
+begin
+  Result := c = RColor($FF, $FF, $FF, $FF);
+end;
+
+function TSegmentationColorList.IsIgnoredBorder(const ID: WORD): Boolean;
+begin
+  Result := ID = $FFFF;
+end;
+
+function TSegmentationColorList.IsIgnoredBorder(const Token: TPascalString): Boolean;
+begin
+  Result := Token.Same('ignored border');
+end;
+
+function TSegmentationColorList.ExistsColor(const c: TRColor): Boolean;
+var
+  i: Integer;
+begin
+  Result := True;
+  for i := 0 to Count - 1 do
+    if Items[i]^.Color = c then
+        exit;
+  Result := False;
+end;
+
+function TSegmentationColorList.ExistsID(const ID: WORD): Boolean;
+var
+  i: Integer;
+begin
+  Result := True;
+  for i := 0 to Count - 1 do
+    if Items[i]^.ID = ID then
+        exit;
+  Result := False;
+end;
+
+function TSegmentationColorList.GetColorID(const c: TRColor; const def: WORD; var output: WORD): Boolean;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+    if Items[i]^.Color = c then
+      begin
+        output := Items[i]^.ID;
+        Result := True;
+        exit;
+      end;
+  output := def;
+  Result := False;
+end;
+
+function TSegmentationColorList.GetIDColor(const ID: WORD; const def: TRColor; var output: TRColor): Boolean;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+    if Items[i]^.ID = ID then
+      begin
+        output := Items[i]^.Color;
+        Result := True;
+        exit;
+      end;
+  output := def;
+  Result := False;
+end;
+
+function TSegmentationColorList.GetIDColorAndToken(const ID: WORD; const def_color: TRColor; const def_token: TPascalString;
+  var output_color: TRColor; var output_token: TPascalString): Boolean;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+    if Items[i]^.ID = ID then
+      begin
+        output_color := Items[i]^.Color;
+        output_token := Items[i]^.Token;
+        Result := True;
+        exit;
+      end;
+  output_color := def_color;
+  output_token := def_token;
+  Result := False;
+end;
+
+function TSegmentationColorList.GetColorToken(const c: TRColor; const def: TPascalString): TPascalString;
+var
+  i: Integer;
+begin
+  Result := def;
+  for i := 0 to Count - 1 do
+    if Items[i]^.Color = c then
+      begin
+        Result := Items[i]^.Token;
+        exit;
+      end;
+end;
+
+function TSegmentationColorList.GetColorToken(const c: TRColor): TPascalString;
+begin
+  Result := GetColorToken(c, '');
+end;
+
+function TSegmentationColorList.GetTokenColor(const Token: TPascalString; const def: TRColor): TRColor;
+var
+  i: Integer;
+begin
+  Result := def;
+  for i := 0 to Count - 1 do
+    if Token.Same(@Items[i]^.Token) then
+      begin
+        Result := Items[i]^.Color;
+        exit;
+      end;
+end;
+
+function TSegmentationColorList.GetTokenColor(const Token: TPascalString): TRColor;
+begin
+  Result := GetTokenColor(Token, RColor(0, 0, 0, 0));
+end;
+
+procedure TSegmentationColorList.BuildLabelViewer(input, output: TMemoryRaster; LabColor, BoxColor: TRColor);
+var
+  s: TColorSegmentation;
+  i: Integer;
+  pool: TSegPool;
+  id_color: TRColor;
+  id_token: TPascalString;
+  R: TRect;
+begin
+  s := TColorSegmentation.Create(input);
+  s.OnSegColor := {$IFDEF FPC}@{$ENDIF FPC}DoSegColor;
+  s.BuildSegmentation;
+  s.RemoveNoise(500);
+  s.MergeOverlapSegmentation;
+
+  for i := 0 to s.Count - 1 do
+    begin
+      pool := s[i];
+
+      if GetIDColorAndToken(pool.Classify, RColor(0, 0, 0, $FF), '', id_color, id_token) then
+        begin
+          R := pool.BoundsRect;
+          pool.FillTo(output, id_color);
+          output.DrawText(id_token, R.Left, R.Top, 14, LabColor);
+          output.DrawRect(R, BoxColor);
+        end;
+    end;
+
+  disposeObject(s);
+end;
+
+procedure TSegmentationColorList.SaveToStream(stream: TCoreClassStream);
+var
+  d, nd: TDataFrameEngine;
+  i: Integer;
+  p: PSegmentationColor;
+begin
+  d := TDataFrameEngine.Create;
+
+  for i := 0 to Count - 1 do
+    begin
+      p := Items[i];
+      nd := TDataFrameEngine.Create;
+      nd.WriteString(p^.Token);
+      nd.WriteCardinal(p^.Color);
+      nd.WriteWORD(p^.ID);
+      d.WriteDataFrame(nd);
+      disposeObject(nd);
+    end;
+
+  d.EncodeTo(stream, False);
+  disposeObject(d);
+end;
+
+procedure TSegmentationColorList.LoadFromStream(stream: TCoreClassStream);
+var
+  d, nd: TDataFrameEngine;
+  i: Integer;
+  p: PSegmentationColor;
+begin
+  Clear;
+  d := TDataFrameEngine.Create;
+  d.DecodeFrom(stream, False);
+
+  while d.Reader.NotEnd do
+    begin
+      nd := TDataFrameEngine.Create;
+      d.Reader.ReadDataFrame(nd);
+      new(p);
+      p^.Token := nd.Reader.ReadString;
+      p^.Color := nd.Reader.ReadCardinal;
+      p^.ID := nd.Reader.ReadWord;
+      Add(p);
+      disposeObject(nd);
+    end;
+
+  disposeObject(d);
+end;
+
+procedure TSegmentationColorList.SaveToFile(fileName: TPascalString);
+var
+  fs: TMemoryStream64;
+begin
+  fs := TMemoryStream64.Create;
+  SaveToStream(fs);
+  fs.SaveToFile(fileName);
+  disposeObject(fs);
+end;
+
+procedure TSegmentationColorList.LoadFromFile(fileName: TPascalString);
+var
+  fs: TMemoryStream64;
+begin
+  fs := TMemoryStream64.Create;
+  fs.LoadFromFile(fileName);
+  fs.Position := 0;
+  LoadFromStream(fs);
+  disposeObject(fs);
+end;
+
+{$UNDEF parallel}
+
+
+procedure TSegmentationMasks.MergePixelToRaster(segMask: PSegmentationMask; colors: TSegmentationColorList);
+var
+  fg: TRColor;
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  var
+    i: Integer;
+  begin
+    for i := 0 to segMask^.Raster.Width - 1 do
+      if segMask^.Raster[i, pass] = segMask^.FrontColor then
+          MaskMergeRaster[i, pass] := fg;
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+    i: Integer;
+  begin
+    for pass := 0 to segMask^.Raster.Height - 1 do
+      for i := 0 to segMask^.Raster.Width - 1 do
+        if segMask^.Raster[i, pass] = segMask^.FrontColor then
+            MaskMergeRaster[i, pass] := fg;
+  end;
+{$ENDIF parallel}
+
+
+begin
+  if (MaskMergeRaster.Width <> segMask^.Raster.Width) or (MaskMergeRaster.Height <> segMask^.Raster.Height) then
+      exit;
+  fg := colors.GetTokenColor(segMask^.Token, 0);
+  if fg = 0 then
+      exit;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, segMask^.Raster.Height - 1);
+{$ELSE FPC}
+  TParallel.for(0, segMask^.Raster.Height - 1, procedure(pass: Integer)
+    var
+      i: Integer;
+    begin
+      for i := 0 to segMask^.Raster.Width - 1 do
+        if segMask^.Raster[i, pass] = segMask^.FrontColor then
+            MaskMergeRaster[i, pass] := fg;
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  DoFor;
+{$ENDIF parallel}
+end;
+
+constructor TSegmentationMasks.Create(OwnerImage_: TAI_Image);
+begin
+  inherited Create;
+  OwnerImage := OwnerImage_;
+  MaskMergeRaster := NewRaster();
+end;
+
+destructor TSegmentationMasks.Destroy;
+begin
+  Clear();
+  disposeObject(MaskMergeRaster);
+  inherited Destroy;
+end;
+
+procedure TSegmentationMasks.Remove(p: PSegmentationMask);
+begin
+  inherited Remove(p);
+  disposeObject(p^.Raster);
+  dispose(p);
+end;
+
+procedure TSegmentationMasks.Delete(index: Integer);
+var
+  p: PSegmentationMask;
+begin
+  p := Items[index];
+  p^.Token := '';
+  disposeObject(p^.Raster);
+  dispose(p);
+  inherited Delete(index);
+end;
+
+procedure TSegmentationMasks.Clear;
+var
+  i: Integer;
+  p: PSegmentationMask;
+begin
+  for i := 0 to Count - 1 do
+    begin
+      p := Items[i];
+      p^.Token := '';
+      disposeObject(p^.Raster);
+      dispose(p);
+    end;
+  inherited Clear;
+  MaskMergeRaster.Reset;
+end;
+
+procedure TSegmentationMasks.SaveToStream(stream: TCoreClassStream);
+var
+  d, nd: TDataFrameEngine;
+  i: Integer;
+  p: PSegmentationMask;
+  m64: TMemoryStream64;
+begin
+  d := TDataFrameEngine.Create;
+
+  for i := 0 to Count - 1 do
+    begin
+      // 0: bk color
+      // 1: fg color
+      // 2: name
+      // 3: raster
+      nd := TDataFrameEngine.Create;
+      p := Items[i];
+      nd.WriteCardinal(p^.BackgroundColor);
+      nd.WriteCardinal(p^.FrontColor);
+      nd.WriteString(p^.Token);
+
+      m64 := TMemoryStream64.Create;
+      p^.Raster.SaveToBmp32Stream(m64);
+      nd.WriteStream(m64);
+      disposeObject(m64);
+
+      d.WriteDataFrame(nd);
+
+      disposeObject(nd);
+    end;
+
+  d.EncodeAsZLib(stream, True);
+  disposeObject(d);
+end;
+
+procedure TSegmentationMasks.LoadFromStream(stream: TCoreClassStream);
+var
+  d, nd: TDataFrameEngine;
+  i: Integer;
+  p: PSegmentationMask;
+  m64: TMemoryStream64;
+begin
+  d := TDataFrameEngine.Create;
+  d.DecodeFrom(stream, True);
+
+  while d.Reader.NotEnd do
+    begin
+      nd := TDataFrameEngine.Create;
+      d.Reader.ReadDataFrame(nd);
+
+      // 0: bk color
+      // 1: fg color
+      // 2: name
+      // 3: raster
+
+      new(p);
+      p^.BackgroundColor := nd.Reader.ReadCardinal;
+      p^.FrontColor := nd.Reader.ReadCardinal;
+      p^.Token := nd.Reader.ReadString;
+
+      m64 := TMemoryStream64.Create;
+      nd.Reader.ReadStream(m64);
+      m64.Position := 0;
+      p^.Raster := NewRaster();
+      p^.Raster.LoadFromStream(m64);
+      disposeObject(m64);
+
+      Add(p);
+
+      disposeObject(nd);
+    end;
+
+  disposeObject(d);
+end;
+
+procedure TSegmentationMasks.BuildSegmentationMask(Width, Height: Integer; polygon: T2DPolygon; buildBG_color, buildFG_color: TRColor; Token: TPascalString);
+var
+  p: PSegmentationMask;
+  R: TRectV2;
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  var
+    i: Integer;
+  begin
+    for i := 0 to Width - 1 do
+      if PointInRect(Vec2(i, pass), R) and polygon.InHere(Vec2(i, pass)) then
+          p^.Raster.Pixel[i, pass] := p^.FrontColor;
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass, i: Integer;
+  begin
+    for pass := 0 to Height - 1 do
+      begin
+        for i := 0 to Width - 1 do
+          if PointInRect(Vec2(i, pass), R) and polygon.InHere(Vec2(i, pass)) then
+              p^.Raster.Pixel[i, pass] := p^.FrontColor;
+      end;
+  end;
+{$ENDIF parallel}
+
+
+begin
+  new(p);
+  p^.BackgroundColor := buildBG_color;
+  p^.FrontColor := buildFG_color;
+  p^.Token := Token;
+  p^.Raster := NewRaster();
+  p^.Raster.SetSize(Width, Height, p^.BackgroundColor);
+  R := polygon.BoundRect;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Height - 1);
+{$ELSE}
+  TParallel.for(0, Height - 1, procedure(pass: Integer)
+    var
+      i: Integer;
+    begin
+      for i := 0 to Width - 1 do
+        if PointInRect(Vec2(i, pass), R) and polygon.InHere(Vec2(i, pass)) then
+            p^.Raster.Pixel[i, pass] := p^.FrontColor;
+    end);
+{$ENDIF FPC}
+{$ELSE}
+  DoFor();
+{$ENDIF parallel}
+  Add(p);
+end;
+
+procedure TSegmentationMasks.BuildSegmentationMask(Width, Height: Integer; polygon: T2DPolygonGraph; buildBG_color, buildFG_color: TRColor; Token: TPascalString);
+var
+  p: PSegmentationMask;
+  R: TRectV2;
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  var
+    i: Integer;
+  begin
+    for i := 0 to Width - 1 do
+      if PointInRect(Vec2(i, pass), R) and polygon.InHere(Vec2(i, pass)) then
+          p^.Raster.Pixel[i, pass] := p^.FrontColor;
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass, i: Integer;
+  begin
+    for pass := 0 to Height - 1 do
+      begin
+        for i := 0 to Width - 1 do
+          if PointInRect(Vec2(i, pass), R) and polygon.InHere(Vec2(i, pass)) then
+              p^.Raster.Pixel[i, pass] := p^.FrontColor;
+      end;
+  end;
+{$ENDIF parallel}
+
+
+begin
+  new(p);
+  p^.BackgroundColor := buildBG_color;
+  p^.FrontColor := buildFG_color;
+  p^.Token := Token;
+  p^.Raster := NewRaster();
+  p^.Raster.SetSize(Width, Height, p^.BackgroundColor);
+  R := polygon.BoundRect;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Height - 1);
+{$ELSE}
+  TParallel.for(0, Height - 1, procedure(pass: Integer)
+    var
+      i: Integer;
+    begin
+      for i := 0 to Width - 1 do
+        if PointInRect(Vec2(i, pass), R) and polygon.InHere(Vec2(i, pass)) then
+            p^.Raster.Pixel[i, pass] := p^.FrontColor;
+    end);
+{$ENDIF FPC}
+{$ELSE}
+  DoFor();
+{$ENDIF parallel}
+  Add(p);
+end;
+
+procedure TSegmentationMasks.BuildSegmentationMask(Width, Height: Integer; sour: TMemoryRaster; sampler_FG_Color, buildBG_color, buildFG_color: TRColor; Token: TPascalString);
+var
+  p: PSegmentationMask;
+  i, j: Integer;
+begin
+  if not sour.ExistsColor(sampler_FG_Color) then
+      exit;
+  new(p);
+  p^.BackgroundColor := buildBG_color;
+  p^.FrontColor := buildFG_color;
+  p^.Token := Token;
+  p^.Raster := NewRaster();
+  p^.Raster.SetSize(Width, Height, p^.BackgroundColor);
+
+  for j := 0 to Height - 1 do
+    for i := 0 to Width - 1 do
+      if PointInRect(i, j, 0, 0, sour.Width, sour.Height) then
+        if sour.Pixel[i, j] = sampler_FG_Color then
+            p^.Raster.Pixel[i, j] := p^.FrontColor;
+  Add(p);
+end;
+
+procedure TSegmentationMasks.BuildMaskMerge(colors: TSegmentationColorList);
+var
+  i: Integer;
+begin
+  MaskMergeRaster.SetSize(OwnerImage.Raster.Width, OwnerImage.Raster.Height, RColor(0, 0, 0, $FF));
+  for i := 0 to Count - 1 do
+      MergePixelToRaster(Items[i], colors);
+  MaskMergeRaster.FillNoneBGColorBorder(RColor(0, 0, 0, $FF), RColor($FF, $FF, $FF, $FF), 4);
+end;
+
+procedure TSegmentationMasks.SegmentationTokens(output: TPascalStringList);
+var
+  i: Integer;
+  p: PSegmentationMask;
+begin
+  for i := 0 to Count - 1 do
+    begin
+      p := Items[i];
+      if output.ExistsValue(p^.Token) < 0 then
+          output.Add(p^.Token);
+    end;
+end;
+
 procedure TAI_Image.CheckAndRegOPRT;
 begin
   if FOP_RT <> nil then
@@ -818,12 +1565,12 @@ end;
 
 function TAI_Image.OP_Image_GetWidth(var Param: TOpParam): Variant;
 begin
-  Result := Raster.width;
+  Result := Raster.Width;
 end;
 
 function TAI_Image.OP_Image_GetHeight(var Param: TOpParam): Variant;
 begin
-  Result := Raster.height;
+  Result := Raster.Height;
 end;
 
 function TAI_Image.OP_Image_GetDetector(var Param: TOpParam): Variant;
@@ -833,7 +1580,7 @@ end;
 
 function TAI_Image.OP_Detector_GetLabel(var Param: TOpParam): Variant;
 begin
-  Result := GetTokenCount(Param[0]);
+  Result := GetDetectorTokenCount(Param[0]);
 end;
 
 function TAI_Image.OP_Image_Delete(var Param: TOpParam): Variant;
@@ -849,7 +1596,7 @@ begin
     begin
       Scale(Param[0]);
       if Raster is TDETexture then
-          TDETexture(Raster).ReleaseFMXResource;
+          TDETexture(Raster).ReleaseGPUMemory;
     end;
   Result := True;
 end;
@@ -864,7 +1611,7 @@ begin
     begin
       Raster.FormatBGRA;
       if Raster is TDETexture then
-          TDETexture(Raster).ReleaseFMXResource;
+          TDETexture(Raster).ReleaseGPUMemory;
     end;
 
   for i := 0 to DetectorDefineList.Count - 1 do
@@ -883,7 +1630,7 @@ begin
     begin
       Raster.Grayscale;
       if Raster is TDETexture then
-          TDETexture(Raster).ReleaseFMXResource;
+          TDETexture(Raster).ReleaseGPUMemory;
     end;
 
   for i := 0 to DetectorDefineList.Count - 1 do
@@ -902,7 +1649,7 @@ begin
     begin
       Sharpen(Raster, True);
       if Raster is TDETexture then
-          TDETexture(Raster).ReleaseFMXResource;
+          TDETexture(Raster).ReleaseGPUMemory;
     end;
 
   for i := 0 to DetectorDefineList.Count - 1 do
@@ -921,7 +1668,7 @@ begin
     begin
       HistogramEqualize(Raster);
       if Raster is TDETexture then
-          TDETexture(Raster).ReleaseFMXResource;
+          TDETexture(Raster).ReleaseGPUMemory;
     end;
 
   for i := 0 to DetectorDefineList.Count - 1 do
@@ -940,7 +1687,7 @@ begin
     begin
       RemoveRedEyes(Raster);
       if Raster is TDETexture then
-          TDETexture(Raster).ReleaseFMXResource;
+          TDETexture(Raster).ReleaseGPUMemory;
     end;
 
   for i := 0 to DetectorDefineList.Count - 1 do
@@ -959,7 +1706,7 @@ begin
     begin
       Sepia32(Raster, Param[0]);
       if Raster is TDETexture then
-          TDETexture(Raster).ReleaseFMXResource;
+          TDETexture(Raster).ReleaseGPUMemory;
     end;
 
   for i := 0 to DetectorDefineList.Count - 1 do
@@ -978,7 +1725,7 @@ begin
     begin
       GaussianBlur(Raster, Param[0], Raster.BoundsRect);
       if Raster is TDETexture then
-          TDETexture(Raster).ReleaseFMXResource;
+          TDETexture(Raster).ReleaseGPUMemory;
     end;
 
   for i := 0 to DetectorDefineList.Count - 1 do
@@ -997,7 +1744,7 @@ begin
     begin
       Raster.CalibrateRotate;
       if Raster is TDETexture then
-          TDETexture(Raster).ReleaseFMXResource;
+          TDETexture(Raster).ReleaseGPUMemory;
     end;
 
   for i := 0 to DetectorDefineList.Count - 1 do
@@ -1023,7 +1770,7 @@ end;
 
 function TAI_Image.OP_Detector_ClearDetector(var Param: TOpParam): Variant;
 begin
-  Clear;
+  ClearDetector;
   Result := True;
 end;
 
@@ -1119,15 +1866,19 @@ constructor TAI_Image.Create(AOwner: TAI_ImageList);
 begin
   inherited Create;
   Owner := AOwner;
-  DetectorDefineList := TDetectorDefineList.Create;
+  DetectorDefineList := TEditorDetectorDefineList.Create;
+  SegmentationMaskList := TSegmentationMasks.Create(Self);
   Raster := NewRaster();
   FOP_RT := nil;
+  FOP_RT_RunDeleted := False;
 end;
 
 destructor TAI_Image.Destroy;
 begin
-  Clear;
+  ClearDetector;
+  ClearSegmentation;
   disposeObject(DetectorDefineList);
+  disposeObject(SegmentationMaskList);
   disposeObject(Raster);
   if FOP_RT <> nil then
       disposeObject(FOP_RT);
@@ -1137,12 +1888,12 @@ end;
 function TAI_Image.RunExpCondition(RSeri: TRasterSerialized; ScriptStyle: TTextStyle; exp: SystemString): Boolean;
 begin
   CheckAndRegOPRT;
-  DoStatusNoLn('Image (%d * %d, detector:%d) EvaluateExpression: %s', [Raster.width, Raster.height, DetectorDefineList.Count, exp]);
+  DoStatusNoLn('Image (%d * %d, detector:%d) EvaluateExpression: %s', [Raster.Width, Raster.Height, DetectorDefineList.Count, exp]);
 
   if RSeri <> nil then
       UnserializedMemory(RSeri);
 
-  Result := EvaluateExpressionValue(ScriptStyle, exp, FOP_RT);
+  Result := EvaluateExpressionValue(False, ScriptStyle, exp, FOP_RT);
 
   if Result then
       DoStatusNoLn(' = yes.')
@@ -1161,7 +1912,7 @@ begin
   if RSeri <> nil then
       UnserializedMemory(RSeri);
 
-  Result := EvaluateExpressionValue(ScriptStyle, exp, FOP_RT);
+  Result := EvaluateExpressionValue(False, ScriptStyle, exp, FOP_RT);
 
   if RSeri <> nil then
       SerializedAndRecycleMemory(RSeri);
@@ -1174,13 +1925,18 @@ begin
   FOP_RT.ProcList.GetNameList(Result);
 end;
 
-procedure TAI_Image.Clear;
+procedure TAI_Image.ClearDetector;
 var
   i: Integer;
 begin
   for i := 0 to DetectorDefineList.Count - 1 do
       disposeObject(DetectorDefineList[i]);
   DetectorDefineList.Clear;
+end;
+
+procedure TAI_Image.ClearSegmentation;
+begin
+  SegmentationMaskList.Clear;
 end;
 
 procedure TAI_Image.ClearPrepareRaster;
@@ -1197,11 +1953,18 @@ var
   i, j: Integer;
   DetDef: TAI_DetectorDefine;
   pt_p: PVec2;
+  segMask: PSegmentationMask;
 begin
   d := TDrawEngine.Create;
   d.Options := [];
   output.Assign(Raster);
   d.Rasterization.SetWorkMemory(output);
+
+  for i := 0 to SegmentationMaskList.Count - 1 do
+    begin
+      segMask := SegmentationMaskList[i];
+      d.DrawPicture(segMask^.Raster, segMask^.Raster.BoundsRectV2, d.ScreenRect, 0.5);
+    end;
 
   for i := 0 to DetectorDefineList.Count - 1 do
     begin
@@ -1233,7 +1996,7 @@ begin
   disposeObject(d);
 end;
 
-function TAI_Image.FoundNoTokenDetectorDefine(output: TMemoryRaster; color: TDEColor): Boolean;
+function TAI_Image.FoundNoTokenDetectorDefine(output: TMemoryRaster; Color: TDEColor): Boolean;
 var
   i: Integer;
   DetDef: TAI_DetectorDefine;
@@ -1250,9 +2013,9 @@ begin
           DetDef := DetectorDefineList[i];
           if DetDef.Token = '' then
             begin
-              d.FillBox(RectV2(DetDef.R), color);
+              d.FillBox(RectV2(DetDef.R), Color);
               d.BeginCaptureShadow(Vec2(1, 1), 0.9);
-              d.DrawText('ERROR!!' + #13#10 + 'NULL TOKEN', 12, RectV2(DetDef.R), DEColorInv(color), True);
+              d.DrawText('ERROR!!' + #13#10 + 'NULL TOKEN', 12, RectV2(DetDef.R), DEColorInv(Color), True);
               d.EndCaptureShadow;
               Result := True;
             end;
@@ -1309,6 +2072,11 @@ begin
       disposeObject(m64);
     end;
 
+  m64 := TMemoryStream64.Create;
+  SegmentationMaskList.SaveToStream(m64);
+  de.WriteStream(m64);
+  disposeObject(m64);
+
   de.EncodeTo(stream, True);
 
   disposeObject(de);
@@ -1356,6 +2124,15 @@ begin
       DetectorDefineList.Add(DetDef);
     end;
 
+  if de.Reader.NotEnd then
+    begin
+      m64 := TMemoryStream64.Create;
+      de.Reader.ReadStream(m64);
+      m64.Position := 0;
+      SegmentationMaskList.LoadFromStream(m64);
+      disposeObject(m64);
+    end;
+
   disposeObject(de);
 end;
 
@@ -1368,14 +2145,16 @@ procedure TAI_Image.LoadPicture(stream: TMemoryStream64);
 begin
   disposeObject(Raster);
   Raster := NewRasterFromStream(stream);
-  Clear;
+  ClearDetector;
+  ClearSegmentation;
 end;
 
 procedure TAI_Image.LoadPicture(fileName: SystemString);
 begin
   disposeObject(Raster);
   Raster := NewRasterFromFile(fileName);
-  Clear;
+  ClearDetector;
+  ClearSegmentation;
 end;
 
 procedure TAI_Image.Scale(f: TGeoFloat);
@@ -1394,14 +2173,17 @@ begin
       DetDef.R := MakeRect(RectMul(RectV2(DetDef.R), f));
       DetDef.Part.Mul(f, f);
     end;
+
+  for i := 0 to SegmentationMaskList.Count - 1 do
+      SegmentationMaskList[i]^.Raster.NoLineScale(f);
 end;
 
-function TAI_Image.ExistsToken(Token: TPascalString): Boolean;
+function TAI_Image.ExistsDetectorToken(Token: TPascalString): Boolean;
 begin
-  Result := GetTokenCount(Token) > 0;
+  Result := GetDetectorTokenCount(Token) > 0;
 end;
 
-function TAI_Image.GetTokenCount(Token: TPascalString): Integer;
+function TAI_Image.GetDetectorTokenCount(Token: TPascalString): Integer;
 var
   i: Integer;
 begin
@@ -1418,6 +2200,11 @@ begin
   for i := 0 to DetectorDefineList.Count - 1 do
       DetectorDefineList[i].PrepareRaster.SerializedAndRecycleMemory(Serializ);
 
+  for i := 0 to SegmentationMaskList.Count - 1 do
+      SegmentationMaskList[i]^.Raster.SerializedAndRecycleMemory(Serializ);
+
+  SegmentationMaskList.MaskMergeRaster.SerializedAndRecycleMemory(Serializ);
+
   Raster.SerializedAndRecycleMemory(Serializ);
 end;
 
@@ -1426,10 +2213,15 @@ var
   i: Integer;
 begin
   for i := 0 to DetectorDefineList.Count - 1 do
-    begin
-      if DetectorDefineList[i].PrepareRaster.Empty then
-          DetectorDefineList[i].PrepareRaster.UnserializedMemory(Serializ);
-    end;
+    if DetectorDefineList[i].PrepareRaster.Empty then
+        DetectorDefineList[i].PrepareRaster.UnserializedMemory(Serializ);
+
+  for i := 0 to SegmentationMaskList.Count - 1 do
+    if SegmentationMaskList[i]^.Raster.Empty then
+        SegmentationMaskList[i]^.Raster.UnserializedMemory(Serializ);
+
+  if SegmentationMaskList.MaskMergeRaster.Empty then
+      SegmentationMaskList.MaskMergeRaster.UnserializedMemory(Serializ);
 
   if Raster.Empty then
       Raster.UnserializedMemory(Serializ);
@@ -1562,7 +2354,7 @@ var
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure FPC_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure FPC_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   var
     mr: TMemoryRaster;
   begin
@@ -1605,7 +2397,7 @@ var
     for i := 0 to rp.Count - 1 do
       begin
         mr := rp[i]^.Data2 as TMemoryRaster;
-        d.DrawTexture(mr, mr.BoundsRectV2, rp[i]^.Rect, 1.0);
+        d.DrawPicture(mr, mr.BoundsRectV2, rp[i]^.Rect, 1.0);
       end;
 
     DoStatus('draw imageList.');
@@ -1668,7 +2460,7 @@ begin
   for i := 0 to Count - 1 do
       rList.Add(Items[i].Raster);
 
-  d.DrawTexturePackingInScene(rList, Margins, destOffset, alpha);
+  d.DrawPicturePackingInScene(rList, Margins, destOffset, alpha);
   disposeObject(rList);
 end;
 
@@ -1759,7 +2551,7 @@ begin
           rp.Add(nil, Items[i].Raster, Items[i].Raster.BoundsRectV2);
       rp.Build;
 
-      Result.SetSizeF(rp.MaxWidth, rp.MaxHeight, RasterColorF(0, 0, 0, 1));
+      Result.SetSizeF(rp.MaxWidth, rp.MaxHeight, RColorF(0, 0, 0, 1));
       d := TDrawEngine.Create;
       d.ViewOptions := [];
       d.Rasterization.SetWorkMemory(Result);
@@ -1767,7 +2559,7 @@ begin
       for i := 0 to rp.Count - 1 do
         begin
           mr := TMemoryRaster(rp[i]^.Data2);
-          d.DrawTexture(mr, mr.BoundsRectV2, rp[i]^.Rect, 0, 1.0);
+          d.DrawPicture(mr, mr.BoundsRectV2, rp[i]^.Rect, 0, 1.0);
         end;
 
       d.Flush;
@@ -1824,7 +2616,7 @@ begin
   for i := 0 to rp.Count - 1 do
     begin
       mr := rp[i]^.Data2 as TMemoryRaster;
-      de.DrawTexture(mr, mr.BoundsRectV2, rp[i]^.Rect, 0, 1.0);
+      de.DrawPicture(mr, mr.BoundsRectV2, rp[i]^.Rect, 0, 1.0);
     end;
 
   de.Flush;
@@ -1964,11 +2756,12 @@ begin
     end;
 end;
 
-procedure TAI_ImageList.CalibrationNullDetectorDefineToken(Token: SystemString);
+procedure TAI_ImageList.CalibrationNullDefineToken(Token: SystemString);
 var
   i, j: Integer;
   imgData: TAI_Image;
   DetDef: TAI_DetectorDefine;
+  p: PSegmentationMask;
 begin
   for i := 0 to Count - 1 do
     begin
@@ -1980,47 +2773,15 @@ begin
           if DetDef.Token = '' then
               DetDef.Token := Token;
           DetDef.Token := umlTrimSpace(DetDef.Token);
-        end
-    end;
-end;
+        end;
 
-procedure TAI_ImageList.CalibrationDetectorDefineTokenPrefix(Prefix: SystemString);
-var
-  i, j: Integer;
-  imgData: TAI_Image;
-  DetDef: TAI_DetectorDefine;
-begin
-  for i := 0 to Count - 1 do
-    begin
-      imgData := Items[i];
-      for j := 0 to imgData.DetectorDefineList.Count - 1 do
+      for j := 0 to imgData.SegmentationMaskList.Count - 1 do
         begin
-          DetDef := imgData.DetectorDefineList[j];
-          DetDef.Token := umlTrimSpace(DetDef.Token);
-          if DetDef.Token = '' then
-              DetDef.Token := Prefix + DetDef.Token;
-          DetDef.Token := umlTrimSpace(DetDef.Token);
-        end
-    end;
-end;
-
-procedure TAI_ImageList.CalibrationDetectorDefineTokenSuffix(Suffix: SystemString);
-var
-  i, j: Integer;
-  imgData: TAI_Image;
-  DetDef: TAI_DetectorDefine;
-begin
-  for i := 0 to Count - 1 do
-    begin
-      imgData := Items[i];
-      for j := 0 to imgData.DetectorDefineList.Count - 1 do
-        begin
-          DetDef := imgData.DetectorDefineList[j];
-          DetDef.Token := umlTrimSpace(DetDef.Token);
-          if DetDef.Token = '' then
-              DetDef.Token := DetDef.Token + Suffix;
-          DetDef.Token := umlTrimSpace(DetDef.Token);
-        end
+          p := imgData.SegmentationMaskList[j];
+          p^.Token := umlTrimSpace(p^.Token);
+          if p^.Token = '' then
+              p^.Token := Token;
+        end;
     end;
 end;
 
@@ -2178,7 +2939,7 @@ begin
   for i := 0 to Count - 1 do
     begin
       imgData := Items[i];
-      if (imgData.DetectorDefineList.Count = 0) or (not imgData.ExistsToken(TokenFilter)) then
+      if (imgData.DetectorDefineList.Count = 0) or (not imgData.ExistsDetectorToken(TokenFilter)) then
           continue;
 
       m64 := TMemoryStream64.Create;
@@ -2210,7 +2971,7 @@ begin
             begin
               body.Add(PFormat(
                 '  <box top='#39'%d'#39' left='#39'%d'#39' width='#39'%d'#39' height='#39'%d'#39'>',
-                [DetDef.R.Top, DetDef.R.Left, DetDef.R.width, DetDef.R.height]));
+                [DetDef.R.Top, DetDef.R.Left, DetDef.R.Width, DetDef.R.Height]));
 
               if includeLabel and (DetDef.Token.Len > 0) then
                   body.Add(PFormat('    <label>%s</label>', [DetDef.Token.Text]));
@@ -2315,7 +3076,7 @@ begin
               mr.UserToken := DetDef.Token;
 
               // projection
-              if (DetDef.Owner.Raster.width <> SS_width) or (DetDef.Owner.Raster.height <> SS_height) then
+              if (DetDef.Owner.Raster.Width <> SS_width) or (DetDef.Owner.Raster.Height <> SS_height) then
                 begin
                   mr.SetSize(SS_width, SS_height);
                   DetDef.Owner.Raster.ProjectionTo(mr,
@@ -2323,7 +3084,7 @@ begin
                     TV2Rect4.Init(mr.BoundsRectV2, 0),
                     True, 1.0);
                 end
-              else // fast assign
+              else // fast copy
                   mr.Assign(DetDef.Owner.Raster);
 
               if not hList.Exists(DetDef.Token) then
@@ -2511,7 +3272,7 @@ begin
   Result := False;
 end;
 
-function TAI_ImageList.Tokens: TArrayPascalString;
+function TAI_ImageList.DetectorTokens: TArrayPascalString;
 var
   i, j: Integer;
   imgData: TAI_Image;
@@ -2535,18 +3296,85 @@ begin
   disposeObject(hList);
 end;
 
-function TAI_ImageList.ExistsToken(Token: TPascalString): Boolean;
+function TAI_ImageList.ExistsDetectorToken(Token: TPascalString): Boolean;
 begin
-  Result := GetTokenCount(Token) > 0;
+  Result := GetDetectorTokenCount(Token) > 0;
 end;
 
-function TAI_ImageList.GetTokenCount(Token: TPascalString): Integer;
+function TAI_ImageList.GetDetectorTokenCount(Token: TPascalString): Integer;
 var
   i: Integer;
 begin
   Result := 0;
   for i := 0 to Count - 1 do
-      inc(Result, Items[i].GetTokenCount(Token));
+      inc(Result, Items[i].GetDetectorTokenCount(Token));
+end;
+
+procedure TAI_ImageList.SegmentationTokens(output: TPascalStringList);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].SegmentationMaskList.SegmentationTokens(output);
+end;
+
+function TAI_ImageList.BuildSegmentationColorBuffer: TSegmentationColorList;
+var
+  SegTokenList: TPascalStringList;
+  i: Integer;
+  c: TRColor;
+begin
+  Result := TSegmentationColorList.Create;
+  SegTokenList := TPascalStringList.Create;
+  SegmentationTokens(SegTokenList);
+
+  for i := 0 to SegTokenList.Count - 1 do
+    begin
+      repeat
+          c := RColor(umlRandomRange($1, $FF - 1), umlRandomRange($1, $FF - 1), umlRandomRange($1, $FF - 1), $FF);
+      until not Result.ExistsColor(c);
+      Result.AddColor(SegTokenList[i], c);
+    end;
+
+  disposeObject(SegTokenList);
+end;
+
+procedure TAI_ImageList.BuildMaskMerge(colors: TSegmentationColorList);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].SegmentationMaskList.BuildMaskMerge(colors);
+end;
+
+procedure TAI_ImageList.BuildMaskMerge;
+var
+  cl: TSegmentationColorList;
+begin
+  cl := BuildSegmentationColorBuffer;
+  BuildMaskMerge(cl);
+  disposeObject(cl);
+end;
+
+procedure TAI_ImageList.LargeScale_BuildMaskMerge(RSeri: TRasterSerialized; colors: TSegmentationColorList);
+var
+  i: Integer;
+  img: TAI_Image;
+begin
+  for i := 0 to Count - 1 do
+    begin
+      img := Items[i];
+      img.SegmentationMaskList.BuildMaskMerge(colors);
+      img.SerializedAndRecycleMemory(RSeri);
+    end;
+end;
+
+procedure TAI_ImageList.ClearMaskMerge;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].SegmentationMaskList.MaskMergeRaster.Reset;
 end;
 
 procedure TAI_ImageList.SerializedAndRecycleMemory(Serializ: TRasterSerialized);
@@ -2586,7 +3414,7 @@ begin
                   mr.SetSize(SS_width, SS_height);
 
                   // projection
-                  if (DetDef.Owner.Raster.width <> SS_width) or (DetDef.Owner.Raster.height <> SS_height) then
+                  if (DetDef.Owner.Raster.Width <> SS_width) or (DetDef.Owner.Raster.Height <> SS_height) then
                     begin
                       mr.SetSize(SS_width, SS_height);
                       DetDef.Owner.Raster.ProjectionTo(mr,
@@ -2724,7 +3552,7 @@ begin
                   mr := NewRaster();
 
                   // projection
-                  if (DetDef.Owner.Raster.width <> SS_width) or (DetDef.Owner.Raster.height <> SS_height) then
+                  if (DetDef.Owner.Raster.Width <> SS_width) or (DetDef.Owner.Raster.Height <> SS_height) then
                     begin
                       mr.SetSize(SS_width, SS_height);
                       DetDef.Owner.Raster.ProjectionTo(mr,
@@ -2970,7 +3798,7 @@ var
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure fpc_Prepare_Save_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure fpc_Prepare_Save_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   var
     p: PSaveRec;
   begin
@@ -3085,7 +3913,7 @@ var
     p: PLoadRec;
   begin
     new(p);
-    p^.fn := umlChangeFileExt(itmSR.name, '');
+    p^.fn := umlChangeFileExt(itmSR.Name, '');
     dbEng.ItemFastOpen(itmSR.HeaderPOS, itmHnd);
     p^.m64 := TMemoryStream64.Create;
     p^.m64.Size := itmHnd.Item.Size;
@@ -3099,7 +3927,7 @@ var
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure Load_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure Load_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   var
     p: PLoadRec;
   begin
@@ -3109,7 +3937,7 @@ var
     p^.imgList.FileInfo := p^.fn;
     disposeObject(p^.m64);
     p^.fn := '';
-    Dispose(p);
+    dispose(p);
   end;
 {$ENDIF FPC}
 {$ELSE parallel}
@@ -3126,7 +3954,7 @@ var
         p^.imgList.FileInfo := p^.fn;
         disposeObject(p^.m64);
         p^.fn := '';
-        Dispose(p);
+        dispose(p);
       end;
   end;
 {$ENDIF parallel}
@@ -3140,7 +3968,7 @@ begin
   if dbEng.ItemFastFindFirst(fPos, '', itmSR) then
     begin
       repeat
-        if umlMultipleMatch('*' + C_ImageList_Ext, itmSR.name) then
+        if umlMultipleMatch('*' + C_ImageList_Ext, itmSR.Name) then
             PrepareMemory;
       until not dbEng.ItemFindNext(itmSR);
     end;
@@ -3160,7 +3988,7 @@ begin
       p^.imgList.FileInfo := p^.fn;
       disposeObject(p^.m64);
       p^.fn := '';
-      Dispose(p);
+      dispose(p);
     end);
 {$ENDIF FPC}
 {$ELSE parallel}
@@ -3255,7 +4083,7 @@ procedure TAI_ImageMatrix.Build_XML(TokenFilter: SystemString; includeLabel, inc
     for i := 0 to imgList.Count - 1 do
       begin
         imgData := imgList[i];
-        if (imgData.DetectorDefineList.Count = 0) or (not imgData.ExistsToken(TokenFilter)) then
+        if (imgData.DetectorDefineList.Count = 0) or (not imgData.ExistsDetectorToken(TokenFilter)) then
             continue;
 
         m64 := TMemoryStream64.Create;
@@ -3288,7 +4116,7 @@ procedure TAI_ImageMatrix.Build_XML(TokenFilter: SystemString; includeLabel, inc
               begin
                 body.Add(PFormat(
                   '  <box top='#39'%d'#39' left='#39'%d'#39' width='#39'%d'#39' height='#39'%d'#39'>',
-                  [DetDef.R.Top, DetDef.R.Left, DetDef.R.width, DetDef.R.height]));
+                  [DetDef.R.Top, DetDef.R.Left, DetDef.R.Width, DetDef.R.Height]));
 
                 if includeLabel and (DetDef.Token.Len > 0) then
                     body.Add(PFormat('    <label>%s</label>', [DetDef.Token.Text]));
@@ -3421,7 +4249,7 @@ begin
   Result := False;
 end;
 
-function TAI_ImageMatrix.Tokens: TArrayPascalString;
+function TAI_ImageMatrix.DetectorTokens: TArrayPascalString;
 var
   hList: THashList;
 
@@ -3460,18 +4288,18 @@ begin
   disposeObject(hList);
 end;
 
-function TAI_ImageMatrix.ExistsToken(Token: TPascalString): Boolean;
+function TAI_ImageMatrix.ExistsDetectorToken(Token: TPascalString): Boolean;
 begin
-  Result := GetTokenCount(Token) > 0;
+  Result := GetDetectorTokenCount(Token) > 0;
 end;
 
-function TAI_ImageMatrix.GetTokenCount(Token: TPascalString): Integer;
+function TAI_ImageMatrix.GetDetectorTokenCount(Token: TPascalString): Integer;
 var
   i: Integer;
 begin
   Result := 0;
   for i := 0 to Count - 1 do
-      inc(Result, Items[i].GetTokenCount(Token));
+      inc(Result, Items[i].GetDetectorTokenCount(Token));
 end;
 
 function TAI_ImageMatrix.FindImageList(FileInfo: TPascalString): TAI_ImageList;
@@ -3487,13 +4315,75 @@ begin
   Result := nil;
 end;
 
+procedure TAI_ImageMatrix.SegmentationTokens(output: TPascalStringList);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].SegmentationTokens(output);
+end;
+
+function TAI_ImageMatrix.BuildSegmentationColorBuffer: TSegmentationColorList;
+var
+  SegTokenList: TPascalStringList;
+  i: Integer;
+  c: TRColor;
+begin
+  Result := TSegmentationColorList.Create;
+  SegTokenList := TPascalStringList.Create;
+  SegmentationTokens(SegTokenList);
+
+  for i := 0 to SegTokenList.Count - 1 do
+    begin
+      repeat
+          c := RColor(umlRandomRange($1, $FF - 1), umlRandomRange($1, $FF - 1), umlRandomRange($1, $FF - 1), $FF);
+      until not Result.ExistsColor(c);
+      Result.AddColor(SegTokenList[i], c);
+    end;
+
+  disposeObject(SegTokenList);
+end;
+
+procedure TAI_ImageMatrix.BuildMaskMerge(colors: TSegmentationColorList);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].BuildMaskMerge(colors);
+end;
+
+procedure TAI_ImageMatrix.BuildMaskMerge;
+var
+  cl: TSegmentationColorList;
+begin
+  cl := BuildSegmentationColorBuffer;
+  BuildMaskMerge(cl);
+  disposeObject(cl);
+end;
+
+procedure TAI_ImageMatrix.LargeScale_BuildMaskMerge(RSeri: TRasterSerialized; colors: TSegmentationColorList);
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].LargeScale_BuildMaskMerge(RSeri, colors);
+end;
+
+procedure TAI_ImageMatrix.ClearMaskMerge;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].ClearMaskMerge;
+end;
+
 function TAI_ImageMatrix.ExtractDetectorDefineAsSnapshotProjection(SS_width, SS_height: Integer): TMemoryRaster2DArray;
 var
   hList: THashObjectList;
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   begin
     BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], hList);
   end;
@@ -3554,7 +4444,7 @@ var
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   begin
     BuildSnapshot_HashList(Items[pass], hList);
   end;
@@ -3615,7 +4505,7 @@ var
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   begin
     BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], hList);
   end;
@@ -3676,7 +4566,7 @@ var
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   begin
     BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], hList);
   end;
@@ -3748,7 +4638,7 @@ var
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure fpc_Prepare_Save_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure fpc_Prepare_Save_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   var
     p: PSaveRec;
   begin
@@ -3866,7 +4756,7 @@ var
     p: PLoadRec;
   begin
     new(p);
-    p^.fn := umlChangeFileExt(itmSR.name, '');
+    p^.fn := umlChangeFileExt(itmSR.Name, '');
     dbEng.ItemFastOpen(itmSR.HeaderPOS, p^.itmHnd);
     p^.imgList := TAI_ImageList.Create;
     Add(p^.imgList);
@@ -3875,7 +4765,7 @@ var
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure Load_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure Load_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   var
     p: PLoadRec;
     m64: TMemoryStream64;
@@ -3892,7 +4782,7 @@ var
     p^.imgList.SerializedAndRecycleMemory(RSeri);
     disposeObject(m64);
     p^.fn := '';
-    Dispose(p);
+    dispose(p);
   end;
 {$ENDIF FPC}
 {$ELSE parallel}
@@ -3916,7 +4806,7 @@ var
         p^.imgList.SerializedAndRecycleMemory(RSeri);
         disposeObject(m64);
         p^.fn := '';
-        Dispose(p);
+        dispose(p);
       end;
   end;
 {$ENDIF parallel}
@@ -3930,7 +4820,7 @@ begin
   if dbEng.ItemFastFindFirst(fPos, '', itmSR) then
     begin
       repeat
-        if umlMultipleMatch('*' + C_ImageList_Ext, itmSR.name) then
+        if umlMultipleMatch('*' + C_ImageList_Ext, itmSR.Name) then
             PrepareMemory;
       until not dbEng.ItemFindNext(itmSR);
     end;
@@ -3957,7 +4847,7 @@ begin
       p^.imgList.SerializedAndRecycleMemory(RSeri);
       disposeObject(m64);
       p^.fn := '';
-      Dispose(p);
+      dispose(p);
     end);
 {$ENDIF FPC}
 {$ELSE parallel}
@@ -4000,7 +4890,7 @@ var
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   begin
     BuildSnapshotProjection_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
   end;
@@ -4061,7 +4951,7 @@ var
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   begin
     BuildSnapshot_HashList(Items[pass], RSeri, hList);
   end;
@@ -4122,7 +5012,7 @@ var
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   begin
     BuildDefinePrepareRaster_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
   end;
@@ -4183,7 +5073,7 @@ var
 
 {$IFDEF parallel}
 {$IFDEF FPC}
-  procedure Nested_ParallelFor(pass: PtrInt; data: Pointer; Item: TMultiThreadProcItem);
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   begin
     BuildScaleSpace_HashList(SS_width, SS_height, Items[pass], RSeri, hList);
   end;

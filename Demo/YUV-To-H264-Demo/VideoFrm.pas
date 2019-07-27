@@ -65,9 +65,9 @@ procedure TVideoForm.OpenButtonClick(Sender: TObject);
 begin
   if not OpenDialog.Execute then
       exit;
-  yR := TY4MReader.Create(OpenDialog.FileName);
+  yR := TY4MReader.CreateOnFile(OpenDialog.FileName);
   yR.ReadFrame.SaveToRaster(VideoTexture);
-  VideoTexture.ReleaseFMXResource;
+  VideoTexture.ReleaseGPUMemory;
 end;
 
 procedure TVideoForm.PaintBoxPaint(Sender: TObject; Canvas: TCanvas);
@@ -79,11 +79,11 @@ var
 begin
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
-  d.ViewOptions := [TDrawEngineViewOption.devpFPS];
+  d.ViewOptions := [voFPS];
   d.SetSize;
 
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
-  d.DrawTexture(VideoTexture, VideoTexture.BoundsRectV2, d.ScreenRect, 1.0);
+  d.DrawPicture(VideoTexture, VideoTexture.BoundsRectV2, d.ScreenRect, 1.0);
   vInfo := Format('Frame information: %d * %d', [VideoTexture.Width, VideoTexture.Height]);
   vSiz := d.GetTextSize(vInfo, 12);
   vR := DERect(DEVec(0, 0), vSiz);
@@ -109,7 +109,7 @@ procedure TVideoForm.ProcessButtonClick(Sender: TObject);
     clientLayout.Enabled := False;
     Timer.Enabled := False;
 
-    enWriter := TY4MWriter.Create(yR.Width, yR.Height, Round(yR.FrameRate + 0.5), Y4MSaveDialog.FileName);
+    enWriter := TY4MWriter.CreateOnFile(yR.Width, yR.Height, Round(yR.FrameRate + 0.5), Y4MSaveDialog.FileName);
     raster := TMemoryRaster.Create;
     yR.SeekFirstFrame;
     for i := yR.CurrentFrame to yR.FrameCount - 1 do
@@ -195,7 +195,7 @@ begin
       if (yR.CurrentFrame < yR.FrameCount) then
         begin
           yR.ReadFrame.SaveToRaster(VideoTexture);
-          VideoTexture.ReleaseFMXResource;
+          VideoTexture.ReleaseGPUMemory;
         end
       else
           yR.SeekFirstFrame;

@@ -112,7 +112,7 @@ begin
   alpha := BounceFloat(alpha, d.LastDeltaTime * 5, 1.0, 0.5, alpha_bound);
 
   // 显示边框和帧率
-  d.ViewOptions := [devpFPS, devpFrameEndge];
+  d.ViewOptions := [voFPS, voEdge];
 
   // 背景被填充成黑色，这里的画图指令并不是立即执行的，而是形成命令流队列存放在DrawEngine的一个容器中
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
@@ -122,7 +122,7 @@ begin
   // 画原，画图指令并不是立即执行的，而是形成命令流队列存放在DrawEngine的一个容器中
   sr := d.ScreenRect;
   sr[1, 1] := d.height * 0.5;
-  r := d.FitDrawTexture(source, source.BoundsRectV2, sr, 1.0); // 画出来
+  r := d.FitDrawPicture(source, source.BoundsRectV2, sr, 1.0); // 画出来
   d.BeginCaptureShadow(Vec2(1, 1), 0.9);                       // 开始捕获画文字的影子
   d.DrawText('原图像', 12, r, DEColor(1, 0, 0, 1), False);        // 画字
   d.EndCaptureShadow;                                          // 结束捕获画文字的影子
@@ -130,7 +130,7 @@ begin
   // 画目标，这里的画图指令并不是立即执行的，而是形成命令流队列存放在DrawEngine的一个容器中
   dr := d.ScreenRect;
   dr[0, 1] := d.height * 0.5;
-  r := d.FitDrawTexture(dest, dest.BoundsRectV2, dr, 1.0);   // 画出来,返回的r是画图fit后的框体，r是纹理的实际屏幕框体的坐标系
+  r := d.FitDrawPicture(dest, dest.BoundsRectV2, dr, 1.0);   // 画出来,返回的r是画图fit后的框体，r是纹理的实际屏幕框体的坐标系
   d.BeginCaptureShadow(Vec2(1, 1), 0.9);                     // 开始捕获画文字的影子
   d.DrawText('检测后的图像', 12, r, DEColor(1, 0, 0, 1.0), False); // 画字
   d.EndCaptureShadow;                                        // 结束捕获画文字的影子

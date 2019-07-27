@@ -63,7 +63,7 @@ begin
   drawIntf := TDrawEngineInterface_FMX.Create;
 
   // mpeg yv12视频帧格式
-  mpeg_y4m := TY4MReader.Create(umlCombineFileName(TPath.GetLibraryPath, 'dog.y4m'));
+  mpeg_y4m := TY4MReader.CreateOnFile(umlCombineFileName(TPath.GetLibraryPath, 'dog.y4m'));
 
   // 当前绘制的视频帧
   frame := TDrawEngine.NewTexture;
@@ -176,15 +176,15 @@ var
 begin
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
-  d.ViewOptions := [devpFPS];
+  d.ViewOptions := [voFPS];
   d.FPSFontColor := DEColor(0.5, 0.5, 1, 1);
 
   mpeg_y4m.ReadFrame();
   YV12ToRaster(mpeg_y4m.Image, frame);
   Raster_DetectAndDraw(frame);
-  frame.FastUpdateTexture;
+  frame.ReleaseGPUMemory;
 
-  d.DrawTexture(frame, frame.BoundsRectV2, d.ScreenRect, 1.0);
+  d.DrawPicture(frame, frame.BoundsRectV2, d.ScreenRect, 1.0);
 
   if mpeg_y4m.CurrentFrame >= mpeg_y4m.FrameCount then
     begin

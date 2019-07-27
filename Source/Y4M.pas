@@ -1,5 +1,5 @@
 { ****************************************************************************** }
-{ * Yuv for Mpeg               by qq600585                                     * }
+{ * YUV FOR MPEG               by qq600585                                     * }
 { * https://zpascal.net                                                        * }
 { * https://github.com/PassByYou888/zAI                                        * }
 { * https://github.com/PassByYou888/ZServer4D                                  * }
@@ -39,8 +39,8 @@ type
     FImage: TPlanarImage;
     procedure ParseHeader;
   public
-    constructor Create(const FileName: TPascalString); overload;
-    constructor Create(const stream: TCoreClassStream; const autoFreeSteam: Boolean); overload;
+    constructor CreateOnFile(const FileName: TPascalString);
+    constructor CreateOnStream(const stream: TCoreClassStream; const autoFreeSteam: Boolean);
     destructor Destroy; override;
 
     procedure SeekFirstFrame;
@@ -68,7 +68,7 @@ type
       psf: per second frame
       filename: output filename
     *)
-    constructor Create(const w, h, psf: uint16_t; const FileName: TPascalString); overload;
+    constructor CreateOnFile(const w, h, psf: uint16_t; const FileName: TPascalString);
 
     (*
       w: frame FWidth
@@ -76,7 +76,7 @@ type
       psf: per second frame
       stream: output stream
     *)
-    constructor Create(const w, h, psf: uint16_t; const stream: TCoreClassStream); overload;
+    constructor CreateOnStream(const w, h, psf: uint16_t; const stream: TCoreClassStream);
 
     destructor Destroy; override;
 
@@ -137,7 +137,7 @@ begin
   FFileHeaderSize := umlFilePOS(ioHandle);
 end;
 
-constructor TY4MReader.Create(const FileName: TPascalString);
+constructor TY4MReader.CreateOnFile(const FileName: TPascalString);
 begin
   inherited Create;
   FFrameCount := 0;
@@ -153,7 +153,7 @@ begin
   FImage := TPlanarImage.Create(FWidth, FHeight);
 end;
 
-constructor TY4MReader.Create(const stream: TCoreClassStream; const autoFreeSteam: Boolean);
+constructor TY4MReader.CreateOnStream(const stream: TCoreClassStream; const autoFreeSteam: Boolean);
 begin
   inherited Create;
   FFrameCount := 0;
@@ -219,7 +219,7 @@ begin
   Result := FImage;
 end;
 
-constructor TY4MWriter.Create(const w, h, psf: uint16_t; const FileName: TPascalString);
+constructor TY4MWriter.CreateOnFile(const w, h, psf: uint16_t; const FileName: TPascalString);
 var
   s: TPascalString;
   b: TBytes;
@@ -239,7 +239,7 @@ begin
   FImage := TPlanarImage.Create(w, h);
 end;
 
-constructor TY4MWriter.Create(const w, h, psf: uint16_t; const stream: TCoreClassStream);
+constructor TY4MWriter.CreateOnStream(const w, h, psf: uint16_t; const stream: TCoreClassStream);
 var
   s: TPascalString;
   b: TBytes;

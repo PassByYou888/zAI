@@ -174,7 +174,7 @@ end;
 
 procedure TNavigationScene.AddPolygon(PointList: TVec2List; ConvexHull: Boolean);
 begin
-  PointList.FixedSameError;
+  PointList.RemoveSame;
   if ConvexHull then
       FPolyManager.AddConvexHullPointList(PointList)
   else
@@ -186,7 +186,7 @@ end;
 
 procedure TNavigationScene.SetScene(PointList: TVec2List);
 begin
-  PointList.FixedSameError;
+  PointList.RemoveSame;
   FPolyManager.Scene.RebuildPoly(PointList);
   ResetCollisionState;
   ClearPass;
@@ -266,7 +266,7 @@ begin
   s := TMemoryStream64.Create;
   r.ReadStream(s);
   PolyManager.Scene.LoadFromStream(s);
-  PolyManager.Scene.FixedSameError;
+  PolyManager.Scene.RemoveSame;
   DisposeObject(s);
 
   for i := 0 to c - 1 do
@@ -275,7 +275,7 @@ begin
       r.ReadStream(s);
       Poly := TPolyManagerChildren.Create(PolyManager);
       Poly.LoadFromStream(s);
-      Poly.FixedSameError;
+      Poly.RemoveSame;
       Poly.ExpandMode := emConvex;
       PolyManager.Add(Poly);
       DisposeObject(s);

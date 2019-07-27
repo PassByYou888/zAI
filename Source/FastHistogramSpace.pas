@@ -59,7 +59,7 @@ type
       normH: TLFloat;
     end;
 
-    PHRec      = ^THRec;
+    PHRec = ^THRec;
     THRecArray = array of array of THRec;
     PHRecArray = ^THRecArray;
   private
@@ -82,7 +82,7 @@ type
     procedure BuildViewer(output: TMemoryRaster);
   end;
 
-procedure TestHOG;
+procedure TestHOG(inputfile, viewfile: string);
 
 implementation
 
@@ -98,7 +98,7 @@ uses
   SyncObjs, Learn;
 
 const
-  NUM_DIFF      = 511;
+  NUM_DIFF = 511;
   NUM_DIFF_DIV2 = 255;
 
 constructor THOGTable.Create(const numOriHalf, numOriFull, cellSize: TLInt);
@@ -811,7 +811,7 @@ begin
     end;
 end;
 
-procedure TestHOG;
+procedure TestHOG(inputfile, viewfile: string);
 var
   tab: THOGTable;
   HOG: THOG;
@@ -821,7 +821,7 @@ var
   t: TTimeTick;
   M: TLMatrix;
 begin
-  img := NewRasterFromFile('c:\1.bmp');
+  img := NewRasterFromFile(inputfile);
 
   tab := THOGTable.Create(18, 36, 16);
 
@@ -839,7 +839,7 @@ begin
   view.OpenAgg;
   HOG.BuildViewer(view);
   img.Draw(-8, -8, view);
-  img.SaveToFile('c:\view.bmp');
+  img.SaveToFile(viewfile);
   DisposeObject(view);
 
   DisposeObject(tab);

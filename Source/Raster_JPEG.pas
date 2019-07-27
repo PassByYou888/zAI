@@ -180,7 +180,7 @@ begin
       DisposeObject(FRaster);
       FRaster := nil;
       FRaster := SetBitmap32FromIterator(AIterator);
-      FRaster.Clear(RasterColor(0, 0, 0, $FF));
+      FRaster.Clear(RColor(0, 0, 0, $FF));
     end;
 
   // also update the iterator with bitmap properties

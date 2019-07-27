@@ -29,7 +29,6 @@ uses Math, CoreClasses, MemoryRaster, Geometry2DUnit, UnicodeMixedLib, DataFrame
 
 {$REGION 'PyramidTypes'}
 
-
 type
   TGFloat = Single;
   PGFloat = ^TGFloat;
@@ -249,16 +248,16 @@ procedure BuildSigmaKernel(const SIGMA: TGFloat; var kernel: TSigmaKernel);
 procedure SigmaRow(var theRow, destRow: TGaussVec; var k: TSigmaKernel);
 procedure SigmaSampler(var Source, dest: TGaussSpace; const SIGMA: TGFloat);
 procedure SaveSampler(var Source: TGaussSpace; FileName: string);
-procedure SaveSamplerToJpegLS(var Source: TGaussSpace; FileName: string);
 procedure ComputeSamplerSize(var width, height: TLInt);
 function Descriptor2LVec(d: TDescriptorArray): TLVec;
 
 // square of euclidean
-// need avx + sse or GPU
 type
+  // sse alignment
   TGFloat_4x = array [0 .. 3] of TGFloat;
 
-var sqr_128: function(sour, dest: PGFloat): TGFloat_4x;
+var
+  sqr_128: function(sour, dest: PGFloat): TGFloat_4x;
 function e_sqr(const sour, dest: PDescriptor): TGFloat;
 
 // feature match
@@ -393,22 +392,22 @@ var
   r, g, b: TGFloat;
 begin
   SetLength(dest, Source.height, Source.width);
-  if ColorSap > 255 then
-      c := 256
+  if ColorSap > $FF then
+      c := $FF
   else if ColorSap < 1 then
       c := 2
   else
       c := ColorSap;
 
-  f := 256 div c;
+  f := $FF div c;
 
   for j := 0 to Source.height - 1 do
     for i := 0 to Source.width - 1 do
       begin
         RasterColor2F(Source.Pixel[i, j], r, g, b);
-        w := Trunc((r * wr + g * wg + b * wb) / (wr + wg + wb) * 256);
+        w := Trunc((r * wr + g * wg + b * wb) / (wr + wg + wb) * $FF);
         wf := (w div f) * f;
-        dest[j, i] := Clamp(Round(wf) / 256, 0.0, 1.0);
+        dest[j, i] := Clamp(Round(wf) / $FF, 0.0, 1.0);
       end;
 end;
 
@@ -681,20 +680,6 @@ begin
   DisposeObject(mr);
 end;
 
-procedure SaveSamplerToJpegLS(var Source: TGaussSpace; FileName: string);
-var
-  gray: TByteRaster;
-  fs: TCoreClassFileStream;
-begin
-  Sampler(Source, gray);
-  try
-    fs := TCoreClassFileStream.Create(FileName, fmCreate);
-    EncodeJpegLSGrayRasterToStream(@gray, fs);
-    DisposeObject(fs);
-  except
-  end;
-end;
-
 procedure ComputeSamplerSize(var width, height: TLInt);
 var
   f: TGFloat;
@@ -765,7 +750,7 @@ end;
 
 {$IF Defined(Delphi) and Defined(MSWINDOWS)}
 
-
+// sse:x64+x86
 function sse_sqr_128(sour, dest: PGFloat): TGFloat_4x;
 asm
   movups xmm0,[[dest]+0*4*4]
@@ -864,7 +849,8 @@ begin
 end;
 
 function MatchFeature(const Source, dest: TFeature; var MatchInfo: TArrayMatchInfo): TLInt;
-const MaxFloatN = 3.4E+38;
+const
+  MaxFloatN = 3.4E+38;
 var
   L: TCoreClassList;
   pf1_len, pf2_len: TLInt;
@@ -2101,7 +2087,7 @@ procedure TPyramids.SetRegion(const Clip: TVec2List);
     i: TLInt;
   begin
     for i := 0 to FWidth - 1 do
-        SamplerXY[i + pass * FWidth] := IfThen(Clip.PointInHere(vec2(i, pass)), 1, 0);
+        SamplerXY[i + pass * FWidth] := IfThen(Clip.InHere(vec2(i, pass)), 1, 0);
   end;
 {$ENDIF FPC}
 {$ELSE parallel}
@@ -2111,7 +2097,7 @@ procedure TPyramids.SetRegion(const Clip: TVec2List);
   begin
     for pass := 0 to FHeight - 1 do
       for i := 0 to FWidth - 1 do
-          SamplerXY[i + pass * FWidth] := IfThen(Clip.PointInHere(vec2(i, pass)), 1, 0);
+          SamplerXY[i + pass * FWidth] := IfThen(Clip.InHere(vec2(i, pass)), 1, 0);
   end;
 {$ENDIF parallel}
 
@@ -2128,7 +2114,7 @@ begin
           i: TLInt;
         begin
           for i := 0 to FWidth - 1 do
-              SamplerXY[i + pass * FWidth] := IfThen(Clip.PointInHere(vec2(i, pass)), 1, 0);
+              SamplerXY[i + pass * FWidth] := IfThen(Clip.InHere(vec2(i, pass)), 1, 0);
         end);
 {$ENDIF FPC}
 {$ELSE parallel}
@@ -2615,11 +2601,6 @@ begin
 
   FWidth := Pyramids.FWidth;
   FHeight := Pyramids.FHeight;
-  // SetLength(FViewer, FHeight * FWidth);
-  // for j := 0 to FHeight - 1 do
-  // for i := 0 to FWidth - 1 do
-  // // FViewer[i + j * FWidth] := Pyramids.FViewer.PixelGray[i, j];
-  // FViewer[i + j * FWidth] := Round(Clamp(Pyramids.GaussTransformSpace[j, i], 0, 1) * 255);
 end;
 
 constructor TFeature.CreateWithPyramids(Pyramids: TPyramids);

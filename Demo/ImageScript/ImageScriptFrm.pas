@@ -78,7 +78,7 @@ var
 begin
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
-  d.ViewOptions := [devpFPS, devpFrameEndge];
+  d.ViewOptions := [voFPS, voEdge];
 
   // draw background
   fi := 0;
@@ -87,7 +87,7 @@ begin
       fj := 0;
       while fj < d.height do
         begin
-          d.DrawTexture(background, background.BoundsRectV2,
+          d.DrawPicture(background, background.BoundsRectV2,
             RectAdd(background.BoundsRectV2, Vec2(fi, fj)), 0, 1.0);
           fj := fj + background.height - 1;
         end;

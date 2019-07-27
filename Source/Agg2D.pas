@@ -46,7 +46,9 @@ unit Agg2D;
 
 {$DEFINE FPC_DELPHI_MODE}
 {$INCLUDE zDefine.inc}
+
 interface
+
 uses
   Math,
   AggBasics, AggMath, AggArray, AggTransAffine, AggTransViewport, AggPathStorage, AggConvStroke, AggConvDash, AggConvTransform, AggConvCurve,
@@ -69,15 +71,15 @@ uses
   AggVcgenStroke, AggVcgenVertexSequence, AggVertexSequence, AggVpGen, AggVpGenClipPolygon, AggVpGenClipPolyline, AggVpGenSegmentator;
 
 type
-  TAggPixelFormat     = (pfRGBA, pfBGRA);
-  PAggColorRgba8      = ^TAggColorRgba8;
-  TAggColorRgba8      = TAggRgba8;
-  TAggGradient        = (grdSolid, grdLinear, grdRadial);
-  TAggDirection       = (dirCW, dirCCW);
-  TAggDrawPathFlag    = (dpfFillOnly, dpfStrokeOnly, dpfFillAndStroke, dpfFillWithHorizontalLineColor);
-  TAggViewportOption  = (voAnisotropic, voXMinYMin, voXMidYMin, voXMaxYMin, voXMinYMid, voXMidYMid, voXMaxYMid, voXMinYMax, voXMidYMax, voXMaxYMax);
+  TAggPixelFormat = (pfRGBA, pfBGRA);
+  PAggColorRgba8 = ^TAggColorRgba8;
+  TAggColorRgba8 = TAggRgba8;
+  TAggGradient = (grdSolid, grdLinear, grdRadial);
+  TAggDirection = (dirCW, dirCCW);
+  TAggDrawPathFlag = (dpfFillOnly, dpfStrokeOnly, dpfFillAndStroke, dpfFillWithHorizontalLineColor);
+  TAggViewportOption = (voAnisotropic, voXMinYMin, voXMidYMin, voXMaxYMin, voXMinYMid, voXMidYMid, voXMaxYMid, voXMinYMax, voXMidYMax, voXMaxYMax);
   TAggImageFilterType = (ifNoFilter, ifBilinear, ifHanning, ifHermite, ifQuadric, ifBicubic, ifCatrom, ifSpline16, ifSpline36, ifBlackman144);
-  TAggImageResample   = (irNever, irAlways, irOnZoomOut);
+  TAggImageResample = (irNever, irAlways, irOnZoomOut);
   PAggTransformations = ^TAggTransformations;
 
   TAggTransformations = record
@@ -1395,35 +1397,16 @@ begin
   VP := TAggTransViewport.Create;
   try
     case opt of
-      voAnisotropic:
-        VP.PreserveAspectRatio(0, 0, arStretch);
-
-      voXMinYMin:
-        VP.PreserveAspectRatio(0, 0, arMeet);
-
-      voXMidYMin:
-        VP.PreserveAspectRatio(0.5, 0, arMeet);
-
-      voXMaxYMin:
-        VP.PreserveAspectRatio(1, 0, arMeet);
-
-      voXMinYMid:
-        VP.PreserveAspectRatio(0, 0.5, arMeet);
-
-      voXMidYMid:
-        VP.PreserveAspectRatio(0.5, 0.5, arMeet);
-
-      voXMaxYMid:
-        VP.PreserveAspectRatio(1, 0.5, arMeet);
-
-      voXMinYMax:
-        VP.PreserveAspectRatio(0, 1, arMeet);
-
-      voXMidYMax:
-        VP.PreserveAspectRatio(0.5, 1, arMeet);
-
-      voXMaxYMax:
-        VP.PreserveAspectRatio(1, 1, arMeet);
+      voAnisotropic: VP.PreserveAspectRatio(0, 0, arStretch);
+      voXMinYMin: VP.PreserveAspectRatio(0, 0, arMeet);
+      voXMidYMin: VP.PreserveAspectRatio(0.5, 0, arMeet);
+      voXMaxYMin: VP.PreserveAspectRatio(1, 0, arMeet);
+      voXMinYMid: VP.PreserveAspectRatio(0, 0.5, arMeet);
+      voXMidYMid: VP.PreserveAspectRatio(0.5, 0.5, arMeet);
+      voXMaxYMid: VP.PreserveAspectRatio(1, 0.5, arMeet);
+      voXMinYMax: VP.PreserveAspectRatio(0, 1, arMeet);
+      voXMidYMax: VP.PreserveAspectRatio(0.5, 1, arMeet);
+      voXMaxYMax: VP.PreserveAspectRatio(1, 1, arMeet);
     end;
 
     VP.WorldViewport(WorldX1, WorldY1, WorldX2, WorldY2);
@@ -1451,35 +1434,16 @@ begin
   VP := TAggTransViewport.Create;
   try
     case opt of
-      voAnisotropic:
-        VP.PreserveAspectRatio(0, 0, arStretch);
-
-      voXMinYMin:
-        VP.PreserveAspectRatio(0, 0, arMeet);
-
-      voXMidYMin:
-        VP.PreserveAspectRatio(0.5, 0, arMeet);
-
-      voXMaxYMin:
-        VP.PreserveAspectRatio(1, 0, arMeet);
-
-      voXMinYMid:
-        VP.PreserveAspectRatio(0, 0.5, arMeet);
-
-      voXMidYMid:
-        VP.PreserveAspectRatio(0.5, 0.5, arMeet);
-
-      voXMaxYMid:
-        VP.PreserveAspectRatio(1, 0.5, arMeet);
-
-      voXMinYMax:
-        VP.PreserveAspectRatio(0, 1, arMeet);
-
-      voXMidYMax:
-        VP.PreserveAspectRatio(0.5, 1, arMeet);
-
-      voXMaxYMax:
-        VP.PreserveAspectRatio(1, 1, arMeet);
+      voAnisotropic: VP.PreserveAspectRatio(0, 0, arStretch);
+      voXMinYMin: VP.PreserveAspectRatio(0, 0, arMeet);
+      voXMidYMin: VP.PreserveAspectRatio(0.5, 0, arMeet);
+      voXMaxYMin: VP.PreserveAspectRatio(1, 0, arMeet);
+      voXMinYMid: VP.PreserveAspectRatio(0, 0.5, arMeet);
+      voXMidYMid: VP.PreserveAspectRatio(0.5, 0.5, arMeet);
+      voXMaxYMid: VP.PreserveAspectRatio(1, 0.5, arMeet);
+      voXMinYMax: VP.PreserveAspectRatio(0, 1, arMeet);
+      voXMidYMax: VP.PreserveAspectRatio(0.5, 1, arMeet);
+      voXMaxYMax: VP.PreserveAspectRatio(1, 1, arMeet);
     end;
 
     VP.WorldViewport(World);
@@ -1610,8 +1574,7 @@ begin
   DrawPath(dpfFillAndStroke);
 end;
 
-procedure TAgg2D.RoundedRect(x1, y1, x2, y2, RxBottom, RyBottom, RxTop,
-  RyTop: Double);
+procedure TAgg2D.RoundedRect(x1, y1, x2, y2, RxBottom, RyBottom, RxTop, RyTop: Double);
 var
   RC: TAggRoundedRect;
 begin
@@ -1807,14 +1770,12 @@ begin
   FPath.VerticalLineRelative(dy);
 end;
 
-procedure TAgg2D.ArcTo(RX, RY, angle: Double; LargeArcFlag, SweepFlag: Boolean;
-  x, y: Double);
+procedure TAgg2D.ArcTo(RX, RY, angle: Double; LargeArcFlag, SweepFlag: Boolean; x, y: Double);
 begin
   FPath.ArcTo(RX, RY, angle, LargeArcFlag, SweepFlag, x, y);
 end;
 
-procedure TAgg2D.ArcRel(RX, RY, angle: Double; LargeArcFlag, SweepFlag: Boolean;
-  dx, dy: Double);
+procedure TAgg2D.ArcRel(RX, RY, angle: Double; LargeArcFlag, SweepFlag: Boolean; dx, dy: Double);
 begin
   FPath.ArcRelative(RX, RY, angle, LargeArcFlag, SweepFlag, dx, dy);
 end;
@@ -1844,8 +1805,7 @@ begin
   FPath.Curve4(XCtrl1, YCtrl1, XCtrl2, YCtrl2, XTo, YTo);
 end;
 
-procedure TAgg2D.CubicCurveRel(DxCtrl1, DyCtrl1, DxCtrl2, DyCtrl2, DxTo,
-  DyTo: Double);
+procedure TAgg2D.CubicCurveRel(DxCtrl1, DyCtrl1, DxCtrl2, DyCtrl2, DxTo, DyTo: Double);
 begin
   FPath.Curve4Relative(DxCtrl1, DyCtrl1, DxCtrl2, DyCtrl2, DxTo, DyTo);
 end;
@@ -1960,34 +1920,16 @@ end;
 procedure TAgg2D.SetImageFilter(f: TAggImageFilterType);
 begin
   FImageFilter := f;
-
   case f of
-    ifBilinear:
-      FImageFilterLUT.Calculate(FImageFilterBilinear, True);
-
-    ifHanning:
-      FImageFilterLUT.Calculate(FImageFilterHanning, True);
-
-    ifHermite:
-      FImageFilterLUT.Calculate(FImageFilterHermite, True);
-
-    ifQuadric:
-      FImageFilterLUT.Calculate(FImageFilterQuadric, True);
-
-    ifBicubic:
-      FImageFilterLUT.Calculate(FImageFilterBicubic, True);
-
-    ifCatrom:
-      FImageFilterLUT.Calculate(FImageFilterCatrom, True);
-
-    ifSpline16:
-      FImageFilterLUT.Calculate(FImageFilterSpline16, True);
-
-    ifSpline36:
-      FImageFilterLUT.Calculate(FImageFilterSpline36, True);
-
-    ifBlackman144:
-      FImageFilterLUT.Calculate(FImageFilterBlackman144, True);
+    ifBilinear: FImageFilterLUT.Calculate(FImageFilterBilinear, True);
+    ifHanning: FImageFilterLUT.Calculate(FImageFilterHanning, True);
+    ifHermite: FImageFilterLUT.Calculate(FImageFilterHermite, True);
+    ifQuadric: FImageFilterLUT.Calculate(FImageFilterQuadric, True);
+    ifBicubic: FImageFilterLUT.Calculate(FImageFilterBicubic, True);
+    ifCatrom: FImageFilterLUT.Calculate(FImageFilterCatrom, True);
+    ifSpline16: FImageFilterLUT.Calculate(FImageFilterSpline16, True);
+    ifSpline36: FImageFilterLUT.Calculate(FImageFilterSpline36, True);
+    ifBlackman144: FImageFilterLUT.Calculate(FImageFilterBlackman144, True);
   end;
 end;
 
@@ -2140,8 +2082,7 @@ begin
     img.FRenderingBuffer.height, Parallelogram);
 end;
 
-procedure TAgg2D.TransformImage(img: TAgg2DImage; ImgRect: TRectInteger; DstX1,
-  DstY1, DstX2, DstY2: Double);
+procedure TAgg2D.TransformImage(img: TAgg2DImage; ImgRect: TRectInteger; DstX1, DstY1, DstX2, DstY2: Double);
 var
   Parall: TAggParallelogram;
 begin
@@ -2155,8 +2096,7 @@ begin
   RenderImage(img, ImgRect, @Parall[0]);
 end;
 
-procedure TAgg2D.TransformImage(img: TAgg2DImage; ImgRect: TRectInteger;
-  Destination: TRectDouble);
+procedure TAgg2D.TransformImage(img: TAgg2DImage; ImgRect: TRectInteger; Destination: TRectDouble);
 var
   Parall: TAggParallelogram;
 begin
@@ -2170,8 +2110,7 @@ begin
   RenderImage(img, ImgRect, @Parall[0]);
 end;
 
-procedure TAgg2D.TransformImagePath(img: TAgg2DImage;
-  ImgX1, ImgY1, ImgX2, ImgY2: Integer; DstX1, DstY1, DstX2, DstY2: Double);
+procedure TAgg2D.TransformImagePath(img: TAgg2DImage; ImgX1, ImgY1, ImgX2, ImgY2: Integer; DstX1, DstY1, DstX2, DstY2: Double);
 var
   Parall: TAggParallelogram;
 begin
@@ -2185,8 +2124,7 @@ begin
   RenderImage(img, ImgX1, ImgY1, ImgX2, ImgY2, @Parall[0]);
 end;
 
-procedure TAgg2D.TransformImagePath(img: TAgg2DImage;
-  DstX1, DstY1, DstX2, DstY2: Double);
+procedure TAgg2D.TransformImagePath(img: TAgg2DImage; DstX1, DstY1, DstX2, DstY2: Double);
 var
   Parall: TAggParallelogram;
 begin
@@ -2201,8 +2139,7 @@ begin
     img.FRenderingBuffer.height, @Parall[0]);
 end;
 
-procedure TAgg2D.TransformImagePath(img: TAgg2DImage;
-  ImgX1, ImgY1, ImgX2, ImgY2: Integer; Parallelogram: PDouble);
+procedure TAgg2D.TransformImagePath(img: TAgg2DImage; ImgX1, ImgY1, ImgX2, ImgY2: Integer; Parallelogram: PDouble);
 begin
   RenderImage(img, ImgX1, ImgY1, ImgX2, ImgY2, Parallelogram);
 end;
@@ -2213,8 +2150,7 @@ begin
     img.FRenderingBuffer.height, Parallelogram);
 end;
 
-procedure TAgg2D.BlendImage(img: TAgg2DImage; ImgX1, ImgY1, ImgX2, ImgY2: Integer;
-  Dstx, Dsty: Double; alpha: Cardinal = 255);
+procedure TAgg2D.BlendImage(img: TAgg2DImage; ImgX1, ImgY1, ImgX2, ImgY2: Integer; Dstx, Dsty: Double; alpha: Cardinal = 255);
 var
   PixF: TAggPixelFormatProcessor;
   r: TRectInteger;
@@ -2231,8 +2167,7 @@ begin
       Trunc(Dsty) - ImgY1, alpha);
 end;
 
-procedure TAgg2D.BlendImage(img: TAgg2DImage; Dstx, Dsty: Double;
-  alpha: Cardinal = 255);
+procedure TAgg2D.BlendImage(img: TAgg2DImage; Dstx, Dsty: Double; alpha: Cardinal = 255);
 var
   PixF: TAggPixelFormatProcessor;
 begin
@@ -2247,8 +2182,7 @@ begin
       FRendererBaseCompPre.BlendFrom(PixF, nil, Trunc(Dstx), Trunc(Dsty), alpha);
 end;
 
-procedure TAgg2D.CopyImage(img: TAgg2DImage; ImgX1, ImgY1, ImgX2, ImgY2: Integer;
-  Dstx, Dsty: Double);
+procedure TAgg2D.CopyImage(img: TAgg2DImage; ImgX1, ImgY1, ImgX2, ImgY2: Integer; Dstx, Dsty: Double);
 var
   r: TRectInteger;
 begin
@@ -2259,8 +2193,7 @@ begin
     Trunc(Dsty) - ImgY1);
 end;
 
-procedure TAgg2D.CopyImage(img: TAgg2DImage; ImgRect: TRectInteger;
-  Destination: TPointDouble);
+procedure TAgg2D.CopyImage(img: TAgg2DImage; ImgRect: TRectInteger; Destination: TPointDouble);
 begin
   WorldToScreen(@Destination.x, @Destination.y);
 
@@ -2312,8 +2245,7 @@ begin
   FRasterizer.Gamma(FGammaAgg2D);
 end;
 
-procedure TAgg2D.RenderImage(img: TAgg2DImage; x1, y1, x2, y2: Integer;
-  Parl: PDouble);
+procedure TAgg2D.RenderImage(img: TAgg2DImage; x1, y1, x2, y2: Integer; Parl: PDouble);
 var
   Mtx: TAggTransAffine;
   Interpolator: TAggSpanInterpolatorLinear;
@@ -2340,8 +2272,7 @@ begin
   end;
 end;
 
-procedure TAgg2D.RenderImage(img: TAgg2DImage; Rect: TRectInteger;
-  Parl: PDouble);
+procedure TAgg2D.RenderImage(img: TAgg2DImage; Rect: TRectInteger; Parl: PDouble);
 var
   Mtx: TAggTransAffine;
   Interpolator: TAggSpanInterpolatorLinear;
@@ -2371,16 +2302,14 @@ end;
 
 { TAggSpanConvImageBlend }
 
-constructor TAggSpanConvImageBlend.Create(BlendMode: TAggBlendMode; c: TAggColorRgba8;
-  p: TAggPixelFormatProcessor);
+constructor TAggSpanConvImageBlend.Create(BlendMode: TAggBlendMode; c: TAggColorRgba8; p: TAggPixelFormatProcessor);
 begin
   FMode := BlendMode;
   FColor := c;
   FPixel := p;
 end;
 
-procedure TAggSpanConvImageBlend.Convert(Span: PAggColor; x, y: Integer;
-  Len: Cardinal);
+procedure TAggSpanConvImageBlend.Convert(Span: PAggColor; x, y: Integer; Len: Cardinal);
 var
   l2, a: Cardinal;
   s2: PAggColorRgba8;
@@ -2427,8 +2356,7 @@ begin
   Result := not OperatorIsEqual(c1, c2);
 end;
 
-procedure Agg2DRendererRender(Gr: TAgg2D; RendererBase: TAggRendererBase;
-  RenSolid: TAggRendererScanLineAASolid; FillColor: Boolean);
+procedure Agg2DRendererRender(Gr: TAgg2D; RendererBase: TAggRendererBase; RenSolid: TAggRendererScanLineAASolid; FillColor: Boolean);
 var
   Span: TAggSpanGradient;
   Ren: TAggRendererScanLineAA;
@@ -2514,8 +2442,7 @@ begin
     end;
 end;
 
-procedure Agg2DRendererRenderImage(Gr: TAgg2D; img: TAgg2DImage;
-  RendererBase: TAggRendererBase; Interpolator: TAggSpanInterpolatorLinear);
+procedure Agg2DRendererRenderImage(Gr: TAgg2D; img: TAgg2DImage; RendererBase: TAggRendererBase; Interpolator: TAggSpanInterpolatorLinear);
 var
   Blend: TAggSpanConvImageBlend;
 
@@ -2682,7 +2609,4 @@ begin
   end;
 end;
 
-end. 
- 
- 
- 
+end.

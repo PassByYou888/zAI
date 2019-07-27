@@ -221,13 +221,13 @@ begin
   d := DrawPool(Sender, drawIntf);
 
   // 显示边框和帧率
-  d.ViewOptions := [devpFrameEndge];
+  d.ViewOptions := [voEdge];
 
   // 背景被填充成黑色，这里的画图指令并不是立即执行的，而是形成命令流队列存放在DrawEngine的一个容器中
   d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
 
   LockObject(rList);
-  d.DrawTexturePackingInScene(rList, 5, Vec2(0, 0), 1.0);
+  d.DrawPicturePackingInScene(rList, 5, Vec2(0, 0), 1.0);
   UnLockObject(rList);
 
   d.BeginCaptureShadow(Vec2(1, 1), 0.9);

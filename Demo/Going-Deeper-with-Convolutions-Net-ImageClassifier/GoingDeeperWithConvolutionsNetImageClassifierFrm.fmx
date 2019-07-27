@@ -49,8 +49,8 @@ object GoingDeeperWithConvolutionsNetImageClassifierForm: TGoingDeeperWithConvol
     Size.Height = 697.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 4
-    Viewport.Width = 1449.000000000000000000
-    Viewport.Height = 697.000000000000000000
+    Viewport.Width = 1445.000000000000000000
+    Viewport.Height = 693.000000000000000000
   end
   object Timer1: TTimer
     Interval = 100

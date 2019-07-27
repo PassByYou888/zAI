@@ -26,9 +26,9 @@ uses SysUtils, CoreClasses, Math, Geometry2DUnit, zNavigationPoly, MovementEngin
 
 type
   TPolyPassManager = class;
-  TBasePass        = class;
-  TNavBio          = class;
-  TNavBioManager   = class;
+  TBasePass = class;
+  TNavBio = class;
+  TNavBioManager = class;
 
   TPassState = record
     Owner: TBasePass;
@@ -116,9 +116,9 @@ type
 
   TPolyPassManager = class(TCoreClassPersistent)
   private type
-    TCacheState     = (csUnCalc, csYes, csNo);
+    TCacheState = (csUnCalc, csYes, csNo);
     TIntersectCache = array of array of array of array of TCacheState;
-    TPointInCache   = array of array of TCacheState;
+    TPointInCache = array of array of TCacheState;
   private
     FPolyManager: TPolyManager;
     FNavBioManager: TNavBioManager;
@@ -1165,12 +1165,12 @@ end;
 
 function TNavBio.SmoothBouncePosition(const OldPos: TVec2; var NewPos, NewLerpPos: TVec2): Boolean;
 var
-  LineList: T2DLineList;
+  LineList: TDeflectionPolygonLines;
 
   function LineIsLink: Boolean;
   var
     i: Integer;
-    L1, l2: P2DLine;
+    L1, l2: PDeflectionPolygonLine;
   begin
     Result := True;
     if LineList.Count = 1 then
@@ -1181,10 +1181,10 @@ var
     for i := 1 to LineList.Count - 1 do
       begin
         l2 := LineList[i];
-        if l2^.Poly <> L1^.Poly then
+        if l2^.OwnerDeflectionPolygon <> L1^.OwnerDeflectionPolygon then
             Exit;
-        if not((L1^.PolyIndex[1] = l2^.PolyIndex[0]) or (L1^.PolyIndex[0] = l2^.PolyIndex[1]) or
-          (L1^.PolyIndex[1] = l2^.PolyIndex[1]) or (L1^.PolyIndex[0] = l2^.PolyIndex[0])) then
+        if not((L1^.OwnerDeflectionPolygonIndex[1] = l2^.OwnerDeflectionPolygonIndex[0]) or (L1^.OwnerDeflectionPolygonIndex[0] = l2^.OwnerDeflectionPolygonIndex[1]) or
+          (L1^.OwnerDeflectionPolygonIndex[1] = l2^.OwnerDeflectionPolygonIndex[1]) or (L1^.OwnerDeflectionPolygonIndex[0] = l2^.OwnerDeflectionPolygonIndex[0])) then
             Exit;
         L1 := l2;
       end;
@@ -1196,7 +1196,7 @@ var
     dir: TVec2;
     totaldist, Dist, a1, a2, a3: TGeoFloat;
     LastPos: TVec2;
-    L: T2DLine;
+    L: TDeflectionPolygonLine;
   begin
     LastPos := NewPos;
 
@@ -1224,10 +1224,10 @@ var
 
         if AngleDistance(a1, a3) < AngleDistance(a2, a3) then
           // dir to index 0..1
-            LastPos := L.Poly.LerpToEndge(LastPos, totaldist, radius + 1, L.PolyIndex[0], L.PolyIndex[1])
+            LastPos := L.OwnerDeflectionPolygon.LerpToEndge(LastPos, totaldist, radius + 1, L.OwnerDeflectionPolygonIndex[0], L.OwnerDeflectionPolygonIndex[1])
         else
           // dir to index 1..0
-            LastPos := L.Poly.LerpToEndge(LastPos, totaldist, radius + 1, L.PolyIndex[1], L.PolyIndex[0]);
+            LastPos := L.OwnerDeflectionPolygon.LerpToEndge(LastPos, totaldist, radius + 1, L.OwnerDeflectionPolygonIndex[1], L.OwnerDeflectionPolygonIndex[0]);
 
         NewLerpPos := LastPos;
         NewPos := LastPos;
@@ -1242,7 +1242,7 @@ begin
   if (IsFlight) or (IsRun) or (FPassManager.PointOk(radius, NewPos)) then
       Exit;
 
-  LineList := T2DLineList.Create;
+  LineList := TDeflectionPolygonLines.Create;
   if FPassManager.PolyManager.Collision2Circle(NewPos, radius, LineList) then
     begin
       if LineIsLink then
@@ -1256,7 +1256,7 @@ begin
     end
   else
     begin
-      NewLerpPos := FPassManager.PolyManager.GetMinimumFromPointToPoly(radius + 2, NewPos);
+      NewLerpPos := FPassManager.PolyManager.GetNearLine(radius + 2, NewPos);
       Result := True;
     end;
   DisposeObject(LineList);
@@ -1452,10 +1452,10 @@ begin
       nsf.PassManager.Rebuild;
 
   if not nsf.PassManager.PointOk(radius, ToPosition) then
-      ToPosition := nsf.PassManager.PolyManager.GetMinimumFromPointToPoly(radius + 1, ToPosition);
+      ToPosition := nsf.PassManager.PolyManager.GetNearLine(radius + 1, ToPosition);
 
   if not nsf.PassManager.PointOk(radius, DirectPosition) then
-      DirectPosition := nsf.PassManager.PolyManager.GetMinimumFromPointToPoly(radius + 1, DirectPosition);
+      DirectPosition := nsf.PassManager.PolyManager.GetNearLine(radius + 1, DirectPosition);
 
   if nsf.FindPath(Self, ToPosition) then
     begin
@@ -1485,12 +1485,12 @@ end;
 
 function TNavBio.GetBouncePosition(const OldPos: TVec2; var NewPos: TVec2): Boolean;
 var
-  LineList: T2DLineList;
+  LineList: TDeflectionPolygonLines;
 
   function LineIsLink: Boolean;
   var
     i: Integer;
-    L1, l2: P2DLine;
+    L1, l2: PDeflectionPolygonLine;
   begin
     Result := True;
     if LineList.Count = 1 then
@@ -1501,10 +1501,10 @@ var
     for i := 1 to LineList.Count - 1 do
       begin
         l2 := LineList[i];
-        if l2^.Poly <> L1^.Poly then
+        if l2^.OwnerDeflectionPolygon <> L1^.OwnerDeflectionPolygon then
             Exit;
-        if not((L1^.PolyIndex[1] = l2^.PolyIndex[0]) or (L1^.PolyIndex[0] = l2^.PolyIndex[1]) or
-          (L1^.PolyIndex[1] = l2^.PolyIndex[1]) or (L1^.PolyIndex[0] = l2^.PolyIndex[0])) then
+        if not((L1^.OwnerDeflectionPolygonIndex[1] = l2^.OwnerDeflectionPolygonIndex[0]) or (L1^.OwnerDeflectionPolygonIndex[0] = l2^.OwnerDeflectionPolygonIndex[1]) or
+          (L1^.OwnerDeflectionPolygonIndex[1] = l2^.OwnerDeflectionPolygonIndex[1]) or (L1^.OwnerDeflectionPolygonIndex[0] = l2^.OwnerDeflectionPolygonIndex[0])) then
             Exit;
         L1 := l2;
       end;
@@ -1516,7 +1516,7 @@ var
     dir: TVec2;
     totaldist, Dist, a1, a2, a3: TGeoFloat;
     LastPos: TVec2;
-    L: T2DLine;
+    L: TDeflectionPolygonLine;
   begin
     LastPos := NewPos;
 
@@ -1539,10 +1539,10 @@ var
 
         if AngleDistance(a1, a3) < AngleDistance(a2, a3) then
           // dir to index 0..1
-            LastPos := L.Poly.LerpToEndge(LastPos, totaldist, radius + 1, L.PolyIndex[0], L.PolyIndex[1])
+            LastPos := L.OwnerDeflectionPolygon.LerpToEndge(LastPos, totaldist, radius + 1, L.OwnerDeflectionPolygonIndex[0], L.OwnerDeflectionPolygonIndex[1])
         else
           // dir to index 1..0
-            LastPos := L.Poly.LerpToEndge(LastPos, totaldist, radius + 1, L.PolyIndex[1], L.PolyIndex[0]);
+            LastPos := L.OwnerDeflectionPolygon.LerpToEndge(LastPos, totaldist, radius + 1, L.OwnerDeflectionPolygonIndex[1], L.OwnerDeflectionPolygonIndex[0]);
       end;
 
     NewPos := LastPos;
@@ -1555,7 +1555,7 @@ begin
   if (IsFlight) or (IsRun) or (FPassManager.PointOk(radius, NewPos)) then
       Exit;
 
-  LineList := T2DLineList.Create;
+  LineList := TDeflectionPolygonLines.Create;
   if FPassManager.PolyManager.Collision2Circle(NewPos, radius, LineList) then
     begin
       if LineIsLink then
@@ -1565,7 +1565,7 @@ begin
     end
   else
     begin
-      NewPos := FPassManager.PolyManager.GetMinimumFromPointToPoly(radius + 2, NewPos);
+      NewPos := FPassManager.PolyManager.GetNearLine(radius + 2, NewPos);
       Result := True;
     end;
   DisposeObject(LineList);
@@ -1661,7 +1661,7 @@ begin
       if (not PassManager.PointOk(radius, DirectPosition)) and (not IsFlight) then
         begin
           FInternalStates.ChangeSource := csBounce;
-          DirectPosition := PassManager.PolyManager.GetMinimumFromPointToPoly(radius + 2, DirectPosition);
+          DirectPosition := PassManager.PolyManager.GetNearLine(radius + 2, DirectPosition);
         end;
 
       if IsFlight then
@@ -1727,12 +1727,12 @@ begin
                         if Owner.Smooth then
                           begin
                             FInternalStates.LastState := lsDirectLerpTo;
-                            FInternalStates.LerpTo := FPassManager.PolyManager.GetMinimumFromPointToPoly(radius + 1, DirectPosition);
+                            FInternalStates.LerpTo := FPassManager.PolyManager.GetNearLine(radius + 1, DirectPosition);
                             FInternalStates.LerpSpeed := FMovement.RollMoveRatio * FMovement.MoveSpeed;
                           end
                         else
                           begin
-                            DirectPosition := FPassManager.PolyManager.GetMinimumFromPointToPoly(radius + 1, DirectPosition);
+                            DirectPosition := FPassManager.PolyManager.GetNearLine(radius + 1, DirectPosition);
                             FInternalStates.LastState := lsProcessBounce;
                           end;
                       end;
@@ -2075,7 +2075,4 @@ begin
     end;
 end;
 
-end. 
- 
- 
- 
+end.

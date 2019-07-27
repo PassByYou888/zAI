@@ -233,13 +233,7 @@ type
     property Transform: byte read GetTransform write SetTransform;
   end;
 
-type
-{$IFDEF FPC}
-  TJpegMarkerClassList = specialize TGenericsList<TJpegMarkerClass>;
-{$ELSE FPC}
-  TJpegMarkerClassList = TGenericsList<TJpegMarkerClass>;
-{$ENDIF FPC}
-
+  TJpegMarkerClassList = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TJpegMarkerClass>;
 
 var
   glJpegMarkerClassList: TJpegMarkerClassList;

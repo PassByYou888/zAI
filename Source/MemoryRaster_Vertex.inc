@@ -1,30 +1,9 @@
-function EnsureCcWinding(var t: TTriangle): Boolean;
-  procedure swap_vertex(var a, b: TVert2);
-  var
-    v: TVert2;
-  begin
-    v := a;
-    a := b;
-    b := v;
-  end;
-
-{
-  Make sure the triangle has counter-clockwise winding
-  For a triangle A B C, you can find the winding by computing the cross product (B - A) rx (C - A).
-  For 2d tri's, with z=0, it will only have a z component.
-  To give all the same winding, swap vertices C and B if this z component is negative.
-}
+function EnsureCCWinding(var t: TTriangle): Boolean; inline;
 begin
-  Result := False;
-  if (t[1].Render[0] - t[0].Render[0]) * (t[2].Render[1] - t[0].Render[1]) > (t[2].Render[0] - t[0].Render[0]) * (t[1].Render[1] - t[0].Render[1]) then
-    begin
-      swap_vertex(t[1], t[2]);
-      Result := True;
-    end;
+  Result := (t[1, 0] - t[0, 0]) * (t[2, 1] - t[0, 1]) > (t[2, 0] - t[0, 0]) * (t[1, 1] - t[0, 1]);
 end;
 
 function TexCoordWrapRepeat(const f: TGeoFloat): TGeoFloat;
-{ emulate OpenGL4.4 GL_TEXTURE_WRAP_S/T: GL_REPEAT }
 begin
   if f < 0 then
       Result := 1 - Trunc(f) + f
@@ -34,24 +13,24 @@ begin
       Result := f;
 end;
 
-procedure Vertex_ComputeBlend(const Sender: PVertexMap; const f, M: TRasterColor; var b: TRasterColor);
+procedure Vertex_ComputeBlend(const Sender: PVertexMap; const f, M: TRColor; var b: TRColor);
 begin
-  if M >= 255 then
+  if M >= $FF then
       BlendMem(f, b)
   else
       BlendMemEx(f, b, M);
 end;
 
-function Vertex_ComputeNearest(const Sender: PVertexMap; const Sampler: TMemoryRaster; const x, y: TGeoFloat): TRasterColor;
+function Vertex_ComputeNearest(const Sender: PVertexMap; const Sampler: TMemoryRaster; const x, y: TGeoFloat): TRColor;
 var
   tu0, tv0: Integer;
 begin
-  tu0 := ClampInt_(Trunc(TexCoordWrapRepeat(x) * (Sampler.width)), 0, Sampler.width - 1);
-  tv0 := ClampInt_(Trunc(TexCoordWrapRepeat(y) * (Sampler.height)), 0, Sampler.height - 1);
+  tu0 := ClampInt(Trunc(TexCoordWrapRepeat(x) * (Sampler.Width0)), 0, Sampler.Width0i);
+  tv0 := ClampInt(Trunc(TexCoordWrapRepeat(y) * (Sampler.Height0)), 0, Sampler.Height0i);
   Result := Sampler.Pixel[tu0, tv0];
 end;
 
-function Vertex_ComputeLinear(const Sender: PVertexMap; const Sampler: TMemoryRaster; const x, y: TGeoFloat): TRasterColor;
+function Vertex_ComputeLinear(const Sender: PVertexMap; const Sampler: TMemoryRaster; const x, y: TGeoFloat): TRColor;
   procedure ClampF(var f: TGeoFloat); inline;
   begin
     if f < 0 then
@@ -65,22 +44,23 @@ var
   i_x, i_y: Integer;
   i_x2, i_y2: Integer;
   delta_x, delta_y: TGeoFloat;
-  c1, c2, c3, c4: TRasterColorEntry;
+  c1, c2, c3, c4: TRColorEntry;
   k1, k2, k3, K4: TGeoFloat;
   r, g, b, a: TGeoFloat;
 begin
-  fx := TexCoordWrapRepeat(x) * Sampler.width;
-  fy := TexCoordWrapRepeat(y) * Sampler.height;
+  fx := TexCoordWrapRepeat(x) * Sampler.Width0;
+  fy := TexCoordWrapRepeat(y) * Sampler.Height0;
 
-  i_x := ClampInt_(Trunc(fx), 0, Sampler.width - 1);
-  i_y := ClampInt_(Trunc(fy), 0, Sampler.height - 1);
+  i_x := ClampInt(Trunc(fx), 0, Sampler.Width0i);
+  i_y := ClampInt(Trunc(fy), 0, Sampler.Height0i);
 
   i_x2 := i_x + 1;
-  if i_x2 > Sampler.width - 1 then
-      i_x2 := 0;
   i_y2 := i_y + 1;
-  if i_y2 > Sampler.height - 1 then
-      i_y2 := 0;
+  if (i_x2 > Sampler.Width0) or (i_y2 > Sampler.Height0) then
+    begin
+      Result := Sampler[i_x, i_y];
+      exit;
+    end;
 
   delta_x := Frac(fx);
   delta_y := Frac(fy);
@@ -105,24 +85,24 @@ begin
   ClampF(b);
   ClampF(a);
 
-  TRasterColorEntry(Result).r := Trunc(r * 255);
-  TRasterColorEntry(Result).g := Trunc(g * 255);
-  TRasterColorEntry(Result).b := Trunc(b * 255);
-  TRasterColorEntry(Result).a := Trunc(a * 255);
+  TRColorEntry(Result).r := Trunc(r * $FF);
+  TRColorEntry(Result).g := Trunc(g * $FF);
+  TRColorEntry(Result).b := Trunc(b * $FF);
+  TRColorEntry(Result).a := Trunc(a * $FF);
 end;
 
-procedure TVertexMap.RasterizeTriangle(const FS: TFragSampling; const sc: TRasterColor; const tex: TMemoryRaster; const t: TTriangle);
+procedure TVertexMap.RasterizeTriangle(const FS: TFragSampling; const sc: TRColor; const tex: TMemoryRaster; const SamplerTri, RenderTri: TTriangle);
 
   function ComputeDeterminant: TGeoFloat;
   var
     x1, x2, x3, y1, y2, y3: TGeoFloat;
   begin
-    x1 := t[0].Render[0];
-    y1 := t[0].Render[1];
-    x2 := t[1].Render[0];
-    y2 := t[1].Render[1];
-    x3 := t[2].Render[0];
-    y3 := t[2].Render[1];
+    x1 := RenderTri[0, 0];
+    y1 := RenderTri[0, 1];
+    x2 := RenderTri[1, 0];
+    y2 := RenderTri[1, 1];
+    x3 := RenderTri[2, 0];
+    y3 := RenderTri[2, 1];
     Result := x1 * y2 - x2 * y1 + x2 * y3 - x3 * y2 + x3 * y1 - x1 * y3;
   end;
 
@@ -130,12 +110,12 @@ procedure TVertexMap.RasterizeTriangle(const FS: TFragSampling; const sc: TRaste
   var
     x1, x2, x3, y1, y2, y3: TGeoFloat;
   begin
-    x1 := t[0].Render[0];
-    y1 := t[0].Render[1];
-    x2 := t[1].Render[0];
-    y2 := t[1].Render[1];
-    x3 := t[2].Render[0];
-    y3 := t[2].Render[1];
+    x1 := RenderTri[0, 0];
+    y1 := RenderTri[0, 1];
+    x2 := RenderTri[1, 0];
+    y2 := RenderTri[1, 1];
+    x3 := RenderTri[2, 0];
+    y3 := RenderTri[2, 1];
     Result.a := ((y2 - y3) * W1 + (y3 - y1) * W2 + (y1 - y2) * W3) / Determinant;
     Result.b := ((x3 - x2) * W1 + (x1 - x3) * W2 + (x2 - x1) * W3) / Determinant;
     Result.c := ((x2 * y3 - x3 * y2) * W1 + (x3 * y1 - x1 * y3) * W2 + (x1 * y2 - x2 * y1) * W3) / Determinant;
@@ -178,12 +158,12 @@ var
     x1, x2, x3, y1, y2, y3, c1, c2, c3: Integer;
   begin
     // fixed-point coordinates
-    x1 := Trunc(t[0].Render[0] * 16);
-    y1 := Trunc(t[0].Render[1] * 16);
-    x2 := Trunc(t[1].Render[0] * 16);
-    y2 := Trunc(t[1].Render[1] * 16);
-    x3 := Trunc(t[2].Render[0] * 16);
-    y3 := Trunc(t[2].Render[1] * 16);
+    x1 := Trunc(RenderTri[0, 0] * 16);
+    y1 := Trunc(RenderTri[0, 1] * 16);
+    x2 := Trunc(RenderTri[1, 0] * 16);
+    y2 := Trunc(RenderTri[1, 1] * 16);
+    x3 := Trunc(RenderTri[2, 0] * 16);
+    y3 := Trunc(RenderTri[2, 1] * 16);
 
     // Deltas
     DX12 := x1 - x2;
@@ -199,15 +179,15 @@ var
     minY := min3(y1, y2, y3);
     maxY := max3(y1, y2, y3);
 
-    minX := Max(-Window.width, minX);
-    minX := Min(Window.width, minX);
-    maxX := Min(Window.width, maxX);
-    maxX := Max(-Window.width, maxX);
+    minX := Max(-Window.Width, minX);
+    minX := Min(Window.Width, minX);
+    maxX := Min(Window.Width, maxX);
+    maxX := Max(-Window.Width, maxX);
 
-    minY := Max(-Window.height, minY);
-    minY := Min(Window.height, minY);
-    maxY := Min(Window.height, maxY);
-    maxY := Max(-Window.height, maxY);
+    minY := Max(-Window.Height, minY);
+    minY := Min(Window.Height, minY);
+    maxY := Min(Window.Height, maxY);
+    maxY := Max(-Window.Height, maxY);
 
     if minX > maxX then
         Swap(minX, maxX);
@@ -240,12 +220,12 @@ begin
   // init triangle interpolation
   Determinant := ComputeDeterminant;
   if Determinant = 0 then
-      Exit;
-  attr_u := ComputeInterpolationConsts(Determinant, t[0].Sampler[0], t[1].Sampler[0], t[2].Sampler[0]);
-  attr_v := ComputeInterpolationConsts(Determinant, t[0].Sampler[1], t[1].Sampler[1], t[2].Sampler[1]);
+      exit;
+  attr_u := ComputeInterpolationConsts(Determinant, SamplerTri[0, 0], SamplerTri[1, 0], SamplerTri[2, 0]);
+  attr_v := ComputeInterpolationConsts(Determinant, SamplerTri[0, 1], SamplerTri[1, 1], SamplerTri[2, 1]);
 
   // Scan through bounding rectangle
-  bitDst := minY * Window.width;
+  bitDst := minY * Window.Width;
   j := minY;
   while j < maxY do
     begin
@@ -254,7 +234,7 @@ begin
       CX3 := CY3;
       row_frag_count := 0;
       row_last_x := 0;
-      if (j >= 0) and (j < Window.height) then // if empty line
+      if (j >= 0) and (j < Window.Height) then // if empty line
         begin
           i := minX;
           while i < maxX do
@@ -278,12 +258,12 @@ begin
       inc(CY1, DX12);
       inc(CY2, DX23);
       inc(CY3, DX31);
-      inc(bitDst, Window.width);
+      inc(bitDst, Window.Width);
       inc(j);
     end;
 end;
 
-procedure TVertexMap.FillFragment(const FS: TFragSampling; const sc: TRasterColor; const tex: TMemoryRaster;
+procedure TVertexMap.FillFragment(const FS: TFragSampling; const sc: TRColor; const tex: TMemoryRaster;
   const bitDst, j, start_x, frag_count: Integer; const attr_v, attr_u: TBilerpConsts);
 var
   i, bitX: Integer;
@@ -319,7 +299,7 @@ var
   old: Byte;
 begin
   if FCurrentUpdate > 0 then
-      Exit;
+      exit;
   old := FNearestWriterID;
   inc(FNearestWriterID);
   if FNearestWriterID < old then
@@ -329,83 +309,79 @@ begin
     end;
 end;
 
-procedure TVertexMap.internal_Draw(const Triangle: TTriangle; const Sampler: TRasterColor);
+procedure TVertexMap.internal_Draw(const RenderTri: TTriangle; const Sampler: TRColor);
 var
-  nt: TTriangle;
-  i: Integer;
+  nRenderTri: TTriangle;
 begin
-  nt := Triangle;
-  // triangle must have counter-clockwise winding
-  EnsureCcWinding(nt);
+  nRenderTri := RenderTri;
+  {
+    Make sure the triangle has counter-clockwise winding
+    For a triangle A B C, you can find the winding by computing the cross product (B - A) rx (C - A).
+    For 2d tri's, with z=0, it will only have a z component.
+    To give all the same winding, swap vertices C and B if this z component is negative.
+  }
+  if EnsureCCWinding(nRenderTri) then
+      SwapVec2(nRenderTri[1], nRenderTri[2]);
 
-  // scale vertices to pixel grid
-  nt[0].Render[0] := Round(nt[0].Render[0] * Window.width);
-  nt[0].Render[1] := Round(nt[0].Render[1] * Window.height);
-  nt[1].Render[0] := Round(nt[1].Render[0] * Window.width);
-  nt[1].Render[1] := Round(nt[1].Render[1] * Window.height);
-  nt[2].Render[0] := Round(nt[2].Render[0] * Window.width);
-  nt[2].Render[1] := Round(nt[2].Render[1] * Window.height);
-
-  RasterizeTriangle(TFragSampling.fsSolid, Sampler, nil, nt);
+  RasterizeTriangle(TFragSampling.fsSolid, Sampler, nil, ZeroTriangle, TriRound(TriMul(nRenderTri, Window.Size0)));
 end;
 
-procedure TVertexMap.internal_Draw(const Triangle: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean);
+procedure TVertexMap.internal_Draw(const SamplerTri, RenderTri: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean);
 var
-  nt: TTriangle;
-  offset_u, offset_v: TGeoFloat;
-  i: Integer;
+  nSamplerTri, nRenderTri: TTriangle;
+  f: TFragSampling;
 begin
-  nt := Triangle;
-  // triangle must have counter-clockwise winding
-  EnsureCcWinding(nt);
-
-  // scale vertices to pixel grid
-  nt[0].Render[0] := Round(nt[0].Render[0] * Window.width);
-  nt[0].Render[1] := Round(nt[0].Render[1] * Window.height);
-  nt[1].Render[0] := Round(nt[1].Render[0] * Window.width);
-  nt[1].Render[1] := Round(nt[1].Render[1] * Window.height);
-  nt[2].Render[0] := Round(nt[2].Render[0] * Window.width);
-  nt[2].Render[1] := Round(nt[2].Render[1] * Window.height);
-
-  // offset texel centers
-  offset_u := 1 / (2 * Sampler.width);
-  offset_v := 1 / (2 * Sampler.height);
-  for i := 0 to 2 do
+  nSamplerTri := SamplerTri;
+  nRenderTri := RenderTri;
+  {
+    Make sure the triangle has counter-clockwise winding
+    For a triangle A B C, you can find the winding by computing the cross product (B - A) rx (C - A).
+    For 2d tri's, with z=0, it will only have a z component.
+    To give all the same winding, swap vertices C and B if this z component is negative.
+  }
+  if EnsureCCWinding(nRenderTri) then
     begin
-      nt[i].Sampler[0] := nt[i].Sampler[0] - offset_u;
-      nt[i].Sampler[1] := nt[i].Sampler[1] - offset_v;
+      SwapVec2(nRenderTri[1], nRenderTri[2]);
+      SwapVec2(nSamplerTri[1], nSamplerTri[2]);
     end;
 
+  // offset texel centers
+  nSamplerTri := TriSub(nSamplerTri, Vec2(1.0 / (2.0 * Sampler.Width0), 1.0 / (2.0 * Sampler.Height0)));
+  // scale vertices to pixel grid
+  nRenderTri := TriRound(TriMul(nRenderTri, Window.Size0));
+
   if bilinear_sampling then
-      RasterizeTriangle(TFragSampling.fsLinear, RasterColor(0, 0, 0), Sampler, nt)
+      f := TFragSampling.fsLinear
   else
-      RasterizeTriangle(TFragSampling.fsNearest, RasterColor(0, 0, 0), Sampler, nt);
+      f := TFragSampling.fsNearest;
+
+  RasterizeTriangle(f, RColor(0, 0, 0), Sampler, nSamplerTri, nRenderTri);
 end;
 
-procedure TVertexMap.internal_Draw(const Triangle: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean; const alpha: Single);
+procedure TVertexMap.internal_Draw(const SamplerTri, RenderTri: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean; const alpha: Single);
 var
   MA: Cardinal;
 begin
   MA := Sampler.MasterAlpha;
   if alpha > 1.0 then
-      Sampler.MasterAlpha := ClampByte_(Trunc(alpha))
+      Sampler.MasterAlpha := ClampByte(Trunc(alpha))
   else
-      Sampler.MasterAlpha := ClampByte_(Trunc(alpha * 255));
-  internal_Draw(Triangle, Sampler, bilinear_sampling);
+      Sampler.MasterAlpha := ClampByte(Trunc(alpha * $FF));
+  internal_Draw(SamplerTri, RenderTri, Sampler, bilinear_sampling);
   Sampler.MasterAlpha := MA;
 end;
 
 constructor TVertexMap.Create(raster: TMemoryRaster);
 begin
   inherited Create;
-  SetLength(FNearestWriteBuffer, raster.width * raster.height);
+  SetLength(FNearestWriteBuffer, raster.Width * raster.Height);
   FNearestWriterID := 0;
   FCurrentUpdate := 0;
   ComputeBlend := {$IFDEF FPC}@{$ENDIF FPC}Vertex_ComputeBlend;
   ComputeNearest := {$IFDEF FPC}@{$ENDIF FPC}Vertex_ComputeNearest;
   ComputeLinear := {$IFDEF FPC}@{$ENDIF FPC}Vertex_ComputeLinear;
   Window := raster;
-  WindowSize := Window.width * Window.height;
+  WindowSize := Window.Width * Window.Height;
   UserData := nil;
 end;
 
@@ -415,11 +391,12 @@ begin
   inherited Destroy;
 end;
 
-procedure TVertexMap.BeginUpdate;
+function TVertexMap.BeginUpdate: Byte;
 begin
   if FCurrentUpdate = 0 then
       NewWriterBuffer;
   inc(FCurrentUpdate);
+  Result := FNearestWriterID;
 end;
 
 procedure TVertexMap.EndUpdate;
@@ -427,111 +404,74 @@ begin
   dec(FCurrentUpdate);
 end;
 
-procedure TVertexMap.DrawTriangle(const t1, t2, t3: TVec2; const Sampler: TRasterColor);
-var
-  t: TTriangle;
+procedure TVertexMap.DrawTriangle(const v1, v2, v3: TVec2; const Sampler: TRColor);
 begin
   NewWriterBuffer;
-
-  t[0].Sampler := ZeroVec2;
-  t[1].Sampler := ZeroVec2;
-  t[2].Sampler := ZeroVec2;
-  t[0].Render := Vec2Div(t1, Window.Size2D);
-  t[1].Render := Vec2Div(t2, Window.Size2D);
-  t[2].Render := Vec2Div(t3, Window.Size2D);
-  internal_Draw(t, Sampler);
+  internal_Draw(TriDiv(Tri(v1, v2, v3), Window.Size0), Sampler);
 end;
 
-procedure TVertexMap.DrawTriangle(const Triangle: TTriangle; const Sampler: TRasterColor);
-var
-  t: TTriangle;
+procedure TVertexMap.DrawTriangle(const RenderTri: TTriangle; const Sampler: TRColor);
 begin
   NewWriterBuffer;
-
-  t[0].Sampler := ZeroVec2;
-  t[1].Sampler := ZeroVec2;
-  t[2].Sampler := ZeroVec2;
-  t[0].Render := Vec2Div(t[0].Render, Window.Size2D);
-  t[1].Render := Vec2Div(t[1].Render, Window.Size2D);
-  t[2].Render := Vec2Div(t[2].Render, Window.Size2D);
-  internal_Draw(t, Sampler);
+  internal_Draw(TriDiv(RenderTri, Window.Size0), Sampler);
 end;
 
-procedure TVertexMap.DrawTriangle(const Triangle: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean);
-var
-  t: TTriangle;
+procedure TVertexMap.DrawTriangle(const SamplerTri, RenderTri: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean);
 begin
   NewWriterBuffer;
-
-  t[0].Sampler := Vec2Div(t[0].Sampler, Sampler.Size2D);
-  t[1].Sampler := Vec2Div(t[1].Sampler, Sampler.Size2D);
-  t[2].Sampler := Vec2Div(t[2].Sampler, Sampler.Size2D);
-  t[0].Render := Vec2Div(t[0].Render, Window.Size2D);
-  t[1].Render := Vec2Div(t[1].Render, Window.Size2D);
-  t[2].Render := Vec2Div(t[2].Render, Window.Size2D);
-  internal_Draw(t, Sampler, bilinear_sampling);
+  internal_Draw(TriDiv(SamplerTri, Sampler.Size0), TriDiv(RenderTri, Window.Size0), Sampler, bilinear_sampling);
 end;
 
-procedure TVertexMap.DrawTriangle(const Triangle: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean; const alpha: TGeoFloat);
-var
-  t: TTriangle;
+procedure TVertexMap.DrawTriangle(const SamplerTri, RenderTri: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean; const alpha: TGeoFloat);
 begin
   NewWriterBuffer;
-
-  t[0].Sampler := Vec2Div(t[0].Sampler, Sampler.Size2D);
-  t[1].Sampler := Vec2Div(t[1].Sampler, Sampler.Size2D);
-  t[2].Sampler := Vec2Div(t[2].Sampler, Sampler.Size2D);
-  t[0].Render := Vec2Div(t[0].Render, Window.Size2D);
-  t[1].Render := Vec2Div(t[1].Render, Window.Size2D);
-  t[2].Render := Vec2Div(t[2].Render, Window.Size2D);
-  internal_Draw(Triangle, Sampler, bilinear_sampling, alpha);
+  internal_Draw(TriDiv(SamplerTri, Sampler.Size0), TriDiv(RenderTri, Window.Size0), Sampler, bilinear_sampling, alpha);
 end;
 
-procedure TVertexMap.DrawRect(const RenVec: TV2Rect4; const Sampler: TRasterColor);
+procedure TVertexMap.DrawRect(const RenVec: TV2Rect4; const Sampler: TRColor);
 var
   RV: TV2Rect4;
-  t: TTriangle;
+  RenderTri: TTriangle;
 begin
   NewWriterBuffer;
-  RV := RenVec.FDiv(vec2(Window.width, Window.height));
-  t[0].Sampler := ZeroVec2;
-  t[1].Sampler := ZeroVec2;
-  t[2].Sampler := ZeroVec2;
-  t[0].Render := RV.LeftTop;
-  t[1].Render := RV.RightTop;
-  t[2].Render := RV.LeftBottom;
-  internal_Draw(t, Sampler);
-  t[0].Render := RV.LeftBottom;
-  t[1].Render := RV.RightTop;
-  t[2].Render := RV.RightBottom;
-  internal_Draw(t, Sampler);
+  RV := RenVec.FDiv(Window.Size0);
+  RenderTri[0] := RV.LeftTop;
+  RenderTri[1] := RV.RightTop;
+  RenderTri[2] := RV.LeftBottom;
+  internal_Draw(RenderTri, Sampler);
+  RenderTri[0] := RV.LeftBottom;
+  RenderTri[1] := RV.RightTop;
+  RenderTri[2] := RV.RightBottom;
+  internal_Draw(RenderTri, Sampler);
 end;
 
 procedure TVertexMap.DrawRect(const SamVec, RenVec: TV2Rect4; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean; const alpha: Single);
 var
   SV, RV: TV2Rect4;
-  t: TTriangle;
+  SamplerTri, RenderTri: TTriangle;
 begin
   NewWriterBuffer;
-  SV := SamVec.FDiv(vec2(Sampler.width, Sampler.height));
-  RV := RenVec.FDiv(vec2(Window.width, Window.height));
-  t[0].Sampler := SV.LeftTop;
-  t[0].Render := RV.LeftTop;
-  t[1].Sampler := SV.RightTop;
-  t[1].Render := RV.RightTop;
-  t[2].Sampler := SV.LeftBottom;
-  t[2].Render := RV.LeftBottom;
-  internal_Draw(t, Sampler, bilinear_sampling, alpha);
-  t[0].Sampler := SV.LeftBottom;
-  t[0].Render := RV.LeftBottom;
-  t[1].Sampler := SV.RightTop;
-  t[1].Render := RV.RightTop;
-  t[2].Sampler := SV.RightBottom;
-  t[2].Render := RV.RightBottom;
-  internal_Draw(t, Sampler, bilinear_sampling, alpha);
+  SV := SamVec.FDiv(Sampler.Size0);
+  RV := RenVec.FDiv(Window.Size0);
+
+  SamplerTri[0] := SV.LeftTop;
+  SamplerTri[1] := SV.RightTop;
+  SamplerTri[2] := SV.LeftBottom;
+  RenderTri[0] := RV.LeftTop;
+  RenderTri[1] := RV.RightTop;
+  RenderTri[2] := RV.LeftBottom;
+  internal_Draw(SamplerTri, RenderTri, Sampler, bilinear_sampling, alpha);
+
+  SamplerTri[0] := SV.LeftBottom;
+  SamplerTri[1] := SV.RightTop;
+  SamplerTri[2] := SV.RightBottom;
+  RenderTri[0] := RV.LeftBottom;
+  RenderTri[1] := RV.RightTop;
+  RenderTri[2] := RV.RightBottom;
+  internal_Draw(SamplerTri, RenderTri, Sampler, bilinear_sampling, alpha);
 end;
 
-procedure TVertexMap.DrawRect(const RenVec: TRectV2; const Sampler: TRasterColor);
+procedure TVertexMap.DrawRect(const RenVec: TRectV2; const Sampler: TRColor);
 begin
   DrawRect(TV2Rect4.Init(RenVec, 0), Sampler);
 end;
@@ -541,7 +481,7 @@ begin
   DrawRect(TV2Rect4.Init(SamVec, 0), TV2Rect4.Init(RenVec, 0), Sampler, bilinear_sampling, alpha);
 end;
 
-procedure TVertexMap.DrawRect(const RenVec: TRectV2; const RenAngle: TGeoFloat; const Sampler: TRasterColor);
+procedure TVertexMap.DrawRect(const RenVec: TRectV2; const RenAngle: TGeoFloat; const Sampler: TRColor);
 begin
   DrawRect(TV2Rect4.Init(RenVec, RenAngle), Sampler);
 end;
@@ -556,40 +496,36 @@ begin
   DrawRect(SamVec, TV2Rect4.Init(RenVec, RenAngle), Sampler, bilinear_sampling, alpha);
 end;
 
-procedure TVertexMap.FillPoly(const RenVec: TVec2List; const cen: TVec2; const Sampler: TRasterColor);
+procedure TVertexMap.FillPoly(const RenVec: TVec2List; const cen: TVec2; const Sampler: TRColor);
 var
   RV: TVec2List;
   rCen: TVec2;
   i: Integer;
-  t: TTriangle;
+  RenderTri: TTriangle;
 begin
   NewWriterBuffer;
 
   RV := TVec2List.Create;
   RV.Assign(RenVec);
-  RV.FDiv(Window.width, Window.height);
-  rCen := Vec2Div(cen, vec2(Window.width, Window.height));
-
-  t[0].Sampler := ZeroVec2;
-  t[1].Sampler := ZeroVec2;
-  t[2].Sampler := ZeroVec2;
+  RV.FDiv(Window.Width0, Window.Height0);
+  rCen := Vec2Div(cen, Window.Size0);
 
   for i := 1 to RV.Count - 1 do
     begin
-      t[0].Render := rCen;
-      t[1].Render := RV[i]^;
-      t[2].Render := RV[i - 1]^;
-      internal_Draw(t, Sampler);
+      RenderTri[0] := rCen;
+      RenderTri[1] := RV[i]^;
+      RenderTri[2] := RV[i - 1]^;
+      internal_Draw(RenderTri, Sampler);
     end;
 
-  t[0].Render := rCen;
-  t[1].Render := RV.First^;
-  t[2].Render := RV.Last^;
-  internal_Draw(t, Sampler);
+  RenderTri[0] := rCen;
+  RenderTri[1] := RV.First^;
+  RenderTri[2] := RV.Last^;
+  internal_Draw(RenderTri, Sampler);
   DisposeObject(RV);
 end;
 
-procedure TVertexMap.FillPoly(const RenVec: TVec2List; const Sampler: TRasterColor);
+procedure TVertexMap.FillPoly(const RenVec: TVec2List; const Sampler: TRColor);
 begin
   FillPoly(RenVec, RenVec.Centroid, Sampler);
 end;
@@ -599,7 +535,7 @@ var
   SV, RV: TVec2List;
   sCen, rCen: TVec2;
   i: Integer;
-  t: TTriangle;
+  SamplerTri, RenderTri: TTriangle;
 begin
   if SamVec.Count <> RenVec.Count then
       RaiseInfo('vertex error');
@@ -608,32 +544,35 @@ begin
 
   SV := TVec2List.Create;
   SV.Assign(SamVec);
-  SV.FDiv(Sampler.width, Sampler.height);
-  sCen := Vec2Div(SamCen, vec2(Sampler.width, Sampler.height));
+  SV.FDiv(Sampler.Width0, Sampler.Height0);
+  sCen := Vec2Div(SamCen, Sampler.Size0);
 
   RV := TVec2List.Create;
   RV.Assign(RenVec);
-  RV.FDiv(Window.width, Window.height);
-  rCen := Vec2Div(RenCen, vec2(Window.width, Window.height));
+  RV.FDiv(Window.Width0, Window.Height0);
+  rCen := Vec2Div(RenCen, Window.Size0);
 
   for i := 1 to SV.Count - 1 do
     begin
-      t[0].Sampler := sCen;
-      t[0].Render := rCen;
-      t[1].Sampler := SV[i]^;
-      t[1].Render := RV[i]^;
-      t[2].Sampler := SV[i - 1]^;
-      t[2].Render := RV[i - 1]^;
-      internal_Draw(t, Sampler, bilinear_sampling, alpha);
+
+      SamplerTri[0] := sCen;
+      SamplerTri[1] := SV[i]^;
+      SamplerTri[2] := SV[i - 1]^;
+
+      RenderTri[0] := rCen;
+      RenderTri[1] := RV[i]^;
+      RenderTri[2] := RV[i - 1]^;
+      internal_Draw(SamplerTri, RenderTri, Sampler, bilinear_sampling, alpha);
     end;
 
-  t[0].Sampler := sCen;
-  t[0].Render := rCen;
-  t[1].Sampler := SV.First^;
-  t[1].Render := RV.First^;
-  t[2].Sampler := SV.Last^;
-  t[2].Render := RV.Last^;
-  internal_Draw(t, Sampler, bilinear_sampling, alpha);
+  SamplerTri[0] := sCen;
+  SamplerTri[1] := SV.First^;
+  SamplerTri[2] := SV.Last^;
+
+  RenderTri[0] := rCen;
+  RenderTri[1] := RV.First^;
+  RenderTri[2] := RV.Last^;
+  internal_Draw(SamplerTri, RenderTri, Sampler, bilinear_sampling, alpha);
 
   DisposeObject(SV);
   DisposeObject(RV);

@@ -38,52 +38,39 @@
   N           -   number of columns in matrix A.
   UNeeded     -   0, 1 or 2. See the description of the parameter U.
   VTNeeded    -   0, 1 or 2. See the description of the parameter VT.
+
   AdditionalMemory -
   If the parameter:
-  * equals 0, the algorithm doesnæŠ?use additional
-  memory (lower requirements, lower performance).
-  * equals 1, the algorithm uses additional
-  memory of size min(M,N)*min(M,N) of real numbers.
-  It often speeds up the algorithm.
-  * equals 2, the algorithm uses additional
-  memory of size M*min(M,N) of real numbers.
-  It allows to get a maximum performance.
-  The recommended value of the parameter is 2.
+  * equals 0, the algorithm dont use additional memory (lower requirements, lower performance).
+  * equals 1, the algorithm uses additional memory of size min(M,N)*min(M,N) of real numbers. It often speeds up the algorithm.
+  * equals 2, the algorithm uses additional memory of size M*min(M,N) of real numbers.
+  It allows to get a maximum performance. The recommended value of the parameter is 2.
 
   Output parameters:
   W           -   contains singular values in descending order.
-  U           -   if UNeeded=0, U isn't changed, the left singular vectors
-  are not calculated.
-  if Uneeded=1, U contains left singular vectors (first
-  min(M,N) columns of matrix U). Array whose indexes range
-  within [0..M-1, 0..Min(M,N)-1].
-  if UNeeded=2, U contains matrix U wholly. Array whose
-  indexes range within [0..M-1, 0..M-1].
-  VT          -   if VTNeeded=0, VT isnæŠ?changed, the right singular vectors
-  are not calculated.
-  if VTNeeded=1, VT contains right singular vectors (first
-  min(M,N) rows of matrix V^T). Array whose indexes range
-  within [0..min(M,N)-1, 0..N-1].
-  if VTNeeded=2, VT contains matrix V^T wholly. Array whose
-  indexes range within [0..N-1, 0..N-1].
+  U           -   if UNeeded=0, U isn't changed, the left singular vectors are not calculated.
+  if Uneeded=1, U contains left singular vectors (first min(M,N) columns of matrix U). Array whose indexes range within [0..M-1, 0..Min(M,N)-1].
+  if UNeeded=2, U contains matrix U wholly. Array whose indexes range within [0..M-1, 0..M-1].
+  VT          -   if VTNeeded=0, VT isn't changed, the right singular vectors are not calculated.
+  if VTNeeded=1, VT contains right singular vectors (first min(M,N) rows of matrix V^T). Array whose indexes range within [0..min(M,N)-1, 0..N-1].
+  if VTNeeded=2, VT contains matrix V^T wholly. Array whose indexes range within [0..N-1, 0..N-1].
   ************************************************************************ *)
-function RMatrixSVD(a: TLMatrix; const M, n, UNeeded, VTNeeded, AdditionalMemory: TLInt;
-  var w: TLVec; var u: TLMatrix; var VT: TLMatrix): Boolean;
+function RMatrixSVD(a: TLMatrix; const M, n, UNeeded, VTNeeded, AdditionalMemory: TLInt; var w: TLVec; var u: TLMatrix; var VT: TLMatrix): Boolean;
 var
-  TauQ   : TLVec;
-  TauP   : TLVec;
-  TAU    : TLVec;
-  E      : TLVec;
-  Work   : TLVec;
-  t2     : TLMatrix;
+  TauQ: TLVec;
+  TauP: TLVec;
+  TAU: TLVec;
+  E: TLVec;
+  Work: TLVec;
+  t2: TLMatrix;
   IsUpper: Boolean;
-  MinMN  : TLInt;
-  NCU    : TLInt;
-  NRVT   : TLInt;
-  NRU    : TLInt;
-  NCVT   : TLInt;
-  i      : TLInt;
-  j      : TLInt;
+  MinMN: TLInt;
+  NCU: TLInt;
+  NRVT: TLInt;
+  NRU: TLInt;
+  NCVT: TLInt;
+  i: TLInt;
+  j: TLInt;
 begin
   a := DynamicArrayCopy(a);
   Result := True;
@@ -106,13 +93,13 @@ begin
     begin
       NRU := M;
       NCU := MinMN;
-      SetLength(u, NRU  , NCU  );
+      SetLength(u, NRU, NCU);
     end;
   if UNeeded = 2 then
     begin
       NRU := M;
       NCU := M;
-      SetLength(u, NRU  , NCU  );
+      SetLength(u, NRU, NCU);
     end;
   NRVT := 0;
   NCVT := 0;
@@ -120,13 +107,13 @@ begin
     begin
       NRVT := MinMN;
       NCVT := n;
-      SetLength(VT, NRVT  , NCVT  );
+      SetLength(VT, NRVT, NCVT);
     end;
   if VTNeeded = 2 then
     begin
       NRVT := n;
       NCVT := n;
-      SetLength(VT, NRVT  , NCVT  );
+      SetLength(VT, NRVT, NCVT);
     end;
 
   //
@@ -329,11 +316,9 @@ begin
       //
       // We can use additional memory
       //
-      SetLength(t2, MinMN  , M  );
+      SetLength(t2, MinMN, M);
       CopyAndTranspose(u, 0, M - 1, 0, MinMN - 1, t2, 0, MinMN - 1, 0, M - 1);
       Result := RMatrixBDSVD(w, E, MinMN, IsUpper, False, u, 0, t2, M, VT, NCVT);
       CopyAndTranspose(t2, 0, MinMN - 1, 0, M - 1, u, 0, M - 1, 0, MinMN - 1);
     end;
-end; 
- 
- 
+end;

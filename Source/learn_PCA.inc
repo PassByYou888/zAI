@@ -23,7 +23,6 @@ procedure PCABuildBasis(const x: TLMatrix; NPoints: TLInt; NVars: TLInt; var Inf
 
 procedure InternalStatHeapSort(var Arr: TLVec; n: TLInt); forward;
 
-
 (* ************************************************************************
   Calculation of the distribution moments: mean, variance, slewness, kurtosis.
 
@@ -39,10 +38,10 @@ procedure InternalStatHeapSort(var Arr: TLVec; n: TLInt); forward;
   ************************************************************************ *)
 procedure CalculateMoments(const x: TLVec; n: TLInt; var Mean: TLFloat; var Variance: TLFloat; var Skewness: TLFloat; var Kurtosis: TLFloat);
 var
-  i     : TLInt;
-  v     : TLFloat;
-  v1    : TLFloat;
-  v2    : TLFloat;
+  i: TLInt;
+  v: TLFloat;
+  v1: TLFloat;
+  v2: TLFloat;
   StdDev: TLFloat;
 begin
   Mean := 0;
@@ -125,7 +124,7 @@ end;
   ************************************************************************ *)
 procedure CalculateADev(const x: TLVec; const n: TLInt; var ADev: TLFloat);
 var
-  i   : TLInt;
+  i: TLInt;
   Mean: TLFloat;
 begin
   Mean := 0;
@@ -170,13 +169,13 @@ end;
   ************************************************************************ *)
 procedure CalculateMedian(const x: TLVec; const n: TLInt; var Median: TLFloat);
 var
-  i   : TLInt;
-  IR  : TLInt;
-  j   : TLInt;
-  L   : TLInt;
+  i: TLInt;
+  IR: TLInt;
+  j: TLInt;
+  L: TLInt;
   midp: TLInt;
-  k   : TLInt;
-  a   : TLFloat;
+  k: TLInt;
+  a: TLFloat;
   tval: TLFloat;
 begin
   //
@@ -313,12 +312,11 @@ procedure CalculatePercentile(const x: TLVec; const n: TLInt; const p: TLFloat; 
 var
   Nx: TLVec;
   i1: TLInt;
-  t : TLFloat;
+  t: TLFloat;
 begin
   Nx := DynamicArrayCopy(x);
   Assert(n > 1, 'CalculatePercentile: N<=1!');
-  Assert(AP_FP_Greater_Eq(p, 0) and AP_FP_Less_Eq(p, 1),
-    'CalculatePercentile: incorrect P!');
+  Assert(AP_FP_Greater_Eq(p, 0) and AP_FP_Less_Eq(p, 1), 'CalculatePercentile: incorrect P!');
   InternalStatHeapSort(Nx, n);
   if AP_FP_Eq(p, 0) then
     begin
@@ -338,9 +336,9 @@ end;
 
 procedure InternalStatHeapSort(var Arr: TLVec; n: TLInt);
 var
-  i  : TLInt;
-  k  : TLInt;
-  t  : TLInt;
+  i: TLInt;
+  k: TLInt;
+  t: TLInt;
   tmp: TLFloat;
 begin
   if n = 1 then
@@ -424,23 +422,24 @@ end;
   * -4, if SVD subroutine haven't converged
   * -1, if wrong parameters has been passed (NPoints<0, NVars<1)
   *  1, if task is solved
+
   S2          -   array[0..NVars-1]. variance values corresponding to basis vectors.
   V           -   array[0..NVars-1,0..NVars-1] matrix, whose columns store basis vectors.
-  ************************************************************************ *)
+  **/********************************************************************** *)
 procedure PCABuildBasis(const x: TLMatrix; NPoints: TLInt; NVars: TLInt; var Info: TLInt; var s2: TLVec; var v: TLMatrix);
 var
-  a       : TLMatrix;
-  u       : TLMatrix;
-  VT      : TLMatrix;
-  M       : TLVec;
-  t       : TLVec;
-  i       : TLInt;
-  j       : TLInt;
-  Mean    : TLFloat;
+  a: TLMatrix;
+  u: TLMatrix;
+  VT: TLMatrix;
+  M: TLVec;
+  t: TLVec;
+  i: TLInt;
+  j: TLInt;
+  Mean: TLFloat;
   Variance: TLFloat;
   Skewness: TLFloat;
   Kurtosis: TLFloat;
-  i_      : TLInt;
+  i_: TLInt;
 begin
 
   //
@@ -458,8 +457,8 @@ begin
   //
   if NPoints = 0 then
     begin
-      SetLength(s2, NVars  );
-      SetLength(v, NVars  , NVars  );
+      SetLength(s2, NVars);
+      SetLength(v, NVars, NVars);
       i := 0;
       while i <= NVars - 1 do
         begin
@@ -490,8 +489,8 @@ begin
   //
   // Calculate means
   //
-  SetLength(M, NVars  );
-  SetLength(t, NPoints  );
+  SetLength(M, NVars);
+  SetLength(t, NPoints);
   j := 0;
   while j <= NVars - 1 do
     begin
@@ -507,7 +506,7 @@ begin
   //
   // Center, apply SVD, prepare output
   //
-  SetLength(a, Max(NPoints, NVars)  , NVars  );
+  SetLength(a, Max(NPoints, NVars), NVars);
   i := 0;
   while i <= NPoints - 1 do
     begin
@@ -540,8 +539,6 @@ begin
           inc(i);
         end;
     end;
-  SetLength(v, NVars  , NVars  );
+  SetLength(v, NVars, NVars);
   CopyAndTranspose(VT, 0, NVars - 1, 0, NVars - 1, v, 0, NVars - 1, 0, NVars - 1);
-end; 
- 
- 
+end;

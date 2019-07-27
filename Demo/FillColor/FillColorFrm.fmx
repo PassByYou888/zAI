@@ -1,0 +1,24 @@
+object FillColorForm: TFillColorForm
+  Left = 0
+  Top = 0
+  Caption = 'Fill Color Demo.'
+  ClientHeight = 465
+  ClientWidth = 685
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnPaint = FormPaint
+  DesignerMasterStyle = 0
+  object Timer1: TTimer
+    Interval = 10
+    OnTimer = Timer1Timer
+    Left = 328
+    Top = 280
+  end
+  object Timer2: TTimer
+    Interval = 3000
+    OnTimer = Timer2Timer
+    Left = 328
+    Top = 216
+  end
+end

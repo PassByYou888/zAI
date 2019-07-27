@@ -123,8 +123,8 @@ begin
       d.LastNewTime := 0;
     end;
   Raster_DetectAndDraw(frame);
-  frame.ReleaseFMXResource;
-  d.FitDrawTexture(frame, frame.BoundsRectV2, d.ScreenRect, 1.0);
+  frame.ReleaseGPUMemory;
+  d.FitDrawPicture(frame, frame.BoundsRectV2, d.ScreenRect, 1.0);
 
   d.BeginCaptureShadow(Vec2(1, 1), 0.9);
   d.DrawText(d.LastDrawInfo + #13#10 + PFormat('frame size:%d*%d', [frame.Width, frame.Height]), 16, d.ScreenRect, DEColor(0, 0.5, 0), False);

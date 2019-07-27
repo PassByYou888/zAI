@@ -69,7 +69,7 @@ procedure TRender2VideoForm.BuildButtonClick(Sender: TObject);
     Timer.Enabled := False;
     total := umlStrToInt(TotalFrameEdit.Text, 0) - 1;
 
-    dIntf := TDrawEngine_YUV4MPEG.Create(
+    dIntf := TDrawEngine_YUV4MPEG.CreateOnFile(
       Trunc(PaintBox.Width),
       Trunc(PaintBox.Height),
       Trunc(1 / FixedCadencer.FixedDeltaTime),
@@ -163,7 +163,7 @@ var
 begin
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
-  d.ViewOptions := [devpFPS];
+  d.ViewOptions := [voFPS];
   RenderFrame(d);
 end;
 

@@ -304,6 +304,23 @@ begin
   Result := LVec(M, L);
 end;
 
+function ExpressionToLVec(const s: TPascalString; const_vl: THashVariantList): TLVec;
+var
+  eVec: TExpressionValueVector;
+  i: TLInt;
+begin
+  eVec := EvaluateExpressionVector(s, const_vl);
+  SetLength(Result, length(eVec));
+  for i := 0 to length(eVec) - 1 do
+      Result[i] := eVec[i];
+  SetLength(eVec, 0);
+end;
+
+function ExpressionToLVec(const s: TPascalString): TLVec;
+begin
+  Result := ExpressionToLVec(s, nil);
+end;
+
 function LSpearmanVec(const M: TLMatrix; const veclen: TLInt): TLVec;
 begin
   Result := LVec(M, veclen);
@@ -837,12 +854,16 @@ begin
   Result := rInfo in [1, 2];
 end;
 
-function PCA(const buff: TLMatrix; const NPoints, NVars: TLInt; var v: TLMatrix): TLInt;
-var
-  s: TLVec;
+function PCA(const buff: TLMatrix; const NPoints, NVars: TLInt; var v:TLVec; var m: TLMatrix): TLInt;
 begin
-  PCABuildBasis(buff, NPoints, NVars, Result, s, v);
-  SetLength(s, 0);
+  PCABuildBasis(buff, NPoints, NVars, Result, v, m);
+end;
+
+function PCA(const buff: TLMatrix; const NPoints, NVars: TLInt; var m: TLMatrix): TLInt;
+var
+  s:TLVec;
+begin
+  PCABuildBasis(buff, NPoints, NVars, Result, s, m);
 end;
 
 function KMeans(const Source: TLMatrix; const NVars, k: TLInt; var KArray: TLMatrix; var kIndex: TLIVec): Boolean;
@@ -872,6 +893,28 @@ end;
 function LIMatrix(const L1, l2: TLInt): TLIMatrix;
 begin
   SetLength(Result, L1, l2);
+end;
+
+function ExpressionToLMatrix(w, h: TLInt; const s: TPascalString; const_vl: THashVariantList): TLMatrix;
+var
+  EM: TExpressionValueMatrix;
+  i, j: TLInt;
+begin
+  SetLength(Result, 0, 0);
+  EM := EvaluateExpressionMatrix(w, h, s, const_vl);
+  if length(EM) = 0 then
+      Exit;
+
+  SetLength(Result, h, w);
+  for j := 0 to h - 1 do
+    for i := 0 to w - 1 do
+        Result[j, i] := EM[j, i];
+  SetLength(EM, 0, 0);
+end;
+
+function ExpressionToLMatrix(w, h: TLInt; const s: TPascalString): TLMatrix;
+begin
+  Result := ExpressionToLMatrix(w, h, s, nil);
 end;
 
 {$ENDREGION 'extAPI'}
