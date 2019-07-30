@@ -2586,7 +2586,7 @@ begin
       DrawPolygon(Polygon.Bands[i], Color);
 end;
 
-function TMemoryRaster.PixelAtBorder(const x, y: Integer; const BGColor, BorderColor: TRColor; const halfBorderSize: Integer): Boolean;
+function TMemoryRaster.PixelAtBorder(const x, y: Integer; const BGColor, BorderColor: TRColor; const halfBorderSize: Integer; var detectColor: TRColor): Boolean;
 var
   i, j: Integer;
   c: TRColor;
@@ -2601,6 +2601,7 @@ begin
               if (c <> BGColor) and (c <> BorderColor) then
                 begin
                   Result := True;
+                  detectColor := c;
                   exit;
                 end;
             end;
@@ -2616,9 +2617,10 @@ var
   procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
   var
     i: Integer;
+    detectColor: TRColor;
   begin
     for i := 0 to width - 1 do
-      if PixelAtBorder(i, pass, BGColor, BorderColor, halfBorderSize) then
+      if PixelAtBorder(i, pass, BGColor, BorderColor, halfBorderSize, detectColor) then
           Pixel[i, pass] := BorderColor;
   end;
 {$ENDIF FPC}
@@ -2626,10 +2628,11 @@ var
   procedure DoFor;
   var
     i, pass: Integer;
+    detectColor: TRColor;
   begin
     for pass := 0 to height - 1 do
       for i := 0 to width - 1 do
-        if PixelAtBorder(i, pass, BGColor, BorderColor, halfBorderSize) then
+        if PixelAtBorder(i, pass, BGColor, BorderColor, halfBorderSize, detectColor) then
             Pixel[i, pass] := BorderColor;
   end;
 
@@ -2650,9 +2653,10 @@ begin
   TParallel.for(0, height - 1, procedure(pass: Integer)
     var
       i: Integer;
+      detectColor: TRColor;
     begin
       for i := 0 to width - 1 do
-        if PixelAtBorder(i, pass, BGColor, BorderColor, halfBorderSize) then
+        if PixelAtBorder(i, pass, BGColor, BorderColor, halfBorderSize, detectColor) then
             Pixel[i, pass] := BorderColor;
     end);
 {$ENDIF FPC}

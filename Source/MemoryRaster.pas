@@ -353,7 +353,7 @@ type
     procedure DrawPolygon(Polygon: T2DPolygonGraph; Color: TRColor); overload;
 
     { pixel border }
-    function PixelAtBorder(const X, Y: Integer; const BGColor, BorderColor: TRColor; const halfBorderSize: Integer): Boolean;
+    function PixelAtBorder(const X, Y: Integer; const BGColor, BorderColor: TRColor; const halfBorderSize: Integer; var detectColor: TRColor): Boolean;
     procedure FillNoneBGColorBorder(BGColor, BorderColor: TRColor; BorderSize: Integer);
 
     { rasterization text support }
@@ -755,6 +755,9 @@ type
     // store
     procedure LoadFromStream(stream: TCoreClassStream);
     procedure SaveToStream(stream: TCoreClassStream);
+    procedure LoadFromFile(filename: TPascalString);
+    procedure SaveToFile(filename: TPascalString);
+
     procedure ExportRaster(stream: TCoreClassStream; partitionLine: Boolean);
 
     // draw font

@@ -11,7 +11,7 @@ uses
   zAI, zAI_Common, zDrawEngineInterface_SlowFMX, zDrawEngine, MemoryRaster;
 
 type
-  TForm1 = class(TForm)
+  TODDemoForm = class(TForm)
     Image1: TImage;
     Button1: TButton;
     Image2: TImage;
@@ -34,14 +34,14 @@ type
   end;
 
 var
-  Form1: TForm1;
+  ODDemoForm: TODDemoForm;
 
 implementation
 
 {$R *.fmx}
 
 
-procedure TForm1.Button1Click(Sender: TObject);
+procedure TODDemoForm.Button1Click(Sender: TObject);
 begin
   MemoryBitmapToBitmap(bk1, Image1.bitmap);
   MemoryBitmapToBitmap(bk2, Image2.bitmap);
@@ -50,7 +50,7 @@ begin
   OD_Marshal(Image2.bitmap);
 end;
 
-procedure TForm1.Button2Click(Sender: TObject);
+procedure TODDemoForm.Button2Click(Sender: TObject);
 begin
   MemoryBitmapToBitmap(bk1, Image1.bitmap);
   MemoryBitmapToBitmap(bk2, Image2.bitmap);
@@ -59,7 +59,7 @@ begin
   OD_Bear(Image2.bitmap);
 end;
 
-procedure TForm1.Button3Click(Sender: TObject);
+procedure TODDemoForm.Button3Click(Sender: TObject);
 begin
   MemoryBitmapToBitmap(bk1, Image1.bitmap);
   MemoryBitmapToBitmap(bk2, Image2.bitmap);
@@ -68,13 +68,13 @@ begin
   OD_Dog(Image2.bitmap);
 end;
 
-procedure TForm1.DoStatusMethod(AText: SystemString; const ID: Integer);
+procedure TODDemoForm.DoStatusMethod(AText: SystemString; const ID: Integer);
 begin
   Memo1.Lines.Add(AText);
   Memo1.GoToTextEnd;
 end;
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TODDemoForm.FormCreate(Sender: TObject);
 begin
   AddDoStatusHook(Self, DoStatusMethod);
 
@@ -93,7 +93,7 @@ begin
   BitmapToMemoryBitmap(Image2.bitmap, bk2);
 end;
 
-procedure TForm1.OD_Marshal(bitmap: TBitmap);
+procedure TODDemoForm.OD_Marshal(bitmap: TBitmap);
 var
   ai: TAI;
   odm: TOD_Marshal_Handle;
@@ -128,7 +128,7 @@ begin
   disposeObject(ai);
 end;
 
-procedure TForm1.OD_Bear(bitmap: TBitmap);
+procedure TODDemoForm.OD_Bear(bitmap: TBitmap);
 var
   ai: TAI;
   od: TOD_Handle;
@@ -162,7 +162,7 @@ begin
   disposeObject(ai);
 end;
 
-procedure TForm1.OD_Dog(bitmap: TBitmap);
+procedure TODDemoForm.OD_Dog(bitmap: TBitmap);
 var
   ai: TAI;
   od: TOD_Handle;

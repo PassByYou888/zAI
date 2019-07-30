@@ -108,6 +108,7 @@ type
 
     function BuildNewSegmentationMask(mr: TMemoryRaster; sampler_FG_Color, buildBG_color, buildFG_color: TRColor): TEditorSegmentationMask; overload;
     function BuildNewSegmentationMask(geo: TEditorGeometry; buildBG_color, buildFG_color: TRColor): TEditorSegmentationMask; overload;
+    procedure RemoveGeometrySegmentationMask;
     procedure RebuildGeometrySegmentationMask(buildBG_color, buildFG_color: TRColor);
   end;
 
@@ -185,6 +186,8 @@ type
   TEditorImageDataList = class(TEditorImageDataList_Decl)
   public
     FreeImgData: Boolean;
+    LastLoad_Scale: TGeoFloat;
+    LastLoad_pt: TVec2;
 
     constructor Create(const FreeImgData_: Boolean);
     destructor Destroy; override;
@@ -197,17 +200,20 @@ type
     function GetSegmentationMaskTokenList(filter: U_String): TPascalStringList;
 
     // save as .ai_set format
-    procedure SaveToStream(stream: TCoreClassStream; const Scale: TGeoFloat; const pt_: TVec2; SaveImg: Boolean);
+    procedure SaveToStream(stream: TCoreClassStream; const Scale: TGeoFloat; const pt_: TVec2; SaveImg: Boolean); overload;
+    procedure SaveToStream(stream: TCoreClassStream); overload;
+    procedure SaveToFile(FileName: U_String);
     // load from .ai_set format
     procedure LoadFromStream(stream: TCoreClassStream; var Scale: TGeoFloat; var pt_: TVec2); overload;
-
     procedure LoadFromStream(stream: TCoreClassStream); overload;
     procedure LoadFromFile(FileName: U_String); overload;
 
     // export as .imgDataset (from zAI_Common.pas) format support
     procedure SaveToStream_AI(stream: TCoreClassStream; RasterSaveMode: TRasterSave);
+    procedure SaveToFile_AI(FileName: U_String; RasterSaveMode: TRasterSave);
     // import from .imgDataset (from zAI_Common.pas) format
     procedure LoadFromStream_AI(stream: TCoreClassStream);
+    procedure LoadFromFile_AI(FileName: U_String);
   end;
 
   TEditor_Image_Script_Register = procedure(Sender: TEditorImageData; opRT: TOpCustomRunTime) of object;
@@ -556,7 +562,7 @@ begin
       SegmentationMask := TEditorSegmentationMask.Create;
       SegmentationMask.Owner := Owner;
 
-      // base data
+      // read
       SegmentationMask.BGColor := nd.Reader.ReadCardinal;
       SegmentationMask.FGColor := nd.Reader.ReadCardinal;
       SegmentationMask.Token := nd.Reader.ReadString;
@@ -565,7 +571,7 @@ begin
       m64.Position := 0;
       SegmentationMask.Raster.LoadFromStream(m64);
 
-      // fixed data
+      // calibrate
       SegmentationMask.FromGeometry := False;
       SegmentationMask.FromSegmentationMaskImage := True;
       SegmentationMask.PickedPoint := SegmentationMask.Raster.FindNearColor(SegmentationMask.FGColor, Owner.Raster.Centre);
@@ -630,7 +636,7 @@ begin
   UnlockObject(Self);
 end;
 
-procedure TEditorSegmentationMaskList.RebuildGeometrySegmentationMask(buildBG_color, buildFG_color: TRColor);
+procedure TEditorSegmentationMaskList.RemoveGeometrySegmentationMask;
 var
   i: Integer;
 begin
@@ -646,6 +652,14 @@ begin
       else
           inc(i);
     end;
+end;
+
+procedure TEditorSegmentationMaskList.RebuildGeometrySegmentationMask(buildBG_color, buildFG_color: TRColor);
+var
+  i: Integer;
+begin
+  // remove geometry data source
+  RemoveGeometrySegmentationMask;
 
   for i := 0 to Owner.GeometryList.count - 1 do
       BuildNewSegmentationMask(Owner.GeometryList[i], buildBG_color, buildFG_color);
@@ -1513,6 +1527,8 @@ constructor TEditorImageDataList.Create(const FreeImgData_: Boolean);
 begin
   inherited Create;
   FreeImgData := FreeImgData_;
+  LastLoad_Scale := 1.0;
+  LastLoad_pt := Vec2(0, 0);
 end;
 
 destructor TEditorImageDataList.Destroy;
@@ -1697,6 +1713,23 @@ begin
   DisposeObject(de);
 end;
 
+procedure TEditorImageDataList.SaveToStream(stream: TCoreClassStream);
+begin
+  SaveToStream(stream, LastLoad_Scale, LastLoad_pt, True);
+end;
+
+procedure TEditorImageDataList.SaveToFile(FileName: U_String);
+var
+  stream: TCoreClassStream;
+begin
+  stream := TCoreClassFileStream.Create(FileName, fmCreate);
+  try
+      SaveToStream(stream);
+  finally
+      DisposeObject(stream);
+  end;
+end;
+
 procedure TEditorImageDataList.LoadFromStream(stream: TCoreClassStream; var Scale: TGeoFloat; var pt_: TVec2);
 var
   de: TDataFrameEngine;
@@ -1707,9 +1740,12 @@ begin
   de := TDataFrameEngine.Create;
   de.DecodeFrom(stream);
 
-  Scale := de.Reader.ReadSingle;
-  pt_[0] := umlStrToFloat(de.Reader.ReadString, 0);
-  pt_[1] := umlStrToFloat(de.Reader.ReadString, 0);
+  LastLoad_Scale := de.Reader.ReadSingle;
+  Scale := LastLoad_Scale;
+
+  LastLoad_pt[0] := umlStrToFloat(de.Reader.ReadString, 0);
+  LastLoad_pt[1] := umlStrToFloat(de.Reader.ReadString, 0);
+  pt_ := LastLoad_pt;
 
   c := de.Reader.ReadInteger;
 
@@ -1771,6 +1807,18 @@ begin
   DisposeObject(de);
 end;
 
+procedure TEditorImageDataList.SaveToFile_AI(FileName: U_String; RasterSaveMode: TRasterSave);
+var
+  stream: TCoreClassStream;
+begin
+  stream := TCoreClassFileStream.Create(FileName, fmCreate);
+  try
+      SaveToStream_AI(stream, RasterSaveMode);
+  finally
+      DisposeObject(stream);
+  end;
+end;
+
 procedure TEditorImageDataList.LoadFromStream_AI(stream: TCoreClassStream);
 var
   de: TDataFrameEngine;
@@ -1795,6 +1843,18 @@ begin
     end;
 
   DisposeObject(de);
+end;
+
+procedure TEditorImageDataList.LoadFromFile_AI(FileName: U_String);
+var
+  stream: TCoreClassStream;
+begin
+  stream := TCoreClassFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+  try
+      LoadFromStream_AI(stream);
+  finally
+      DisposeObject(stream);
+  end;
 end;
 
 initialization

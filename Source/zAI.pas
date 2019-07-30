@@ -1050,7 +1050,6 @@ const
   C_LRNIC_Dim = 10000;
   C_GDCNIC_Dim = 10000;
   C_GNIC_Dim = 10000;
-  C_SS_MaxClassification = 500;
 
 procedure Wait_AI_Init;
 

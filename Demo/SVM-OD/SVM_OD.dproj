@@ -382,7 +382,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="ODDemoFrm.pas">
-            <Form>Form1</Form>
+            <Form>ODDemoForm</Form>
             <FormType>fmx</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">

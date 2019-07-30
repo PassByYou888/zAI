@@ -239,6 +239,8 @@ type
     procedure Delete(index: Integer);
 
     procedure Clear;
+    procedure ClearDetector;
+    procedure ClearSegmentation;
     procedure ClearPrepareRaster;
 
     procedure RunScript(RSeri: TRasterSerialized; ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString); overload;
@@ -359,7 +361,9 @@ type
     // image matrix scale
     procedure Scale(f: TGeoFloat);
 
-    // clean PrepareRaster
+    // clean
+    procedure ClearDetector;
+    procedure ClearSegmentation;
     procedure ClearPrepareRaster;
 
     // export
@@ -439,6 +443,19 @@ var
 
   On_Script_RegisterProc: TAI_Image_Script_Register;
 {$ENDREGION 'global variant'}
+{$REGION 'zAI configure api'}
+procedure ReadAIConfig; overload;
+procedure ReadAIConfig(ini: THashTextEngine); overload;
+procedure WriteAIConfig;
+{$ENDREGION 'zAI configure api'}
+{$REGION 'misc api'}
+procedure Build_XML_Dataset(xslFile, Name, comment, body: SystemString; build_output: TMemoryStream64);
+procedure Build_XML_Style(build_output: TMemoryStream64);
+procedure DrawSPLine(sp_desc: TVec2List; bp, ep: Integer; closeLine: Boolean; Color: TDEColor; d: TDrawEngine); overload;
+procedure DrawSPLine(sp_desc: TArrayVec2; bp, ep: Integer; closeLine: Boolean; Color: TDEColor; d: TDrawEngine); overload;
+procedure DrawFaceSP(sp_desc: TVec2List; Color: TDEColor; d: TDrawEngine); overload;
+procedure DrawFaceSP(sp_desc: TArrayVec2; Color: TDEColor; d: TDrawEngine); overload;
+{$ENDREGION 'misc api'}
 {$REGION 'global const'}
 
 
@@ -460,19 +477,6 @@ const
   C_GNIC_Ext: SystemString = '.GNIC';
   C_SS_Ext: SystemString = '.SS';
 {$ENDREGION 'global const'}
-{$REGION 'zAI configure api'}
-procedure ReadAIConfig; overload;
-procedure ReadAIConfig(ini: THashTextEngine); overload;
-procedure WriteAIConfig;
-{$ENDREGION 'zAI configure api'}
-{$REGION 'misc api'}
-procedure Build_XML_Dataset(xslFile, Name, comment, body: SystemString; build_output: TMemoryStream64);
-procedure Build_XML_Style(build_output: TMemoryStream64);
-procedure DrawSPLine(sp_desc: TVec2List; bp, ep: Integer; closeLine: Boolean; Color: TDEColor; d: TDrawEngine); overload;
-procedure DrawSPLine(sp_desc: TArrayVec2; bp, ep: Integer; closeLine: Boolean; Color: TDEColor; d: TDrawEngine); overload;
-procedure DrawFaceSP(sp_desc: TVec2List; Color: TDEColor; d: TDrawEngine); overload;
-procedure DrawFaceSP(sp_desc: TArrayVec2; Color: TDEColor; d: TDrawEngine); overload;
-{$ENDREGION 'misc api'}
 
 implementation
 
@@ -2272,6 +2276,22 @@ begin
   inherited Clear;
 end;
 
+procedure TAI_ImageList.ClearDetector;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].ClearDetector;
+end;
+
+procedure TAI_ImageList.ClearSegmentation;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].ClearSegmentation;
+end;
+
 procedure TAI_ImageList.ClearPrepareRaster;
 var
   i: Integer;
@@ -4029,6 +4049,22 @@ var
 begin
   for i := 0 to Count - 1 do
       Items[i].Scale(f);
+end;
+
+procedure TAI_ImageMatrix.ClearDetector;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].ClearDetector;
+end;
+
+procedure TAI_ImageMatrix.ClearSegmentation;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      Items[i].ClearSegmentation;
 end;
 
 procedure TAI_ImageMatrix.ClearPrepareRaster;

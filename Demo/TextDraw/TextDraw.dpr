@@ -3,12 +3,12 @@ program TextDraw;
 uses
   System.StartUpCopy,
   FMX.Forms,
-  TextDrawMainFrm in 'TextDrawMainFrm.pas' {Form1};
+  TextDrawMainFrm in 'TextDrawMainFrm.pas' {TextDrawMainForm};
 
 {$R *.res}
 
 begin
   Application.Initialize;
-  Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TTextDrawMainForm, TextDrawMainForm);
   Application.Run;
 end.

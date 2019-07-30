@@ -80,8 +80,6 @@ procedure TColorSegmentationMainForm.segListPBPaint(Sender: TObject; Canvas: TCa
 var
   d: TDrawEngine;
   r: TRectV2;
-  offset: TVec2;
-  s: TGeoFloat;
 begin
   drawIntf.SetSurface(Canvas, Sender);
   d := DrawPool(Sender, drawIntf);
@@ -94,10 +92,6 @@ begin
   r := d.DrawPicturePackingInScene(SegImgList, 10, Vec2(0, 0), 1.0);
   d.EndCaptureShadow;
   UnLockObject(SegImgList);
-
-  FitScale(r, d.ScreenRect, offset, s);
-  d.offset := offset;
-  d.Scale := s;
 
   d.DrawText('ÏñËØ·Ö¸îºó', 16, d.ScreenRect, DEColor(0.5, 1.0, 0.5), False);
   d.Flush;
@@ -119,7 +113,6 @@ begin
   pt := RectProjection(tex_box, tex.BoundsRectV2, Vec2(X, Y));
   if PointInRect(pt, tex.BoundsRectV2) then
     begin
-
       pickColor := tex.PixelVec[pt];
 
       if RColorDistance(pickColor, RColor(0, 0, 0)) < color_threshold then

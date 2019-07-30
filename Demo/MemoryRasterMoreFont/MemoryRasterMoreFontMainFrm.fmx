@@ -1,0 +1,21 @@
+object MemoryRasterMoreFontMainForm: TMemoryRasterMoreFontMainForm
+  Left = 0
+  Top = 0
+  Caption = 'more memory rasterization font.'
+  ClientHeight = 709
+  ClientWidth = 995
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object ImageViewer1: TImageViewer
+    Align = Client
+    Size.Width = 995.000000000000000000
+    Size.Height = 709.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Viewport.Width = 991.000000000000000000
+    Viewport.Height = 705.000000000000000000
+  end
+end

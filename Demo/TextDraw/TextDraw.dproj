@@ -373,7 +373,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="TextDrawMainFrm.pas">
-            <Form>Form1</Form>
+            <Form>TextDrawMainForm</Form>
             <FormType>fmx</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">

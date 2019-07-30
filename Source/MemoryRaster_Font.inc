@@ -347,6 +347,30 @@ begin
   stream.Position := 0;
 end;
 
+procedure TFontRaster.LoadFromFile(filename: TPascalString);
+var
+  stream: TCoreClassStream;
+begin
+  stream := TCoreClassFileStream.Create(filename, fmOpenRead or fmShareDenyWrite);
+  try
+      LoadFromStream(stream);
+  except
+  end;
+  DisposeObject(stream);
+end;
+
+procedure TFontRaster.SaveToFile(filename: TPascalString);
+var
+  stream: TCoreClassStream;
+begin
+  stream := TCoreClassFileStream.Create(filename, fmCreate);
+  try
+      SaveToStream(stream);
+  except
+  end;
+  DisposeObject(stream);
+end;
+
 procedure TFontRaster.ExportRaster(stream: TCoreClassStream; partitionLine: Boolean);
 var
   raster: TMemoryRaster;

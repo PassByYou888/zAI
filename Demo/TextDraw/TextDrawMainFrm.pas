@@ -9,7 +9,7 @@ uses
   CoreClasses, PascalStrings, zDrawEngine, zDrawEngineInterface_SlowFMX, Geometry2DUnit;
 
 type
-  TForm1 = class(TForm)
+  TTextDrawMainForm = class(TForm)
     Timer1: TTimer;
     procedure FormCreate(Sender: TObject);
     procedure FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
@@ -23,20 +23,20 @@ type
   end;
 
 var
-  Form1: TForm1;
+  TextDrawMainForm: TTextDrawMainForm;
 
 implementation
 
 {$R *.fmx}
 
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TTextDrawMainForm.FormCreate(Sender: TObject);
 begin
   drawIntf := TDrawEngineInterface_FMX.Create;
   angle := 0;
 end;
 
-procedure TForm1.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+procedure TTextDrawMainForm.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
 var
   d: TDrawEngine;
   n: string;
@@ -88,7 +88,7 @@ begin
   d.Flush;
 end;
 
-procedure TForm1.Timer1Timer(Sender: TObject);
+procedure TTextDrawMainForm.Timer1Timer(Sender: TObject);
 begin
   EnginePool.Progress(Interval2Delta(TTimer(Sender).Interval));
   Invalidate;
