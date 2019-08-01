@@ -14,7 +14,7 @@ uses
   zDrawEngine, MemoryRaster, zDrawEngineInterface_SlowFMX, FMX.Layouts;
 
 type
-  TForm1 = class(TForm)
+  TProjectionForm = class(TForm)
     ScrollBox1: TScrollBox;
     ScrollBox2: TScrollBox;
     s_LeftTop: TCircle;
@@ -28,11 +28,9 @@ type
     s_Image: TImage;
     d_Image: TImage;
     procedure FormCreate(Sender: TObject);
-    procedure cMouseDown(Sender: TObject; Button: TMouseButton; Shift:
-      TShiftState; X, Y: Single);
+    procedure cMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure cMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
-    procedure cMouseUp(Sender: TObject; Button: TMouseButton; Shift:
-      TShiftState; X, Y: Single);
+    procedure cMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure cPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
   private
     { Private declarations }
@@ -47,14 +45,14 @@ type
   end;
 
 var
-  Form1: TForm1;
+  ProjectionForm: TProjectionForm;
 
 implementation
 
 {$R *.fmx}
 
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TProjectionForm.FormCreate(Sender: TObject);
 begin
   ori := NewRasterFromFile(umlCombineFileName(TPath.GetLibraryPath, 'person_face (6).jpg'));
 
@@ -73,19 +71,55 @@ begin
   RunProj();
 end;
 
-procedure TForm1.RunProj;
+procedure TProjectionForm.cMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
+  downObj := TCircle(Sender);
+  lastPt := TControl(downObj.Parent).AbsoluteToLocal(downObj.LocalToAbsolute(Pointf(X, Y)));
+end;
+
+procedure TProjectionForm.cMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
+var
+  pt: TPointf;
+begin
+  if downObj <> Sender then
+      exit;
+
+  pt := TControl(downObj.Parent).AbsoluteToLocal(downObj.LocalToAbsolute(Pointf(X, Y)));
+
+  downObj.Position.Point := downObj.Position.Point + (pt - lastPt);
+  lastPt := pt;
+end;
+
+procedure TProjectionForm.cMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
+  downObj := nil;
+  RunProj();
+end;
+
+procedure TProjectionForm.cPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+var
+  n: U_String;
+begin
+  Canvas.Fill.Color := TAlphaColorRec.Red;
+  n := TComponent(Sender).Name;
+  n.DeleteFirst;
+  n.DeleteFirst;
+  Canvas.FillText(ARect, n, False, 1.0, [], TTextAlign.Leading);
+end;
+
+procedure TProjectionForm.RunProj;
 var
   ps, pd: TV2Rect4;
 begin
-  ps.LeftTop := Vec2(s_LeftTop.Position.Point);
-  ps.RightTop := Vec2(s_RightTop.Position.Point);
-  ps.RightBottom := Vec2(s_RightBottom.Position.Point);
-  ps.LeftBottom := Vec2(s_LeftBottom.Position.Point);
+  ps.LeftTop := Vec2(s_LeftTop.BoundsRect.CenterPoint);
+  ps.RightTop := Vec2(s_RightTop.BoundsRect.CenterPoint);
+  ps.RightBottom := Vec2(s_RightBottom.BoundsRect.CenterPoint);
+  ps.LeftBottom := Vec2(s_LeftBottom.BoundsRect.CenterPoint);
 
-  pd.LeftTop := Vec2(d_LeftTop.Position.Point);
-  pd.RightTop := Vec2(d_RightTop.Position.Point);
-  pd.RightBottom := Vec2(d_RightBottom.Position.Point);
-  pd.LeftBottom := Vec2(d_LeftBottom.Position.Point);
+  pd.LeftTop := Vec2(d_LeftTop.BoundsRect.CenterPoint);
+  pd.RightTop := Vec2(d_RightTop.BoundsRect.CenterPoint);
+  pd.RightBottom := Vec2(d_RightBottom.BoundsRect.CenterPoint);
+  pd.LeftBottom := Vec2(d_LeftBottom.BoundsRect.CenterPoint);
 
   sour.Assign(ori);
 
@@ -99,6 +133,9 @@ begin
   // 在zAI的图像处理中，投影被大量应用于对齐，快照，尺度空间，甚至在MemoryRaster画字都是投影
   // 投影的像素都是按alpha混合叠加的，不是覆盖
   // 请区分开投影和Draw的概念，投影是输入输出，draw是单一的输出
+  dest.OpenAgg;
+  dest.Agg.LineWidth:=2;
+  dest.Vertex.DrawTriangleEdge:=True;
   sour.ProjectionTo(dest, ps, pd, True, 1.0);
 
   MemoryBitmapToBitmap(dest, d_Image.Bitmap);
@@ -106,42 +143,6 @@ begin
   sour.Agg.LineWidth := 5;
   sour.DrawRect(ps, RasterColorF(1, 0.5, 0.5));
   MemoryBitmapToBitmap(sour, s_Image.Bitmap);
-end;
-
-procedure TForm1.cMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
-begin
-  downObj := TCircle(Sender);
-  lastPt := TControl(downObj.Parent).AbsoluteToLocal(downObj.LocalToAbsolute(Pointf(X, Y)));
-end;
-
-procedure TForm1.cMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
-var
-  pt: TPointf;
-begin
-  if downObj <> Sender then
-      exit;
-
-  pt := TControl(downObj.Parent).AbsoluteToLocal(downObj.LocalToAbsolute(Pointf(X, Y)));
-
-  downObj.Position.Point := downObj.Position.Point + (pt - lastPt);
-  lastPt := pt;
-end;
-
-procedure TForm1.cMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
-begin
-  downObj := nil;
-  RunProj();
-end;
-
-procedure TForm1.cPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
-var
-  n: U_String;
-begin
-  Canvas.Fill.Color := TAlphaColorRec.Red;
-  n := TComponent(Sender).Name;
-  n.DeleteFirst;
-  n.DeleteFirst;
-  Canvas.FillText(ARect, n, False, 1.0, [], TTextAlign.Leading);
 end;
 
 end.

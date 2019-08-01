@@ -1,7 +1,7 @@
-object Form1: TForm1
+object ProjectionForm: TProjectionForm
   Left = 0
   Top = 0
-  Caption = 'Form1'
+  Caption = 'Projection, create by.qq600585'
   ClientHeight = 728
   ClientWidth = 1333
   FormFactor.Width = 320

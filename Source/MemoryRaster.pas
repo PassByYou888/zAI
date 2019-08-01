@@ -626,6 +626,9 @@ type
     procedure internal_Draw(const SamplerTri, RenderTri: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean); overload;
     procedure internal_Draw(const SamplerTri, RenderTri: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean; const alpha: TGeoFloat); overload;
   public
+    //draw triangle edge
+    DrawTriangleEdge:Boolean;
+    TriangleEdgeColor:TRColor;
     // render window
     Window: TMemoryRaster;
     WindowSize: Integer;

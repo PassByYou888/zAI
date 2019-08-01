@@ -90,6 +90,7 @@ begin
   d := TDrawEngine.Create;
   d.Rasterization.UsedAgg := usedAggCheckBox.IsChecked;
   d.Rasterization.SetSize(RectV2(0, 0, Image.width, Image.height));
+  // d.Rasterization.Memory.Vertex.DrawTriangleEdge:=True;
   Render(d);
   MemoryBitmapToBitmap(d.Rasterization.Memory, Image.Bitmap);
   DisposeObject(d);

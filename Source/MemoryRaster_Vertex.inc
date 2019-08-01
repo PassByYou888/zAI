@@ -324,6 +324,9 @@ begin
       SwapVec2(nRenderTri[1], nRenderTri[2]);
 
   RasterizeTriangle(TFragSampling.fsSolid, Sampler, nil, ZeroTriangle, TriRound(TriMul(nRenderTri, Window.Size0)));
+
+  if DrawTriangleEdge then
+      Window.DrawTriangle(RenderTri, True, TriangleEdgeColor, False);
 end;
 
 procedure TVertexMap.internal_Draw(const SamplerTri, RenderTri: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean);
@@ -356,6 +359,9 @@ begin
       f := TFragSampling.fsNearest;
 
   RasterizeTriangle(f, RColor(0, 0, 0), Sampler, nSamplerTri, nRenderTri);
+
+  if DrawTriangleEdge then
+      Window.DrawTriangle(RenderTri, True, TriangleEdgeColor, False);
 end;
 
 procedure TVertexMap.internal_Draw(const SamplerTri, RenderTri: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean; const alpha: Single);
@@ -380,6 +386,8 @@ begin
   ComputeBlend := {$IFDEF FPC}@{$ENDIF FPC}Vertex_ComputeBlend;
   ComputeNearest := {$IFDEF FPC}@{$ENDIF FPC}Vertex_ComputeNearest;
   ComputeLinear := {$IFDEF FPC}@{$ENDIF FPC}Vertex_ComputeLinear;
+  DrawTriangleEdge := False;
+  TriangleEdgeColor := RColor($FF, $7F, $7F, $7F);
   Window := raster;
   WindowSize := Window.Width * Window.Height;
   UserData := nil;

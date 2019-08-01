@@ -24,6 +24,17 @@ object ColorSegmentationMainForm: TColorSegmentationMainForm
     Size.PlatformDefault = False
     OnMouseUp = segPBMouseUp
     OnPaint = segPBPaint
+    object openButton: TButton
+      Anchors = [akTop, akRight]
+      Position.X = 776.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 56.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'open'
+      OnClick = openButtonClick
+    end
   end
   object Timer1: TTimer
     Interval = 10
@@ -40,5 +51,9 @@ object ColorSegmentationMainForm: TColorSegmentationMainForm
     Size.Width = 8.000000000000000000
     Size.Height = 467.000000000000000000
     Size.PlatformDefault = False
+  end
+  object OpenDialog1: TOpenDialog
+    Left = 352
+    Top = 80
   end
 end

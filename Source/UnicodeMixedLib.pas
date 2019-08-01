@@ -474,7 +474,7 @@ const
   NullMD5: TMD5 = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   ZeroMD5: TMD5 = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
-function umlMD5(const buffPtr: PByte; bufSiz: nativeUInt): TMD5; inline;
+function umlMD5(const buffPtr: PByte; bufSiz: nativeUInt): TMD5;
 function umlMD5Char(const buffPtr: PByte; const BuffSize: nativeUInt): TPascalString;
 function umlMD5String(const buffPtr: PByte; const BuffSize: nativeUInt): TPascalString;
 function umlStreamMD5(stream: TCoreClassStream; StartPos, EndPos: Int64): TMD5; overload;

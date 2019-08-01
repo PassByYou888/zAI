@@ -1956,9 +1956,9 @@ procedure TMemoryRaster.DrawTriangle(tri: TTriangle; Transform: Boolean; Color: 
 begin
   if Transform then
     begin
-      LineF(Vec2Mul(tri[0], Size2D), Vec2Mul(tri[1], Size2D), Color, True, Cross);
-      LineF(Vec2Mul(tri[1], Size2D), Vec2Mul(tri[2], Size2D), Color, True, Cross);
-      LineF(Vec2Mul(tri[2], Size2D), Vec2Mul(tri[0], Size2D), Color, True, Cross);
+      LineF(Vec2Mul(tri[0], Size0), Vec2Mul(tri[1], Size0), Color, True, Cross);
+      LineF(Vec2Mul(tri[1], Size0), Vec2Mul(tri[2], Size0), Color, True, Cross);
+      LineF(Vec2Mul(tri[2], Size0), Vec2Mul(tri[0], Size0), Color, True, Cross);
     end
   else
     begin

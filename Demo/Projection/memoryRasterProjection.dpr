@@ -3,12 +3,12 @@ program memoryRasterProjection;
 uses
   System.StartUpCopy,
   FMX.Forms,
-  ProjectionFrm in 'ProjectionFrm.pas' {Form1};
+  ProjectionFrm in 'ProjectionFrm.pas' {ProjectionForm};
 
 {$R *.res}
 
 begin
   Application.Initialize;
-  Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TProjectionForm, ProjectionForm);
   Application.Run;
 end.

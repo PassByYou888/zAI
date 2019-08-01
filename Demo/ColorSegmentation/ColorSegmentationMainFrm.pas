@@ -8,7 +8,7 @@ uses
   FMX.StdCtrls, System.IOUtils,
 
   CoreClasses, UnicodeMixedLib, PascalStrings, Geometry2DUnit, MemoryRaster,
-  zDrawEngine, zDrawEngineInterface_SlowFMX;
+  zDrawEngine, zDrawEngineInterface_SlowFMX, FMX.Controls.Presentation;
 
 type
   TColorSegmentationMainForm = class(TForm)
@@ -16,7 +16,10 @@ type
     segPB: TPaintBox;
     Timer1: TTimer;
     Splitter1: TSplitter;
+    openButton: TButton;
+    OpenDialog1: TOpenDialog;
     procedure FormCreate(Sender: TObject);
+    procedure openButtonClick(Sender: TObject);
     procedure segListPBPaint(Sender: TObject; Canvas: TCanvas);
     procedure segPBMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure segPBPaint(Sender: TObject; Canvas: TCanvas);
@@ -29,6 +32,7 @@ type
     colors: TRColors;
     pickColor: TRColor;
     SegImgList: TMemoryRasterList;
+    LastSegBox: TArrayRectV2;
 
     // 按阈值裁剪相近颜色
     function RemoveColor(c: TRColor): Boolean;
@@ -42,7 +46,7 @@ type
 
 var
   ColorSegmentationMainForm: TColorSegmentationMainForm;
-  color_threshold: TGeoFloat = 0.4;
+  color_threshold: TGeoFloat = 0.1;
 
 implementation
 
@@ -55,6 +59,7 @@ begin
   tex := NewRasterFromFile(umlCombineFileName(TPath.GetLibraryPath, 'ColorSeg1.bmp'));
   colors := AnalysisColors(tex, nil, 65535);
   SegImgList := TMemoryRasterList.Create;
+  SetLength(LastSegBox, 0);
 
   TComputeThread.RunP(nil, nil, procedure(Sender: TComputeThread)
     var
@@ -144,6 +149,10 @@ begin
   d.FillBox(d.ScreenRect, DEColor(0.5, 0.5, 0.5));
 
   tex_box := d.FitDrawPicture(tex, tex.BoundsRectV2, RectEdge(d.ScreenRect, -20), 1.0);
+
+  for i := 0 to length(LastSegBox) - 1 do
+      d.DrawBox(RectTransformToDest(tex.BoundsRectV2, tex_box, LastSegBox[i]), DEColor(1, 0.5, 0.5, 1), 2);
+
   d.DrawDotLineBox(tex_box, Vec2(0.5, 0.5), 0, DEColor(0.8, 0.1, 0.4), 3);
 
   n := '';
@@ -225,13 +234,16 @@ begin
       // 阈值100表示分割碎片块像素总和如果低于100个
       s.RemoveNoise(100);
 
+      SetLength(LastSegBox, s.count);
+
       for i := 0 to s.count - 1 do
         begin
           sp := s[i];
+          LastSegBox[i] := sp.BoundsRectV2(True);
           // BuildDatamap方法会将分割数据投影到一个新光栅中
           nm := sp.BuildClipDatamap(RColor(0, 0, 0, 0), pickColor);
           // 在显示的分割结果上给分割图形画上边框
-          nm.FillNoneBGColorBorder(RColor(0, 0, 0, 0), RColorInv(pickColor), 4);
+          // nm.FillNoneBGColorBorder(RColor(0, 0, 0, 0), RColorInv(pickColor), 4);
 
           LockObject(SegImgList);
           SegImgList.Add(nm);
@@ -243,6 +255,34 @@ begin
         20, DEColor(1, 1, 1));
       DisposeObject(s);
     end);
+end;
+
+procedure TColorSegmentationMainForm.openButtonClick(Sender: TObject);
+var
+  i: Integer;
+begin
+  OpenDialog1.Filter := TBitmapCodecManager.GetFilterString;
+  if not OpenDialog1.Execute then
+      exit;
+
+  DisposeObject(tex);
+  tex := NewRasterFromFile(OpenDialog1.FileName);
+  colors := AnalysisColors(tex, nil, 65535);
+  SetLength(LastSegBox, 0);
+
+  DrawPool(segPB).PostScrollText(15, Format('发现 |s:12,color(1,0,0)|%d||种颜色 正在均值化处理...', [colors.count]),
+    16, DEColor(0.5, 1.0, 0.5));
+  while i < colors.count do
+    begin
+      if RemoveColor(colors[i]) then
+          i := 0
+      else
+          inc(i);
+    end;
+  RemoveColor(RColor(0, 0, 0));
+  colors.Remove(RColor(0, 0, 0));
+  DrawPool(segPB).PostScrollText(15, Format('均值化以后剩余 |s:12,color(1,0,0)|%d||种颜色...', [colors.count]),
+    16, DEColor(0.5, 1.0, 0.5));
 end;
 
 end.
