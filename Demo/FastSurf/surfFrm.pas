@@ -13,7 +13,7 @@ uses
   PascalStrings, UnicodeMixedLib, Geometry2DUnit, Geometry3DUnit, Cadencer, Y4M, h264Image;
 
 type
-  TForm1 = class(TForm)
+  TsurfForm = class(TForm)
     Memo1: TMemo;
     Timer1: TTimer;
     procedure FormCreate(Sender: TObject);
@@ -27,20 +27,20 @@ type
   end;
 
 var
-  Form1: TForm1;
+  surfForm: TsurfForm;
 
 implementation
 
 {$R *.fmx}
 
 
-procedure TForm1.DoStatus_Hook_(AText: SystemString; const ID: Integer);
+procedure TsurfForm.DoStatus_Hook_(AText: SystemString; const ID: Integer);
 begin
   Memo1.Lines.Add(AText);
   Memo1.GoToTextEnd;
 end;
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TsurfForm.FormCreate(Sender: TObject);
 var
   ai: TAI;
   r1, r2: TMemoryRaster;
@@ -93,7 +93,7 @@ begin
   disposeObject([r1, r2]);
 end;
 
-procedure TForm1.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+procedure TsurfForm.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
 var
   d: TDrawEngine;
 begin
@@ -111,7 +111,7 @@ begin
   d.Flush;
 end;
 
-procedure TForm1.Timer1Timer(Sender: TObject);
+procedure TsurfForm.Timer1Timer(Sender: TObject);
 begin
   EnginePool.Progress(Interval2Delta(Timer1.Interval));
   Invalidate;

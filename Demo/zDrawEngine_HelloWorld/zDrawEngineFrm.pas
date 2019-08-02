@@ -12,7 +12,7 @@ uses
   Geometry2DUnit, zDrawEngine, MemoryRaster, zDrawEngineInterface_SlowFMX;
 
 type
-  TForm1 = class(TForm)
+  TzDrawEngineForm = class(TForm)
     Timer1: TTimer;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -28,20 +28,20 @@ type
   end;
 
 var
-  Form1: TForm1;
+  zDrawEngineForm: TzDrawEngineForm;
 
 implementation
 
 {$R *.fmx}
 
 
-procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TzDrawEngineForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   EnginePool.Clear;
   DisposeObject([drawIntf, background, raster]);
 end;
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TzDrawEngineForm.FormCreate(Sender: TObject);
 begin
   drawIntf := TDrawEngineInterface_FMX.Create;
   background := NewRaster();
@@ -51,7 +51,7 @@ begin
   angle := 0;
 end;
 
-procedure TForm1.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+procedure TzDrawEngineForm.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
 var
   d: TDrawEngine;
   fi, fj: TGeoFloat;
@@ -79,7 +79,7 @@ begin
   d.Flush;
 end;
 
-procedure TForm1.Timer1Timer(Sender: TObject);
+procedure TzDrawEngineForm.Timer1Timer(Sender: TObject);
 begin
   EnginePool.Progress(Interval2Delta(Timer1.Interval));
   Invalidate;

@@ -384,7 +384,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="surfFrm.pas">
-            <Form>Form1</Form>
+            <Form>surfForm</Form>
             <FormType>fmx</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">

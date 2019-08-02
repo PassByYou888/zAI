@@ -382,7 +382,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="numberTrainFrm.pas">
-            <Form>Form1</Form>
+            <Form>numberTrainForm</Form>
             <FormType>fmx</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">

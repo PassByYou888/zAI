@@ -13,7 +13,7 @@ uses
   FMX.ScrollBox, FMX.Memo;
 
 type
-  TForm1 = class(TForm)
+  TImageScriptForm = class(TForm)
     Timer1: TTimer;
     Layout2: TLayout;
     Label2: TLabel;
@@ -39,26 +39,26 @@ type
   end;
 
 var
-  Form1: TForm1;
+  ImageScriptForm: TImageScriptForm;
 
 implementation
 
 {$R *.fmx}
 
 
-procedure TForm1.DoStatusMethod(AText: SystemString; const ID: Integer);
+procedure TImageScriptForm.DoStatusMethod(AText: SystemString; const ID: Integer);
 begin
   Memo1.Lines.Add(AText);
 end;
 
-procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TImageScriptForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   EnginePool.Clear;
   DisposeObject([drawIntf, background]);
   DisposeObject(sourL);
 end;
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TImageScriptForm.FormCreate(Sender: TObject);
 begin
   drawIntf := TDrawEngineInterface_FMX.Create;
   background := NewRaster();
@@ -71,7 +71,7 @@ begin
   AddDoStatusHook(Self, DoStatusMethod);
 end;
 
-procedure TForm1.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+procedure TImageScriptForm.FormPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
 var
   d: TDrawEngine;
   fi, fj: TGeoFloat;
@@ -99,12 +99,12 @@ begin
   d.Flush;
 end;
 
-procedure TForm1.RunButtonClick(Sender: TObject);
+procedure TImageScriptForm.RunButtonClick(Sender: TObject);
 begin
   sourL.RunScript(conditionEdit.Text, ProcessEdit.Text);
 end;
 
-procedure TForm1.Timer1Timer(Sender: TObject);
+procedure TImageScriptForm.Timer1Timer(Sender: TObject);
 begin
   EnginePool.Progress(Interval2Delta(Timer1.Interval));
   Invalidate;

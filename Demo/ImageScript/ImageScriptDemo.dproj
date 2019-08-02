@@ -382,7 +382,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="ImageScriptFrm.pas">
-            <Form>Form1</Form>
+            <Form>ImageScriptForm</Form>
             <FormType>fmx</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">

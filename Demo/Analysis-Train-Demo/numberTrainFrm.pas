@@ -13,7 +13,7 @@ uses
   Geometry2DUnit, UnicodeMixedLib, Learn, LearnTypes;
 
 type
-  TForm1 = class(TForm)
+  TnumberTrainForm = class(TForm)
     Memo1: TMemo;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -27,7 +27,7 @@ type
   end;
 
 var
-  Form1: TForm1;
+  numberTrainForm: TnumberTrainForm;
 
 implementation
 
@@ -35,12 +35,12 @@ implementation
 
 { TForm1 }
 
-procedure TForm1.DoStatusM(AText: SystemString; const ID: Integer);
+procedure TnumberTrainForm.DoStatusM(AText: SystemString; const ID: Integer);
 begin
   Memo1.Lines.Add(AText);
 end;
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TnumberTrainForm.FormCreate(Sender: TObject);
 var
   i     : Integer;
   d1, d2: Double;
@@ -64,13 +64,13 @@ begin
     end);
 end;
 
-procedure TForm1.FormDestroy(Sender: TObject);
+procedure TnumberTrainForm.FormDestroy(Sender: TObject);
 begin
   DeleteDoStatusHook(Self);
   DisposeObject(lr);
 end;
 
-procedure TForm1.UpdateOutput;
+procedure TnumberTrainForm.UpdateOutput;
 var
   i     : Integer;
   d1, d2: Double;

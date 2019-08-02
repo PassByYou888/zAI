@@ -626,9 +626,9 @@ type
     procedure internal_Draw(const SamplerTri, RenderTri: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean); overload;
     procedure internal_Draw(const SamplerTri, RenderTri: TTriangle; const Sampler: TMemoryRaster; const bilinear_sampling: Boolean; const alpha: TGeoFloat); overload;
   public
-    //draw triangle edge
-    DrawTriangleEdge:Boolean;
-    TriangleEdgeColor:TRColor;
+    // draw triangle edge
+    DrawTriangleEdge: Boolean;
+    TriangleEdgeColor: TRColor;
     // render window
     Window: TMemoryRaster;
     WindowSize: Integer;
@@ -1020,18 +1020,33 @@ function DecodeJpegLSGrayRasterFromStream(const stream: TCoreClassStream; var AR
   Various calculations stats can be retrieved by passing Stats parameter. }
 function DocmentRotationDetected(const MaxAngle: TGeoFloat; const Treshold: Integer; raster: TMemoryRaster): TGeoFloat;
 
+{
+  YV12
+}
 procedure YV12ToRasterization(sour: TCoreClassStream; dest: TMemoryRaster);
 procedure RasterizationToYV12(Compressed: Boolean; sour: TMemoryRaster; dest: TCoreClassStream);
 
+{
+  Half YV12
+}
 procedure HalfYUVToRasterization(sour: TCoreClassStream; dest: TMemoryRaster);
 procedure RasterizationToHalfYUV(Compressed: Boolean; sour: TMemoryRaster; dest: TCoreClassStream);
 
+{
+  quart YV12
+}
 procedure QuartYUVToRasterization(sour: TCoreClassStream; dest: TMemoryRaster);
 procedure RasterizationToQuartYUV(Compressed: Boolean; sour: TMemoryRaster; dest: TCoreClassStream);
 
+{
+  byte raster
+}
 procedure SaveByteRasterToStream(raster: TByteRaster; stream: TCoreClassStream);
 procedure LoadByteRasterFromStream(var raster: TByteRaster; stream: TCoreClassStream);
 
+{
+  word raster
+}
 procedure SaveWordRasterToStream(raster: TWordRaster; stream: TCoreClassStream);
 procedure LoadWordRasterFromStream(var raster: TWordRaster; stream: TCoreClassStream);
 
