@@ -118,7 +118,7 @@
     {$DEFINE INLINE_ASM}
     {$R-} { range check }
     {$I-} { Input output checking }
-    {$O+} { optimization }
+    {$O-} { optimization }
     {$C+} { Assertions }
   {$ELSE}
     {$UNDEF INLINE_ASM}
