@@ -67,6 +67,6 @@ begin
   MatrixVec;
   LearnMatrixExp;
   LearnVecExp;
-  DoStatus('preee exter key to exit.');
+  DoStatus('press enter key to exit.');
   readln;
 end.
