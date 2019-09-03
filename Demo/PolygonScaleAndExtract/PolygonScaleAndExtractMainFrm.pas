@@ -52,6 +52,9 @@ begin
       samePolygon1.Add(umlRandomRange(edge, round(pb1.width) - edge), umlRandomRange(edge, round(pb1.height) - edge));
   samePolygon1.ConvexHull();
 
+  samePolygon1.SplineSmoothInSideClosed();
+  samePolygon1.RemoveSame;
+
   samePolygon2.Assign(samePolygon1);
   Invalidate;
 end;
@@ -74,7 +77,7 @@ begin
 
   np.Clear;
   samePolygon2.ExpandDistanceAsList(15, np);
-  d.DrawPL(True, np, True, DEColor(1, 1, 1, 1), 1);
+  d.DrawPL(False, np, True, DEColor(1, 0.5, 0.5, 1), 1);
 
   disposeObject(np);
 
@@ -103,7 +106,7 @@ begin
   c2 := np.Centroid;
   // 用重心轴重新构造多边形的位置，方便查看
   np.Transform(Vec2Sub(c1, c2));
-  d.DrawPL(True, np, True, DEColor(1, 1, 1, 1), 1);
+  d.DrawPL(False, np, True, DEColor(1, 0.5, 0.5, 1), 1);
 
   disposeObject(np);
 

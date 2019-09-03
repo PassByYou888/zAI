@@ -1,3 +1,24 @@
+{ ****************************************************************************** }
+{ * memory Rasterization                                                       * }
+{ * by QQ 600585@qq.com                                                        * }
+{ ****************************************************************************** }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
+{ * https://github.com/PassByYou888/ZServer4D                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
+{ * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
+{ ****************************************************************************** }
+
 constructor TSegPool.Create;
 begin
   inherited Create;
@@ -590,4 +611,175 @@ begin
     end;
   R.SaveToFile(outputfile);
   DisposeObject(R);
+end;
+
+constructor TRCLines.Create(raster: TMemoryRaster; DetectorColor: TRColor; Threshold: TGeoFloat; MinLineLength: Integer);
+var
+  LMap: array of array of Boolean;
+  X, Y: Integer;
+  isNear: Boolean;
+  B, E: Integer;
+begin
+  inherited Create;
+  SetLength(LMap, raster.Height, raster.Width);
+  for Y := 0 to raster.Height - 1 do
+    for X := 0 to raster.Width - 1 do
+        LMap[Y, X] := RColorDistance(raster[X, Y], DetectorColor) <= Threshold;
+
+  // build x lines
+  for Y := 0 to raster.Height - 1 do
+    begin
+      isNear := False;
+      for X := 0 to raster.Width - 1 do
+        begin
+          if (LMap[Y, X]) and (not isNear) then
+            begin
+              B := X;
+              isNear := True;
+            end
+          else if (not LMap[Y, X]) and (isNear) then
+            begin
+              E := X - 1;
+              isNear := False;
+              if E - B >= MinLineLength then
+                  AddRCLine(B, Y, E, Y, lsRow);
+            end;
+        end;
+    end;
+
+  // build y lines
+  for X := 0 to raster.Width - 1 do
+    begin
+      isNear := False;
+      for Y := 0 to raster.Height - 1 do
+        begin
+          if (LMap[Y, X]) and (not isNear) then
+            begin
+              B := Y;
+              isNear := True;
+            end
+          else if (not LMap[Y, X]) and (isNear) then
+            begin
+              E := Y - 1;
+              isNear := False;
+              if E - B >= MinLineLength then
+                  AddRCLine(X, B, X, E, lsCol);
+            end;
+        end;
+    end;
+  SetLength(LMap, 0, 0);
+end;
+
+destructor TRCLines.Destroy;
+begin
+  Clear;
+  inherited Destroy;
+end;
+
+procedure TRCLines.AddRCLine(Bx, By, Ex, Ey: Integer; Style: TRCLineStyle);
+var
+  p: PRCLine;
+begin
+  new(p);
+  p^.Bp := Point(Bx, By);
+  p^.Ep := Point(Ex, Ey);
+  p^.Style := Style;
+  Add(p);
+end;
+
+function TRCLines.ProcessFormulaBox(var box: TRectV2): Boolean;
+  function f(Pt: TPoint; X, Y: Boolean; Style: TRCLineStyle; var index: Integer): PRCLine;
+  var
+    i: Integer;
+    p: PRCLine;
+  begin
+    for i := index to Count - 1 do
+      begin
+        p := Items[i];
+        if ((not X) or (p^.Bp.X = Pt.X)) and ((not Y) or (p^.Bp.Y = Pt.Y)) and (p^.Style = Style) then
+          begin
+            index := i;
+            Result := p;
+            exit;
+          end;
+      end;
+    Result := nil;
+  end;
+
+var
+  i: Integer;
+  p: PRCLine;
+  Left, Right, bot: PRCLine;
+begin
+  while Count > 0 do
+    begin
+      p := Items[0];
+      if p^.Style = lsRow then
+        begin
+          i := 1;
+          bot := f(p^.Bp, True, False, lsRow, i);
+          if (bot <> nil) and (bot^.Ep.X = p^.Ep.X) then
+            begin
+              i := i + 1;
+              Left := f(p^.Bp, True, True, lsCol, i);
+              if (Left <> nil) and (Left^.Ep.Y = bot^.Bp.Y) then
+                begin
+                  i := i + 1;
+                  Right := f(p^.Ep, True, True, lsCol, i);
+                  if (Right <> nil) and (Right^.Ep.X = bot^.Ep.X) and (Right^.Ep.Y = bot^.Ep.Y) then
+                    begin
+                      box[0, 0] := p^.Bp.X;
+                      box[0, 1] := p^.Bp.Y;
+                      box[1, 0] := bot^.Ep.X;
+                      box[1, 1] := bot^.Ep.Y;
+                      Remove(p, bot, Left, Right);
+                      Result := True;
+                      exit;
+                    end;
+                end;
+            end;
+        end;
+      Delete(0);
+    end;
+  Result := False;
+end;
+
+procedure TRCLines.Remove(p1, p2, p3, p4: PRCLine);
+var
+  i: Integer;
+  p: PRCLine;
+begin
+  i := 0;
+  while i < Count do
+    begin
+      p := Items[i];
+      if (p = p1) or (p = p2) or (p = p3) or (p = p4) then
+          Delete(i)
+      else
+          inc(i);
+    end;
+end;
+
+procedure TRCLines.Remove(p: PRCLine);
+begin
+  dispose(p);
+  inherited Remove(p);
+end;
+
+procedure TRCLines.Delete(index: Integer);
+begin
+  if (index >= 0) and (index < Count) then
+    begin
+      dispose(Items[index]);
+      inherited Delete(index);
+    end;
+end;
+
+procedure TRCLines.Clear;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+      dispose(Items[i]);
+  inherited Clear;
 end;

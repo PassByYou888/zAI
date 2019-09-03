@@ -81,7 +81,7 @@
         <Projects Include="VideoTracker_CPU\VideoTrackerAndSoftDecode_CPU.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="VideoTracker_Lady\VideoTracker_Lady.dproj">
+        <Projects Include="VideoTracker_Camera\VideoTracker_Camera.dproj">
             <Dependencies/>
         </Projects>
         <Projects Include="RasterizationFormat\RasterizationFormatDemo.dproj">
@@ -211,6 +211,9 @@
             <Dependencies/>
         </Projects>
         <Projects Include="AISetFormatExtract\AISetFormatExtract.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="BoxColorDetector\BoxColorDetector.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -455,14 +458,14 @@
     <Target Name="VideoTrackerAndSoftDecode_CPU:Make">
         <MSBuild Projects="VideoTracker_CPU\VideoTrackerAndSoftDecode_CPU.dproj" Targets="Make"/>
     </Target>
-    <Target Name="VideoTracker_Lady">
-        <MSBuild Projects="VideoTracker_Lady\VideoTracker_Lady.dproj"/>
+    <Target Name="VideoTracker_Camera">
+        <MSBuild Projects="VideoTracker_Camera\VideoTracker_Camera.dproj"/>
     </Target>
-    <Target Name="VideoTracker_Lady:Clean">
-        <MSBuild Projects="VideoTracker_Lady\VideoTracker_Lady.dproj" Targets="Clean"/>
+    <Target Name="VideoTracker_Camera:Clean">
+        <MSBuild Projects="VideoTracker_Camera\VideoTracker_Camera.dproj" Targets="Clean"/>
     </Target>
-    <Target Name="VideoTracker_Lady:Make">
-        <MSBuild Projects="VideoTracker_Lady\VideoTracker_Lady.dproj" Targets="Make"/>
+    <Target Name="VideoTracker_Camera:Make">
+        <MSBuild Projects="VideoTracker_Camera\VideoTracker_Camera.dproj" Targets="Make"/>
     </Target>
     <Target Name="RasterizationFormatDemo">
         <MSBuild Projects="RasterizationFormat\RasterizationFormatDemo.dproj"/>
@@ -851,14 +854,23 @@
     <Target Name="AISetFormatExtract:Make">
         <MSBuild Projects="AISetFormatExtract\AISetFormatExtract.dproj" Targets="Make"/>
     </Target>
+    <Target Name="BoxColorDetector">
+        <MSBuild Projects="BoxColorDetector\BoxColorDetector.dproj"/>
+    </Target>
+    <Target Name="BoxColorDetector:Clean">
+        <MSBuild Projects="BoxColorDetector\BoxColorDetector.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="BoxColorDetector:Make">
+        <MSBuild Projects="BoxColorDetector\BoxColorDetector.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_CPU_Parallel;Face_Det_GPU;Face_Alignment;Face_Alignment_Parallel;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;DNN_OD2;DNN_OD_BeautifulBreast;ResNetImgClassifier;ResNetImgClassifier2;LargeResNetImgClassifier;LargeMetricImgClassifier;GoingDeeperWithConvolutionsNetImageClassifier;GradientBasedNetImageClassifier;FastSurfDemo;VideoTrackerAndSoftDecode_GPU;VideoTrackerAndSoftDecode_CPU;VideoTracker_Lady;RasterizationFormatDemo;zDrawEngine_HelloWorld;ImageScriptDemo;Analysis_EasyConsoleDemo;Analysis_RandomForestDemo;Analysis_Decision;Analysis_numberTrain;Rep_FaceRecServ;Rep_FaceRecCli;realtime_OD_videoserv;realtime_OD_Video_FMXClient;realtime_MMOD_videoserv;realtime_MMOD_Video_FMXClient;realtime_Face_videoserv;realtime_Face_Video_FMXClient;realtime_Face_videoserv_GPU;realtime_Face_Video_FMXClient_GPU;FFMPEG_ReaderDemo;memoryRasterProjection;ParallelCompressor;MemoryMapping;GaussPyramidDemo;GaussPyramidRegionDemo;Render2Video;SoftRenderer;yuv2Video;SemanticSegmentationTraining;FillColor;GeometryIntersect;MatrixAndVectorExpression;zExpressionSupport;TextDraw;PolygonScaleAndExtract;TriangleOptimization;HoughRotationDetectAndCalibrate;PCA;LDA;NumTrans;PascalCodeDependencyAnslysis;ColorSegmentation;DrawEngine4FMXBitmap;MemoryRasterMoreFont;AISetFormatExtract"/>
+        <CallTarget Targets="SVM_OD;SVM_OD_TrainingAPI_ImgDataset_Demo;SVM_OD_TrainingAPI_XML_Demo;SVM_OD_TrainingAPI_ImgMat_Demo;ShapePredictor;SP_TrainingAPI_ImgMat_Demo;Face_Det_CPU;Face_Det_CPU_Parallel;Face_Det_GPU;Face_Alignment;Face_Alignment_Parallel;Face_Rec_cpu;Face_Rec_GPU;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo;DNN_OD;DNN_OD2;DNN_OD_BeautifulBreast;ResNetImgClassifier;ResNetImgClassifier2;LargeResNetImgClassifier;LargeMetricImgClassifier;GoingDeeperWithConvolutionsNetImageClassifier;GradientBasedNetImageClassifier;FastSurfDemo;VideoTrackerAndSoftDecode_GPU;VideoTrackerAndSoftDecode_CPU;VideoTracker_Camera;RasterizationFormatDemo;zDrawEngine_HelloWorld;ImageScriptDemo;Analysis_EasyConsoleDemo;Analysis_RandomForestDemo;Analysis_Decision;Analysis_numberTrain;Rep_FaceRecServ;Rep_FaceRecCli;realtime_OD_videoserv;realtime_OD_Video_FMXClient;realtime_MMOD_videoserv;realtime_MMOD_Video_FMXClient;realtime_Face_videoserv;realtime_Face_Video_FMXClient;realtime_Face_videoserv_GPU;realtime_Face_Video_FMXClient_GPU;FFMPEG_ReaderDemo;memoryRasterProjection;ParallelCompressor;MemoryMapping;GaussPyramidDemo;GaussPyramidRegionDemo;Render2Video;SoftRenderer;yuv2Video;SemanticSegmentationTraining;FillColor;GeometryIntersect;MatrixAndVectorExpression;zExpressionSupport;TextDraw;PolygonScaleAndExtract;TriangleOptimization;HoughRotationDetectAndCalibrate;PCA;LDA;NumTrans;PascalCodeDependencyAnslysis;ColorSegmentation;DrawEngine4FMXBitmap;MemoryRasterMoreFont;AISetFormatExtract;BoxColorDetector"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_CPU_Parallel:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Alignment_Parallel:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;DNN_OD2:Clean;DNN_OD_BeautifulBreast:Clean;ResNetImgClassifier:Clean;ResNetImgClassifier2:Clean;LargeResNetImgClassifier:Clean;LargeMetricImgClassifier:Clean;GoingDeeperWithConvolutionsNetImageClassifier:Clean;GradientBasedNetImageClassifier:Clean;FastSurfDemo:Clean;VideoTrackerAndSoftDecode_GPU:Clean;VideoTrackerAndSoftDecode_CPU:Clean;VideoTracker_Lady:Clean;RasterizationFormatDemo:Clean;zDrawEngine_HelloWorld:Clean;ImageScriptDemo:Clean;Analysis_EasyConsoleDemo:Clean;Analysis_RandomForestDemo:Clean;Analysis_Decision:Clean;Analysis_numberTrain:Clean;Rep_FaceRecServ:Clean;Rep_FaceRecCli:Clean;realtime_OD_videoserv:Clean;realtime_OD_Video_FMXClient:Clean;realtime_MMOD_videoserv:Clean;realtime_MMOD_Video_FMXClient:Clean;realtime_Face_videoserv:Clean;realtime_Face_Video_FMXClient:Clean;realtime_Face_videoserv_GPU:Clean;realtime_Face_Video_FMXClient_GPU:Clean;FFMPEG_ReaderDemo:Clean;memoryRasterProjection:Clean;ParallelCompressor:Clean;MemoryMapping:Clean;GaussPyramidDemo:Clean;GaussPyramidRegionDemo:Clean;Render2Video:Clean;SoftRenderer:Clean;yuv2Video:Clean;SemanticSegmentationTraining:Clean;FillColor:Clean;GeometryIntersect:Clean;MatrixAndVectorExpression:Clean;zExpressionSupport:Clean;TextDraw:Clean;PolygonScaleAndExtract:Clean;TriangleOptimization:Clean;HoughRotationDetectAndCalibrate:Clean;PCA:Clean;LDA:Clean;NumTrans:Clean;PascalCodeDependencyAnslysis:Clean;ColorSegmentation:Clean;DrawEngine4FMXBitmap:Clean;MemoryRasterMoreFont:Clean;AISetFormatExtract:Clean"/>
+        <CallTarget Targets="SVM_OD:Clean;SVM_OD_TrainingAPI_ImgDataset_Demo:Clean;SVM_OD_TrainingAPI_XML_Demo:Clean;SVM_OD_TrainingAPI_ImgMat_Demo:Clean;ShapePredictor:Clean;SP_TrainingAPI_ImgMat_Demo:Clean;Face_Det_CPU:Clean;Face_Det_CPU_Parallel:Clean;Face_Det_GPU:Clean;Face_Alignment:Clean;Face_Alignment_Parallel:Clean;Face_Rec_cpu:Clean;Face_Rec_GPU:Clean;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Clean;DNN_OD:Clean;DNN_OD2:Clean;DNN_OD_BeautifulBreast:Clean;ResNetImgClassifier:Clean;ResNetImgClassifier2:Clean;LargeResNetImgClassifier:Clean;LargeMetricImgClassifier:Clean;GoingDeeperWithConvolutionsNetImageClassifier:Clean;GradientBasedNetImageClassifier:Clean;FastSurfDemo:Clean;VideoTrackerAndSoftDecode_GPU:Clean;VideoTrackerAndSoftDecode_CPU:Clean;VideoTracker_Camera:Clean;RasterizationFormatDemo:Clean;zDrawEngine_HelloWorld:Clean;ImageScriptDemo:Clean;Analysis_EasyConsoleDemo:Clean;Analysis_RandomForestDemo:Clean;Analysis_Decision:Clean;Analysis_numberTrain:Clean;Rep_FaceRecServ:Clean;Rep_FaceRecCli:Clean;realtime_OD_videoserv:Clean;realtime_OD_Video_FMXClient:Clean;realtime_MMOD_videoserv:Clean;realtime_MMOD_Video_FMXClient:Clean;realtime_Face_videoserv:Clean;realtime_Face_Video_FMXClient:Clean;realtime_Face_videoserv_GPU:Clean;realtime_Face_Video_FMXClient_GPU:Clean;FFMPEG_ReaderDemo:Clean;memoryRasterProjection:Clean;ParallelCompressor:Clean;MemoryMapping:Clean;GaussPyramidDemo:Clean;GaussPyramidRegionDemo:Clean;Render2Video:Clean;SoftRenderer:Clean;yuv2Video:Clean;SemanticSegmentationTraining:Clean;FillColor:Clean;GeometryIntersect:Clean;MatrixAndVectorExpression:Clean;zExpressionSupport:Clean;TextDraw:Clean;PolygonScaleAndExtract:Clean;TriangleOptimization:Clean;HoughRotationDetectAndCalibrate:Clean;PCA:Clean;LDA:Clean;NumTrans:Clean;PascalCodeDependencyAnslysis:Clean;ColorSegmentation:Clean;DrawEngine4FMXBitmap:Clean;MemoryRasterMoreFont:Clean;AISetFormatExtract:Clean;BoxColorDetector:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_CPU_Parallel:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Alignment_Parallel:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;DNN_OD2:Make;DNN_OD_BeautifulBreast:Make;ResNetImgClassifier:Make;ResNetImgClassifier2:Make;LargeResNetImgClassifier:Make;LargeMetricImgClassifier:Make;GoingDeeperWithConvolutionsNetImageClassifier:Make;GradientBasedNetImageClassifier:Make;FastSurfDemo:Make;VideoTrackerAndSoftDecode_GPU:Make;VideoTrackerAndSoftDecode_CPU:Make;VideoTracker_Lady:Make;RasterizationFormatDemo:Make;zDrawEngine_HelloWorld:Make;ImageScriptDemo:Make;Analysis_EasyConsoleDemo:Make;Analysis_RandomForestDemo:Make;Analysis_Decision:Make;Analysis_numberTrain:Make;Rep_FaceRecServ:Make;Rep_FaceRecCli:Make;realtime_OD_videoserv:Make;realtime_OD_Video_FMXClient:Make;realtime_MMOD_videoserv:Make;realtime_MMOD_Video_FMXClient:Make;realtime_Face_videoserv:Make;realtime_Face_Video_FMXClient:Make;realtime_Face_videoserv_GPU:Make;realtime_Face_Video_FMXClient_GPU:Make;FFMPEG_ReaderDemo:Make;memoryRasterProjection:Make;ParallelCompressor:Make;MemoryMapping:Make;GaussPyramidDemo:Make;GaussPyramidRegionDemo:Make;Render2Video:Make;SoftRenderer:Make;yuv2Video:Make;SemanticSegmentationTraining:Make;FillColor:Make;GeometryIntersect:Make;MatrixAndVectorExpression:Make;zExpressionSupport:Make;TextDraw:Make;PolygonScaleAndExtract:Make;TriangleOptimization:Make;HoughRotationDetectAndCalibrate:Make;PCA:Make;LDA:Make;NumTrans:Make;PascalCodeDependencyAnslysis:Make;ColorSegmentation:Make;DrawEngine4FMXBitmap:Make;MemoryRasterMoreFont:Make;AISetFormatExtract:Make"/>
+        <CallTarget Targets="SVM_OD:Make;SVM_OD_TrainingAPI_ImgDataset_Demo:Make;SVM_OD_TrainingAPI_XML_Demo:Make;SVM_OD_TrainingAPI_ImgMat_Demo:Make;ShapePredictor:Make;SP_TrainingAPI_ImgMat_Demo:Make;Face_Det_CPU:Make;Face_Det_CPU_Parallel:Make;Face_Det_GPU:Make;Face_Alignment:Make;Face_Alignment_Parallel:Make;Face_Rec_cpu:Make;Face_Rec_GPU:Make;Face_Metric_ResNet_TrainingAPI_ImgMat_Demo:Make;DNN_OD:Make;DNN_OD2:Make;DNN_OD_BeautifulBreast:Make;ResNetImgClassifier:Make;ResNetImgClassifier2:Make;LargeResNetImgClassifier:Make;LargeMetricImgClassifier:Make;GoingDeeperWithConvolutionsNetImageClassifier:Make;GradientBasedNetImageClassifier:Make;FastSurfDemo:Make;VideoTrackerAndSoftDecode_GPU:Make;VideoTrackerAndSoftDecode_CPU:Make;VideoTracker_Camera:Make;RasterizationFormatDemo:Make;zDrawEngine_HelloWorld:Make;ImageScriptDemo:Make;Analysis_EasyConsoleDemo:Make;Analysis_RandomForestDemo:Make;Analysis_Decision:Make;Analysis_numberTrain:Make;Rep_FaceRecServ:Make;Rep_FaceRecCli:Make;realtime_OD_videoserv:Make;realtime_OD_Video_FMXClient:Make;realtime_MMOD_videoserv:Make;realtime_MMOD_Video_FMXClient:Make;realtime_Face_videoserv:Make;realtime_Face_Video_FMXClient:Make;realtime_Face_videoserv_GPU:Make;realtime_Face_Video_FMXClient_GPU:Make;FFMPEG_ReaderDemo:Make;memoryRasterProjection:Make;ParallelCompressor:Make;MemoryMapping:Make;GaussPyramidDemo:Make;GaussPyramidRegionDemo:Make;Render2Video:Make;SoftRenderer:Make;yuv2Video:Make;SemanticSegmentationTraining:Make;FillColor:Make;GeometryIntersect:Make;MatrixAndVectorExpression:Make;zExpressionSupport:Make;TextDraw:Make;PolygonScaleAndExtract:Make;TriangleOptimization:Make;HoughRotationDetectAndCalibrate:Make;PCA:Make;LDA:Make;NumTrans:Make;PascalCodeDependencyAnslysis:Make;ColorSegmentation:Make;DrawEngine4FMXBitmap:Make;MemoryRasterMoreFont:Make;AISetFormatExtract:Make;BoxColorDetector:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

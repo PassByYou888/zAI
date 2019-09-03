@@ -26,6 +26,8 @@ interface
 uses DoStatusIO, CoreClasses, PascalStrings, MemoryStream64, ListEngine, UnicodeMixedLib,
   UPascalStrings;
 
+procedure WaitFastGBKInit;
+
 { Quick query characters using the GBK encoding table }
 function FastGBKChar(const c: USystemChar): Boolean; overload;
 { Quick query string using the GBK encoding table }
@@ -38,7 +40,7 @@ procedure FastPYSort(const inverse: Boolean; const inBuff: PArrayPascalString; v
 
 { custom sort }
 type
-  TFastCompareFuncCall   = function(const v1, v2: PPascalString): ShortInt;
+  TFastCompareFuncCall = function(const v1, v2: PPascalString): ShortInt;
   TFastCompareFuncMethod = function(const v1, v2: PPascalString): ShortInt of object;
 
 {$IFNDEF FPC} TFastCompareFuncProc = reference to function(const v1, v2: PPascalString): ShortInt; {$ENDIF FPC}
@@ -60,6 +62,8 @@ var
   ID: Cardinal;
   n: TUPascalString;
 begin
+  WaitFastGBKInit;
+
   ID := Ord(c);
   if (ID >= $FF) and (ID <= $FFFF) then
       n := GBKCache[ID]
@@ -88,6 +92,8 @@ var
   LastGBK: Boolean;
   ID: Cardinal;
 begin
+  WaitFastGBKInit;
+
   Result := '';
   LastGBK := False;
   for c in s.buff do
@@ -353,7 +359,10 @@ end;
 {$ENDIF FPC}
 
 
-procedure InitFastGBK;
+var
+  GBKCache_Inited: Boolean;
+
+procedure InitFastGBKThread(thSender: TComputeThread);
 // gbk with unpack format(unicode)
 // char=py1,py2,py3
 var
@@ -377,22 +386,32 @@ begin
       GBKCache[Ord(TUPascalString(umlGetFirstStr(n.Text, '=')).First)] := umlDeleteFirstStr(n.Text, '=');
     end;
   DisposeObject([lst, output]);
+  GBKCache_Inited := True;
 end;
 
 procedure FreeFastGBK;
 var
   i: Integer;
 begin
+  WaitFastGBKInit;
   for i := low(GBKCache) to high(GBKCache) do
       GBKCache[i] := '';
 end;
 
+procedure WaitFastGBKInit;
+begin
+  while not GBKCache_Inited do
+      CoreClasses.CheckThreadSynchronize(1);
+end;
+
 initialization
 
-InitFastGBK;
+GBKCache_Inited := False;
+TComputeThread.RunC({$IFDEF FPC}@{$ENDIF FPC}InitFastGBKThread);
 
 finalization
 
 FreeFastGBK;
+GBKCache_Inited := False;
 
 end.

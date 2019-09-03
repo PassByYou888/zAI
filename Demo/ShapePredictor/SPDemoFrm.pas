@@ -138,10 +138,10 @@ begin
   // 画目标的检测状态
   for od_r in dest_od do
     begin
-      t_r := RectTransformToDest(dest.BoundsRectV2, r, rectV2(od_r)); // 变换方框的坐标系，变换规律类似投影，但是比投影更简单，没有旋转变换，只有缩放的平移变换
+      t_r := RectTransform(dest.BoundsRectV2, r, rectV2(od_r)); // 变换方框的坐标系，变换规律类似投影，但是比投影更简单，没有旋转变换，只有缩放的平移变换
 
       // 画图指令并不是立即执行的，而是形成命令流队列存放在DrawEngine的一个容器中
-      d.DrawCorner(TV2Rect4.Init(t_r, 0), DEColor(1, 0, 1, 1), 40, 2); // 把检测器的包围框画出来
+      d.DrawCorner(TV2Rect4.Init(t_r, 0), DEColor(1, 1, 1, 1), 40, 5); // 把检测器的包围框画出来
     end;
 
   // 画目标的sp状态
@@ -151,26 +151,26 @@ begin
       vl := TVec2List.Create;
       for v2 in arryV2 do
         begin
-          t_v2 := Vec2TransformToDest(dest.BoundsRectV2, r, v2); // 变换点的坐标系，变换规律类似投影，但是比投影更简单，没有旋转变换，只有缩放的平移变换
+          t_v2 := Vec2Transform(dest.BoundsRectV2, r, v2); // 变换点的坐标系，变换规律类似投影，但是比投影更简单，没有旋转变换，只有缩放的平移变换
           vl.Add(t_v2);
 
           // 画图指令并不是立即执行的，而是形成命令流队列存放在DrawEngine的一个容器中
           // d.DrawEllipse(t_v2, 5, DEColor(1, 0, 1, alpha));  // 画圆
-          d.DrawPoint(t_v2, DEColor(0, 0, 1, alpha), 5, 2); // 画标记
+          d.DrawPoint(t_v2, DEColor(1, 1, 1, alpha), 10, 4); // 画标记
         end;
 
       d.BeginCaptureShadow(Vec2(1, 1), 0.9);
-      d.DrawText('左耳', 11, DEColor(1, 0, 1, alpha), vl[0]^);
-      d.DrawText('右耳', 11, DEColor(1, 0, 1, alpha), vl[1]^);
-      d.DrawText('左脸', 11, DEColor(1, 0, 1, alpha), vl[2]^);
-      d.DrawText('右脸', 11, DEColor(1, 0, 1, alpha), vl[3]^);
-      d.DrawText('鼻子', 11, DEColor(1, 0, 1, alpha), vl[4]^);
+      d.DrawText('左耳', 11, DEColor(1, 1, 1, alpha), vl[0]^);
+      d.DrawText('右耳', 11, DEColor(1, 1, 1, alpha), vl[1]^);
+      d.DrawText('左脸', 11, DEColor(1, 1, 1, alpha), vl[2]^);
+      d.DrawText('右脸', 11, DEColor(1, 1, 1, alpha), vl[3]^);
+      d.DrawText('鼻子', 11, DEColor(1, 1, 1, alpha), vl[4]^);
       d.EndCaptureShadow;
 
       // 凸包
       vl.ConvexHull();
       // 用spline闭合线圈住熊本熊五官
-      d.DrawPL(20, vl, True, DEColor(0, 0, 1, 0.3), 2);
+      d.DrawOutSideSmoothPL(False, vl, True, DEColor(1, 0, 0, 0.5), 3);
 
       disposeObject(vl);
     end;
@@ -250,13 +250,12 @@ begin
       r_face := arryV2[3]; // 右脸
 
       mr := NewRaster();
-      mr.SetSize(400, 300, RasterColorF(0,0,0,1));
+      mr.SetSize(400, 300, RasterColorF(0, 0, 0, 1));
 
-      // 投影发射坐标系
-      proj_s.LeftTop := l_Ear;
-      proj_s.RightTop := r_Ear;
-      proj_s.LeftBottom := l_face;
-      proj_s.RightBottom := r_face;
+      // 左右脸坐标对齐成一条线来投影
+      proj_s := TV2Rect4.Init(BoundRect(arryV2), Vec2Angle(r_face, l_face));
+      // 框体等距衍生
+      proj_s := proj_s.Expands(10);
 
       // 投影目标坐标系
       proj_d := TV2Rect4.Init(mr.BoundsRectV2, 0);
@@ -297,7 +296,7 @@ begin
       r_face := arryV2[3]; // 右脸
 
       mr := NewRaster();
-      mr.SetSize(400, 300, RasterColorF(0,0,0,1));
+      mr.SetSize(400, 300, RasterColorF(0, 0, 0, 1));
 
       // 投影发射坐标系
       proj_s := TVec2List.Create;
@@ -305,6 +304,8 @@ begin
       proj_s.Add(r_Ear);
       proj_s.Add(r_face);
       proj_s.Add(l_face);
+      // 左右脸坐标对齐成一条线
+      proj_s.RotateAngle(proj_s.BoundCentre, -Vec2Angle(r_face, l_face));
 
       // 投影目标坐标系
       proj_d := TVec2List.Create;

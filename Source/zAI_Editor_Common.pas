@@ -31,6 +31,7 @@ uses Types,
 {$ENDIF FPC}
   CoreClasses, PascalStrings, MemoryRaster, MemoryStream64, DoStatusIO, DataFrameEngine,
   Cadencer, ListEngine, TextDataEngine, NotifyObjectBase, TextParsing, zExpression, OpCode,
+  ObjectData, ObjectDataManager, ItemStream,
   UnicodeMixedLib, Geometry2DUnit, Geometry3DUnit, zDrawEngine, zAI, zAI_Common;
 
 type
@@ -51,7 +52,7 @@ type
   public
     Owner: TEditorImageData;
     R: TRect;
-    Token: SystemString;
+    Token: U_String;
     Part: TVec2List;
     PrepareRaster: TDETexture;
 
@@ -66,7 +67,7 @@ type
   TEditorGeometry = class(T2DPolygonGraph)
   public
     Owner: TEditorImageData;
-    Token: SystemString;
+    Token: U_String;
     constructor Create;
     destructor Destroy; override;
   end;
@@ -77,13 +78,14 @@ type
     constructor Create;
     procedure SaveToStream(stream: TMemoryStream64);
     procedure LoadFromStream(stream: TMemoryStream64);
+    function GetNearLine(const pt_: TVec2; out output: T2DPolygon; out lb, le: Integer): TVec2;
   end;
 
   TEditorSegmentationMask = class
   public
     Owner: TEditorImageData;
     BGColor, FGColor: TRColor;
-    Token: SystemString;
+    Token: U_String;
     PickedPoint: TPoint;
     Raster: TMemoryRaster;
     FromGeometry: Boolean;
@@ -148,7 +150,7 @@ type
     function OP_SegmentationMask_ClearSegmentationMask(var Param: TOpParam): Variant;
   public
     DetectorDefineList: TEditorDetectorDefineList;
-    FileName: SystemString;
+    FileName: U_String;
     Raster: TDETexture;
     RasterDrawRect: TRectV2;
     GeometryList: TEditorGeometryList;
@@ -157,6 +159,8 @@ type
     constructor Create;
     destructor Destroy; override;
 
+    procedure RemoveDetectorFromRect(R: TRectV2); overload;
+    procedure RemoveDetectorFromRect(R: TRectV2; Token: U_String); overload;
     procedure Clear;
 
     function RunExpCondition(ScriptStyle: TTextStyle; exp: SystemString): Boolean;
@@ -192,6 +196,8 @@ type
     constructor Create(const FreeImgData_: Boolean);
     destructor Destroy; override;
 
+    function GetImageDataFromFileName(FileName: U_String; Width, Height: Integer): TEditorImageData;
+
     procedure RunScript(ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString); overload;
     procedure RunScript(condition_exp, process_exp: SystemString); overload;
 
@@ -214,6 +220,13 @@ type
     // import from .imgDataset (from zAI_Common.pas) format
     procedure LoadFromStream_AI(stream: TCoreClassStream);
     procedure LoadFromFile_AI(FileName: U_String);
+
+    // export as .ImgMat (from zAI_Common.pas) format support
+    procedure SaveToStream_ImgMat(stream: TCoreClassStream; RasterSaveMode: TRasterSave);
+    procedure SaveToFile_ImgMat(FileName: U_String; RasterSaveMode: TRasterSave);
+    // import from .ImgMat (from zAI_Common.pas) format
+    procedure LoadFromStream_ImgMat(stream: TCoreClassStream);
+    procedure LoadFromFile_ImgMat(FileName: U_String);
   end;
 
   TEditor_Image_Script_Register = procedure(Sender: TEditorImageData; opRT: TOpCustomRunTime) of object;
@@ -223,7 +236,15 @@ var
 
 implementation
 
-uses Math;
+uses
+{$IFDEF parallel}
+{$IFDEF FPC}
+  mtprocs,
+{$ELSE FPC}
+  Threading,
+{$ENDIF FPC}
+{$ENDIF parallel}
+  Math;
 
 constructor TEditorDetectorDefine.Create(AOwner: TEditorImageData);
 begin
@@ -385,6 +406,71 @@ begin
   DisposeObject(d);
 end;
 
+function TEditorGeometryList.GetNearLine(const pt_: TVec2; out output: T2DPolygon; out lb, le: Integer): TVec2;
+type
+  TNearLineData = record
+    l: T2DPolygon;
+    lb, le: Integer;
+    near_pt: TVec2;
+  end;
+
+  PNearLineData = ^TNearLineData;
+  TNearLineDataArray = array of TNearLineData;
+  TNearLineDataPtrArray = array of PNearLineData;
+
+var
+  buff_ori: TNearLineDataArray;
+  buff: TNearLineDataPtrArray;
+  procedure Fill_buff;
+  var
+    i: Integer;
+  begin
+    for i := 0 to length(buff) - 1 do
+        buff[i] := @buff_ori[i];
+  end;
+
+  procedure extract_NearLine();
+  var
+    i: Integer;
+  begin
+    for i := 0 to count - 1 do
+        buff_ori[i].near_pt := Items[i].GetNearLine(pt_, buff_ori[i].l, buff_ori[i].lb, buff_ori[i].le);
+  end;
+
+  procedure Fill_Result;
+  var
+    i: Integer;
+  begin
+    // write result
+    output := buff[0]^.l;
+    lb := buff[0]^.lb;
+    le := buff[0]^.le;
+    Result := buff[0]^.near_pt;
+
+    for i := 1 to length(buff) - 1 do
+      begin
+        if PointDistance(buff[i]^.near_pt, pt_) < PointDistance(Result, pt_) then
+          begin
+            output := buff[i]^.l;
+            lb := buff[i]^.lb;
+            le := buff[i]^.le;
+            Result := buff[i]^.near_pt;
+          end;
+      end;
+  end;
+
+begin
+  SetLength(buff_ori, count);
+  SetLength(buff, count);
+  Fill_buff();
+  extract_NearLine();
+  Fill_Result();
+
+  // free buff
+  SetLength(buff_ori, 0);
+  SetLength(buff, 0);
+end;
+
 constructor TEditorSegmentationMask.Create;
 begin
   inherited Create;
@@ -419,7 +505,7 @@ begin
   d.WriteBool(FromSegmentationMaskImage);
 
   m64 := TMemoryStream64.CustomCreate(1024 * 128);
-  Raster.SaveToBmp32Stream(m64);
+  Raster.SaveToZLibCompressStream(m64);
   d.WriteStream(m64);
   DisposeObject(m64);
 
@@ -614,32 +700,74 @@ begin
 end;
 
 function TEditorSegmentationMaskList.BuildNewSegmentationMask(geo: TEditorGeometry; buildBG_color, buildFG_color: TRColor): TEditorSegmentationMask;
+
 var
-  i, j: Integer;
+  SegMask: TEditorSegmentationMask;
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  var
+    i: Integer;
+  begin
+    for i := 0 to SegMask.Raster.Width - 1 do
+      if geo.InHere(Vec2(i, pass)) then
+          SegMask.Raster.Pixel[i, pass] := buildFG_color;
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass, i: Integer;
+  begin
+    for pass := 0 to SegMask.Raster.Height - 1 do
+      for i := 0 to SegMask.Raster.Width - 1 do
+        if geo.InHere(Vec2(i, pass)) then
+            SegMask.Raster.Pixel[i, pass] := buildFG_color;
+  end;
+{$ENDIF parallel}
+
+
 begin
-  Result := TEditorSegmentationMask.Create;
-  Result.Owner := Owner;
-  Result.BGColor := buildBG_color;
-  Result.FGColor := buildFG_color;
-  Result.Token := geo.Token;
-  Result.FromGeometry := True;
-  Result.FromSegmentationMaskImage := False;
-  Result.Raster.SetSize(Owner.Raster.Width, Owner.Raster.Height, buildBG_color);
-  for j := 0 to Owner.Raster.Height - 1 do
-    for i := 0 to Owner.Raster.Width - 1 do
-      if geo.InHere(Vec2(i, j)) then
-          Result.Raster.Pixel[i, j] := buildFG_color;
-  Result.PickedPoint := Result.Raster.FindNearColor(buildFG_color, Owner.Raster.Centre);
+  SegMask := TEditorSegmentationMask.Create;
+  SegMask.Owner := Owner;
+  SegMask.BGColor := buildBG_color;
+  SegMask.FGColor := buildFG_color;
+  SegMask.Token := geo.Token;
+  SegMask.FromGeometry := True;
+  SegMask.FromSegmentationMaskImage := False;
+  SegMask.Raster.SetSize(Owner.Raster.Width, Owner.Raster.Height, buildBG_color);
+
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Owner.GeometryList.count - 1);
+{$ELSE FPC}
+  TParallel.for(0, SegMask.Raster.Height - 1, procedure(pass: Integer)
+    var
+      i: Integer;
+    begin
+      for i := 0 to SegMask.Raster.Width - 1 do
+        if geo.InHere(Vec2(i, pass)) then
+            SegMask.Raster.Pixel[i, pass] := buildFG_color;
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  DoFor;
+{$ENDIF parallel}
+  SegMask.PickedPoint := SegMask.Raster.FindNearColor(buildFG_color, Owner.Raster.Centre);
 
   LockObject(Self);
-  Add(Result);
+  Add(SegMask);
   UnlockObject(Self);
+
+  Result := SegMask;
 end;
 
 procedure TEditorSegmentationMaskList.RemoveGeometrySegmentationMask;
 var
   i: Integer;
 begin
+  LockObject(Self);
   // remove geometry data source
   i := 0;
   while i < count do
@@ -652,17 +780,44 @@ begin
       else
           inc(i);
     end;
+  UnlockObject(Self);
 end;
 
 procedure TEditorSegmentationMaskList.RebuildGeometrySegmentationMask(buildBG_color, buildFG_color: TRColor);
-var
-  i: Integer;
+{$IFDEF parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: PtrInt; Data: Pointer; Item: TMultiThreadProcItem);
+  begin
+    BuildNewSegmentationMask(Owner.GeometryList[pass], buildBG_color, buildFG_color);
+  end;
+{$ENDIF FPC}
+{$ELSE parallel}
+  procedure DoFor;
+  var
+    pass: Integer;
+  begin
+    for pass := 0 to Owner.GeometryList.count - 1 do
+        BuildNewSegmentationMask(Owner.GeometryList[pass], buildBG_color, buildFG_color);
+  end;
+{$ENDIF parallel}
+
+
 begin
   // remove geometry data source
   RemoveGeometrySegmentationMask;
 
-  for i := 0 to Owner.GeometryList.count - 1 do
-      BuildNewSegmentationMask(Owner.GeometryList[i], buildBG_color, buildFG_color);
+{$IFDEF parallel}
+{$IFDEF FPC}
+  ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, Owner.GeometryList.count - 1);
+{$ELSE FPC}
+  TParallel.for(0, Owner.GeometryList.count - 1, procedure(pass: Integer)
+    begin
+      BuildNewSegmentationMask(Owner.GeometryList[pass], buildBG_color, buildFG_color);
+    end);
+{$ENDIF FPC}
+{$ELSE parallel}
+  DoFor;
+{$ENDIF parallel}
 end;
 
 procedure TEditorImageData.CheckAndRegOPRT;
@@ -1117,6 +1272,53 @@ begin
   inherited Destroy;
 end;
 
+procedure TEditorImageData.RemoveDetectorFromRect(R: TRectV2);
+var
+  i: Integer;
+  det: TEditorDetectorDefine;
+  r1, r2: TRectV2;
+begin
+  i := 0;
+  clip(R, Raster.BoundsRectV2, r1);
+
+  while i < DetectorDefineList.count do
+    begin
+      det := DetectorDefineList[i];
+      r2 := RectV2(det.R);
+      if RectWithinRect(r1, r2) or RectWithinRect(r2, r1) or RectToRectIntersect(r2, r1) or RectToRectIntersect(r1, r2) then
+        begin
+          DisposeObject(det);
+          DetectorDefineList.Delete(i);
+        end
+      else
+          inc(i);
+    end;
+end;
+
+procedure TEditorImageData.RemoveDetectorFromRect(R: TRectV2; Token: U_String);
+var
+  i: Integer;
+  det: TEditorDetectorDefine;
+  r1, r2: TRectV2;
+begin
+  i := 0;
+  clip(R, Raster.BoundsRectV2, r1);
+
+  while i < DetectorDefineList.count do
+    begin
+      det := DetectorDefineList[i];
+      r2 := RectV2(det.R);
+      if (RectWithinRect(r1, r2) or RectWithinRect(r2, r1) or RectToRectIntersect(r2, r1) or RectToRectIntersect(r1, r2))
+        and (Token.Same(det.Token)) then
+        begin
+          DisposeObject(det);
+          DetectorDefineList.Delete(i);
+        end
+      else
+          inc(i);
+    end;
+end;
+
 procedure TEditorImageData.Clear;
 var
   i: Integer;
@@ -1267,6 +1469,8 @@ begin
       DisposeObject(m64);
     end;
 
+  SegmentationMaskList.RebuildGeometrySegmentationMask(RColor(0, 0, 0, 0), RColor($7F, $7F, $7F, $FF));
+
   m64 := TMemoryStream64.Create;
   SegmentationMaskList.SaveToStream_AI(m64);
   de.WriteStream(m64);
@@ -1333,7 +1537,7 @@ begin
 
   m64 := TMemoryStream64.Create;
   if SaveImg then
-      Raster.SaveToBmp24Stream(m64);
+      Raster.SaveToStream(m64, TRasterSave.rsJPEG_RGB_Qualily90);
   de.WriteStream(m64);
   DisposeObject(m64);
 
@@ -1544,6 +1748,19 @@ begin
   inherited Destroy;
 end;
 
+function TEditorImageDataList.GetImageDataFromFileName(FileName: U_String; Width, Height: Integer): TEditorImageData;
+var
+  i: Integer;
+begin
+  for i := 0 to count - 1 do
+    if FileName.Same(Items[i].FileName) and (Items[i].Raster.Width = Width) and (Items[i].Raster.Height = Height) then
+      begin
+        Result := Items[i];
+        exit;
+      end;
+  Result := nil;
+end;
+
 procedure TEditorImageDataList.RunScript(ScriptStyle: TTextStyle; condition_exp, process_exp: SystemString);
 var
   i, j: Integer;
@@ -1709,7 +1926,7 @@ begin
       DisposeObject(m64);
     end;
 
-  de.EncodeTo(stream);
+  de.EncodeAsSelectCompressor(TSelectCompressionMethod.scmZLIB_Fast, stream, True);
   DisposeObject(de);
 end;
 
@@ -1803,7 +2020,7 @@ begin
       DisposeObject(m64);
     end;
 
-  de.EncodeTo(stream, True);
+  de.EncodeAsSelectCompressor(TSelectCompressionMethod.scmZLIB, stream, True);
   DisposeObject(de);
 end;
 
@@ -1852,6 +2069,111 @@ begin
   stream := TCoreClassFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
   try
       LoadFromStream_AI(stream);
+  finally
+      DisposeObject(stream);
+  end;
+end;
+
+procedure TEditorImageDataList.SaveToStream_ImgMat(stream: TCoreClassStream; RasterSaveMode: TRasterSave);
+  procedure DoSave(stream_: TCoreClassStream; index_: Integer);
+  var
+    de: TDataFrameEngine;
+    m64: TMemoryStream64;
+    imgData: TEditorImageData;
+  begin
+    de := TDataFrameEngine.Create;
+
+    de.WriteInteger(1);
+
+    m64 := TMemoryStream64.Create;
+    imgData := Items[index_];
+    imgData.SaveToStream_AI(m64, RasterSaveMode);
+    de.WriteStream(m64);
+    DisposeObject(m64);
+
+    de.EncodeTo(stream_, True);
+    DisposeObject(de);
+  end;
+
+var
+  dbEng: TObjectDataManager;
+  i: Integer;
+  m64: TMemoryStream64;
+  fn: U_String;
+  itmHnd: TItemHandle;
+  itmStream: TItemStream;
+begin
+  dbEng := TObjectDataManagerOfCache.CreateAsStream(stream, '', DBMarshal.ID, False, True, False);
+
+  for i := 0 to count - 1 do
+    begin
+      m64 := TMemoryStream64.Create;
+      DoSave(m64, i);
+      fn := Items[i].FileName;
+      if fn.Len = 0 then
+          fn := umlStreamMD5String(m64);
+
+      fn.Append(C_ImageList_Ext);
+
+      dbEng.ItemFastCreate(dbEng.RootField, fn, 'ImageMatrix', itmHnd);
+      itmStream := TItemStream.Create(dbEng, itmHnd);
+      m64.Position := 0;
+      itmStream.CopyFrom(m64, m64.Size);
+      DisposeObject(m64);
+      itmStream.UpdateHandle;
+      dbEng.ItemClose(itmHnd);
+      DisposeObject(itmStream);
+    end;
+  DisposeObject(dbEng);
+  DoStatus('Save Image Matrix done.');
+end;
+
+procedure TEditorImageDataList.SaveToFile_ImgMat(FileName: U_String; RasterSaveMode: TRasterSave);
+var
+  stream: TCoreClassStream;
+begin
+  stream := TCoreClassFileStream.Create(FileName, fmCreate);
+  try
+      SaveToStream_ImgMat(stream, RasterSaveMode);
+  finally
+      DisposeObject(stream);
+  end;
+end;
+
+procedure TEditorImageDataList.LoadFromStream_ImgMat(stream: TCoreClassStream);
+var
+  dbEng: TObjectDataManager;
+  fPos: Int64;
+  PrepareLoadBuffer: TCoreClassList;
+  itmSR: TItemSearch;
+  itmHnd: TItemHandle;
+  itmStream: TItemStream;
+begin
+  dbEng := TObjectDataManagerOfCache.CreateAsStream(stream, '', DBMarshal.ID, True, False, False);
+
+  if dbEng.ItemFastFindFirst(dbEng.RootField, '', itmSR) then
+    begin
+      repeat
+        if umlMultipleMatch('*' + C_ImageList_Ext, itmSR.Name) then
+          begin
+            dbEng.ItemFastOpen(itmSR.HeaderPOS, itmHnd);
+            itmStream := TItemStream.Create(dbEng, itmHnd);
+            LoadFromStream_AI(itmStream);
+            DisposeObject(itmStream);
+            dbEng.ItemClose(itmHnd);
+          end;
+      until not dbEng.ItemFindNext(itmSR);
+    end;
+  DisposeObject(dbEng);
+end;
+
+procedure TEditorImageDataList.LoadFromFile_ImgMat(FileName: U_String);
+var
+  stream: TCoreClassStream;
+begin
+  stream := TCoreClassFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+  try
+      LoadFromStream_ImgMat(stream);
   finally
       DisposeObject(stream);
   end;

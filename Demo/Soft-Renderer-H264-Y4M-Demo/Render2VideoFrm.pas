@@ -74,6 +74,7 @@ procedure TRender2VideoForm.BuildButtonClick(Sender: TObject);
       Trunc(PaintBox.Height),
       Trunc(1 / FixedCadencer.FixedDeltaTime),
       Y4MSaveDialog.FileName);
+    dIntf.Engine.ViewOptions := [];
     ProgressBar.Max := total;
     ProgressBar.Min := 0;
     for i := 0 to total do
@@ -81,7 +82,7 @@ procedure TRender2VideoForm.BuildButtonClick(Sender: TObject);
         RenderFrame(dIntf.Engine);
         dIntf.Engine.Progress(FixedCadencer.FixedDeltaTime);
         ProgressBar.Value := i;
-        SizeInfoLabel.Text := umlSizeToStr(dIntf.Y4MSize);
+        SizeInfoLabel.Text := PFormat('%d - %s', [i + 1, umlSizeToStr(dIntf.Y4MSize).Text]);
         Application.ProcessMessages;
       end;
 
@@ -110,6 +111,7 @@ procedure TRender2VideoForm.BuildButtonClick(Sender: TObject);
       total + 1,
       Trunc(1 / FixedCadencer.FixedDeltaTime),
       h264SaveDialog.FileName);
+    dIntf.Engine.ViewOptions := [];
     ProgressBar.Max := total;
     ProgressBar.Min := 0;
     for i := 0 to total do
@@ -117,7 +119,7 @@ procedure TRender2VideoForm.BuildButtonClick(Sender: TObject);
         RenderFrame(dIntf.Engine);
         dIntf.Engine.Progress(FixedCadencer.FixedDeltaTime);
         ProgressBar.Value := i;
-        SizeInfoLabel.Text := umlSizeToStr(dIntf.H264Size);
+        SizeInfoLabel.Text := PFormat('%d - %s', [i + 1, umlSizeToStr(dIntf.H264Size).Text]);
         Application.ProcessMessages;
       end;
 
@@ -172,13 +174,15 @@ var
   a: TDEFloat;
 begin
   d.SetSize;
-  d.FillBox(d.ScreenRect, DEColor(0, 0, 0, 1));
+  d.FillBox(d.ScreenRect, DEColor(0.2, 0.2, 0.2, 1));
 
   a := d.UserVariants.GetDefaultValue('angle', 0);
   a := a + d.LastDeltaTime * 45;
   d.UserVariants['angle'] := NormalizeDegAngle(a);
 
-  d.DrawText('hello world', 22, d.ScreenRect, DEColor(1, 0.5, 0.5, 0.9), True, Vec2(0.5, 0.5), a);
+  d.BeginCaptureShadow(Vec2(2, 2), 0.9);
+  d.DrawText('hello world', 36, d.ScreenRect, DEColor(1, 0.5, 0.5, 0.9), True, Vec2(0.5, 0.5), a);
+  d.EndCaptureShadow;
 
   d.Flush;
 end;

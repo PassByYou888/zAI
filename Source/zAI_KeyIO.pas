@@ -40,11 +40,16 @@ type
 function AIKey(key: TAI_Key): TAI_Key;
 procedure AIKeyState(var expire: SystemString; var OD_key, SP_key, MetricDNN_key, MMOD_key, RNIC_key: Boolean); overload;
 procedure AIKeyState(var expire: SystemString; var SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key, SS_key: Boolean); overload;
+function AIKeyInfo(): SystemString;
+function AIGetFreeKey(): SystemString;
 
 implementation
 
 
 uses zAI_Common;
+
+const
+  C_Key_TimeOut = 20 * C_Tick_Second;
 
 type
   TGetKeyServer_Remote = class(TCoreClassObject)
@@ -56,10 +61,13 @@ type
     Tunnel: TPhysicsClient;
     expire: SystemString;
     SURF_key, OD_key, SP_key, MetricDNN_key, LMetricDNN_key, MMOD_key, RNIC_key, LRNIC_key, GDCNIC_key, GNIC_key, VideoTracker_key, SS_key: Boolean;
+    KeyInfo: SystemString;
     constructor Create;
     destructor Destroy; override;
     procedure QueryAIKey;
     procedure GetKeyState;
+    procedure DecodeKeyInfo;
+    procedure GetFreeKey;
   end;
 
 constructor TGetKeyServer_Remote.Create;
@@ -85,6 +93,7 @@ begin
   GNIC_key := False;
   VideoTracker_key := False;
   SS_key := False;
+  KeyInfo := '';
 end;
 
 destructor TGetKeyServer_Remote.Destroy;
@@ -101,7 +110,7 @@ var
 begin
   if TCoreClassThread.CurrentThread.ThreadID <> MainThreadID then
     begin
-      DoStatus('zAI Work only on MainThread.');
+      DoStatus('Z-AI Work only on MainThread.');
       exit;
     end;
 
@@ -111,28 +120,31 @@ begin
   try
     if not Tunnel.RemoteInited then
       begin
-        DoStatus('open key server "%s".', [AI_Key_Server_Host.Text]);
         tk := GetTimeTick();
 
         while not Tunnel.Connect(AI_Key_Server_Host, AI_Key_Server_Port) do
           begin
-            DoStatus('key server "%s" no reponse.', [AI_Key_Server_Host.Text]);
-            TCoreClassThread.Sleep(100);
-            if GetTimeTick() - tk > 5 * C_Tick_Second then
+            Tunnel.Progress;
+            TCoreClassThread.Sleep(10);
+            if GetTimeTick() - tk > 1000 then
+              begin
+                DoStatus('Unable to connect to license server %s:%d', [AI_Key_Server_Host.Text, AI_Key_Server_Port]);
                 exit;
+              end;
           end;
       end;
 
     sendDE.WriteString(ProductID);
     sendDE.WriteString(UserKey);
     sendDE.write(key[0], SizeOf(TAI_Key));
-    Tunnel.WaitSendStreamCmd('QueryUserAndAIKey', sendDE, ResultDE, 5000);
-    if ResultDE.Count = 0 then
-        exit;
-    if ResultDE.Reader.ReadBool() then
-        ResultDE.Reader.read(ResultKey[0], SizeOf(TAI_Key))
-    else
-        DoStatus(ResultDE.Reader.ReadString());
+    Tunnel.WaitSendStreamCmd('QueryUserAndAIKey', sendDE, ResultDE, C_Key_TimeOut);
+    if ResultDE.Count > 0 then
+      begin
+        if ResultDE.Reader.ReadBool() then
+            ResultDE.Reader.read(ResultKey[0], SizeOf(TAI_Key))
+        else
+            DoStatus(ResultDE.Reader.ReadString());
+      end;
     Tunnel.Disconnect;
     Tunnel.Progress;
   except
@@ -147,7 +159,7 @@ var
 begin
   if TCoreClassThread.CurrentThread.ThreadID <> MainThreadID then
     begin
-      DoStatus('zAI Work only on MainThread.');
+      DoStatus('Z-AI Work only on MainThread.');
       exit;
     end;
 
@@ -157,39 +169,128 @@ begin
   try
     if not Tunnel.RemoteInited then
       begin
-        DoStatus('open key server "%s".', [AI_Key_Server_Host.Text]);
         tk := GetTimeTick();
 
         while not Tunnel.Connect(AI_Key_Server_Host, AI_Key_Server_Port) do
           begin
-            DoStatus('key server "%s" no reponse.', [AI_Key_Server_Host.Text]);
-            TCoreClassThread.Sleep(100);
-            if GetTimeTick() - tk > 15 * C_Tick_Second then
+            Tunnel.Progress;
+            TCoreClassThread.Sleep(10);
+            if GetTimeTick() - tk > 1000 then
+              begin
+                DoStatus('Unable to connect to license server %s:%d', [AI_Key_Server_Host.Text, AI_Key_Server_Port]);
                 exit;
+              end;
           end;
       end;
 
     sendDE.WriteString(UserKey);
-    Tunnel.WaitSendStreamCmd('GetKeyState', sendDE, ResultDE, 5000);
-    if ResultDE.Count = 0 then
-        exit;
-    if ResultDE.Reader.ReadBool() then
-      begin
-        expire := ResultDE.Reader.ReadString();
+    Tunnel.WaitSendStreamCmd('GetKeyState', sendDE, ResultDE, C_Key_TimeOut);
+    if ResultDE.Count > 0 then
+      if ResultDE.Reader.ReadBool() then
+        begin
+          expire := ResultDE.Reader.ReadString();
 
-        SURF_key := ResultDE.Reader.ReadBool();
-        OD_key := ResultDE.Reader.ReadBool();
-        SP_key := ResultDE.Reader.ReadBool();
-        MetricDNN_key := ResultDE.Reader.ReadBool();
-        LMetricDNN_key := ResultDE.Reader.ReadBool();
-        MMOD_key := ResultDE.Reader.ReadBool();
-        RNIC_key := ResultDE.Reader.ReadBool();
-        LRNIC_key := ResultDE.Reader.ReadBool();
-        GDCNIC_key := ResultDE.Reader.ReadBool();
-        GNIC_key := ResultDE.Reader.ReadBool();
-        VideoTracker_key := ResultDE.Reader.ReadBool();
-        SS_key := ResultDE.Reader.ReadBool();
+          SURF_key := ResultDE.Reader.ReadBool();
+          OD_key := ResultDE.Reader.ReadBool();
+          SP_key := ResultDE.Reader.ReadBool();
+          MetricDNN_key := ResultDE.Reader.ReadBool();
+          LMetricDNN_key := ResultDE.Reader.ReadBool();
+          MMOD_key := ResultDE.Reader.ReadBool();
+          RNIC_key := ResultDE.Reader.ReadBool();
+          LRNIC_key := ResultDE.Reader.ReadBool();
+          GDCNIC_key := ResultDE.Reader.ReadBool();
+          GNIC_key := ResultDE.Reader.ReadBool();
+          VideoTracker_key := ResultDE.Reader.ReadBool();
+          SS_key := ResultDE.Reader.ReadBool();
+        end;
+    Tunnel.Disconnect;
+    Tunnel.Progress;
+  except
+  end;
+  disposeObject([sendDE, ResultDE]);
+end;
+
+procedure TGetKeyServer_Remote.DecodeKeyInfo;
+var
+  sendDE, ResultDE: TDataFrameEngine;
+  tk: TTimeTick;
+begin
+  if TCoreClassThread.CurrentThread.ThreadID <> MainThreadID then
+    begin
+      DoStatus('Z-AI Work only on MainThread.');
+      exit;
+    end;
+
+  sendDE := TDataFrameEngine.Create;
+  ResultDE := TDataFrameEngine.Create;
+
+  try
+    if not Tunnel.RemoteInited then
+      begin
+        tk := GetTimeTick();
+
+        while not Tunnel.Connect(AI_Key_Server_Host, AI_Key_Server_Port) do
+          begin
+            Tunnel.Progress;
+            TCoreClassThread.Sleep(10);
+            if GetTimeTick() - tk > 1000 then
+              begin
+                DoStatus('Unable to connect to license server %s:%d', [AI_Key_Server_Host.Text, AI_Key_Server_Port]);
+                exit;
+              end;
+          end;
       end;
+
+    sendDE.WriteString(UserKey);
+    Tunnel.WaitSendStreamCmd('DecodeKeyInfo', sendDE, ResultDE, C_Key_TimeOut);
+    if ResultDE.Count > 0 then
+      if ResultDE.Reader.ReadBool() then
+        begin
+          KeyInfo := ResultDE.Reader.ReadString();
+        end;
+
+    Tunnel.Disconnect;
+    Tunnel.Progress;
+  except
+  end;
+  disposeObject([sendDE, ResultDE]);
+end;
+
+procedure TGetKeyServer_Remote.GetFreeKey;
+var
+  sendDE, ResultDE: TDataFrameEngine;
+  tk: TTimeTick;
+begin
+  if TCoreClassThread.CurrentThread.ThreadID <> MainThreadID then
+    begin
+      DoStatus('Z-AI Work only on MainThread.');
+      exit;
+    end;
+
+  sendDE := TDataFrameEngine.Create;
+  ResultDE := TDataFrameEngine.Create;
+
+  try
+    if not Tunnel.RemoteInited then
+      begin
+        tk := GetTimeTick();
+
+        while not Tunnel.Connect(AI_Key_Server_Host, AI_Key_Server_Port) do
+          begin
+            Tunnel.Progress;
+            TCoreClassThread.Sleep(10);
+            if GetTimeTick() - tk > 1000 then
+              begin
+                DoStatus('Unable to connect to license server %s:%d', [AI_Key_Server_Host.Text, AI_Key_Server_Port]);
+                exit;
+              end;
+          end;
+      end;
+
+    Tunnel.WaitSendStreamCmd('GetFreeKey', sendDE, ResultDE, C_Key_TimeOut);
+    if ResultDE.Count > 0 then
+        KeyInfo := ResultDE.Reader.ReadString();
+
     Tunnel.Disconnect;
     Tunnel.Progress;
   except
@@ -243,6 +344,26 @@ begin
   GNIC_key := K_Tunnel.GNIC_key;
   VideoTracker_key := K_Tunnel.VideoTracker_key;
   SS_key := K_Tunnel.SS_key;
+  disposeObject(K_Tunnel);
+end;
+
+function AIKeyInfo(): SystemString;
+var
+  K_Tunnel: TGetKeyServer_Remote;
+begin
+  K_Tunnel := TGetKeyServer_Remote.Create;
+  K_Tunnel.DecodeKeyInfo();
+  Result := K_Tunnel.KeyInfo;
+  disposeObject(K_Tunnel);
+end;
+
+function AIGetFreeKey(): SystemString;
+var
+  K_Tunnel: TGetKeyServer_Remote;
+begin
+  K_Tunnel := TGetKeyServer_Remote.Create;
+  K_Tunnel.GetFreeKey();
+  Result := K_Tunnel.KeyInfo;
   disposeObject(K_Tunnel);
 end;
 

@@ -118,14 +118,10 @@
     {$DEFINE INLINE_ASM}
     {$R-} { range check }
     {$I-} { Input output checking }
-    {$O-} { optimization }
-    {$C+} { Assertions }
   {$ELSE}
-    {$UNDEF INLINE_ASM}
-    {$R+} { range check }
-    {$I+} { Input output checking }
-    {$O-} { optimization }
-    {$C+} { Assertions }
+    {$DEFINE INLINE_ASM}
+    {$R-} { range check }
+    {$I-} { Input output checking }
   {$ENDIF}
 
   {$IF Defined(Android) or Defined(IOS)}
@@ -142,6 +138,8 @@
 
 {$WARNINGS OFF}
 {$HINTS OFF}
+{$O-} { optimization }
+{$C+} { Assertions }
 {$M-} { Run-Time Type Information }
 {$H+} { long string }
 {$A+} { Word Align Data }

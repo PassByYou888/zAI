@@ -1,3 +1,23 @@
+{ ****************************************************************************** }
+{ * memory Rasterization                                                       * }
+{ * by QQ 600585@qq.com                                                        * }
+{ ****************************************************************************** }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
+{ * https://github.com/PassByYou888/ZServer4D                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
+{ * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
+{ ****************************************************************************** }
 procedure MakeMergeTables;
 var
   i, j: Integer;
@@ -7,9 +27,9 @@ begin
   for j := 0 to $FF do
     for i := 0 to $FF do
       begin
-        DivTable[i, j] := Byte(Round(i * j * OneByteth));
+        DivTable[i, j] := ClampByte(Round(i * j * OneByteth));
         if i > 0 then
-            RcTable[i, j] := Byte(Round(j * $FF / i))
+            RcTable[i, j] := ClampByte(Round(j * $FF / i))
         else
             RcTable[i, j] := 0;
       end;
@@ -372,7 +392,7 @@ begin
       UnserializedMemory();
 end;
 
-procedure TMemoryRaster.SetWorkMemory(WorkMemory: Pointer; NewWidth, NewHeight: Integer);
+procedure TMemoryRaster.SetWorkMemory(Forever: Boolean; WorkMemory: Pointer; NewWidth, NewHeight: Integer);
 begin
   CloseVertex;
   FreeAgg;
@@ -388,7 +408,7 @@ begin
     end
   else
     begin
-      FFreeBits := False;
+      FFreeBits := Forever;
       FBits := PRColorArray(WorkMemory);
       FWidth := NewWidth;
       FHeight := NewHeight;
@@ -401,9 +421,21 @@ begin
   FSerializedEngine := nil;
 end;
 
+procedure TMemoryRaster.SetWorkMemory(WorkMemory: Pointer; NewWidth, NewHeight: Integer);
+begin
+  SetWorkMemory(False, WorkMemory, NewWidth, NewHeight);
+end;
+
+procedure TMemoryRaster.SetWorkMemory(Forever: Boolean; raster: TMemoryRaster);
+begin
+  SetWorkMemory(Forever, @raster.Bits^[0], raster.width, raster.height);
+  if Forever then
+      raster.FBits := nil;
+end;
+
 procedure TMemoryRaster.SetWorkMemory(raster: TMemoryRaster);
 begin
-  SetWorkMemory(@raster.Bits^[0], raster.width, raster.height);
+  SetWorkMemory(False, raster);
 end;
 
 function TMemoryRaster.IsMemoryMap: Boolean;
@@ -484,6 +516,33 @@ end;
 function TMemoryRaster.AggActivted: Boolean;
 begin
   Result := (FAggImage <> nil) and (FAgg <> nil);
+end;
+
+procedure TMemoryRaster.DiscardMemory;
+begin
+  if FFont <> nil then
+    begin
+      DisposeObject(FFont);
+      FFont := nil;
+    end;
+
+  CloseVertex;
+  FreeAgg;
+  FBits := nil;
+  FFreeBits := True;
+  FWidth := 0;
+  FHeight := 0;
+
+  FMemorySerializedPosition := -1;
+  FSerializedEngine := nil;
+end;
+
+procedure TMemoryRaster.SetParam(sour: TMemoryRaster);
+begin
+  Reset;
+  FBits := sour.FBits;
+  FWidth := sour.FWidth;
+  FHeight := sour.FHeight;
 end;
 
 procedure TMemoryRaster.Reset;
@@ -581,9 +640,19 @@ begin
   SetSize(Round(NewWidth), Round(NewHeight), ClearColor);
 end;
 
+procedure TMemoryRaster.SetSizeF(NewWidth, NewHeight: TGeoFloat);
+begin
+  SetSize(Round(NewWidth), Round(NewHeight));
+end;
+
 procedure TMemoryRaster.SetSizeR(r: TRectV2; const ClearColor: TRColor);
 begin
   SetSizeF(RectWidth(r), RectHeight(r), ClearColor);
+end;
+
+procedure TMemoryRaster.SetSizeR(r: TRectV2);
+begin
+  SetSizeF(RectWidth(r), RectHeight(r));
 end;
 
 function TMemoryRaster.SizeOfPoint: TPoint;
@@ -849,7 +918,7 @@ procedure TMemoryRaster.CalibrateRotate(BackgroundColor: TRColor);
 begin
   if empty then
       exit;
-  Rotate(-DocmentRotationDetected(60, $FF, Self), 0, BackgroundColor);
+  Rotate(-DocumentRotationDetected(60, $FF, Self), 0, BackgroundColor);
 end;
 
 procedure TMemoryRaster.CalibrateRotate;
@@ -1281,31 +1350,62 @@ begin
     end;
 end;
 
-procedure TMemoryRaster.ColorTransparent(c: TRColor);
+procedure TMemoryRaster.ColorReplace(const old_c, new_c: TRColor);
 var
-  i, j: Integer;
-  a: Byte;
-  ce: TRColorEntry;
+  pass: Integer;
+  p: PRColor;
 begin
-  ce.BGRA := c;
-  a := ce.a;
-  for i := 0 to width - 1 do
-    for j := 0 to height - 1 do
-      begin
-        ce.BGRA := Pixel[i, j];
-        ce.a := a;
-        if ce.BGRA = c then
-            Pixel[i, j] := RColor(0, 0, 0, 0);
-      end;
+  pass := width * height;
+  if pass <= 0 then
+      exit;
+  ReadyBits();
+  p := @FBits^[0];
+  while pass > 0 do
+    begin
+      if p^ = old_c then
+          p^ := new_c;
+      inc(p);
+      dec(pass);
+    end;
+end;
+
+procedure TMemoryRaster.ColorTransparent(c_: TRColor);
+var
+  pass: Integer;
+  p: PRColor;
+  c: TRColor;
+begin
+  pass := width * height;
+  if pass <= 0 then
+      exit;
+  c := RasterAlphaColor(c_, 0);
+  ReadyBits();
+  p := @FBits^[0];
+  while pass > 0 do
+    begin
+      if RasterAlphaColor(p^, 0) = c then
+          p^ := 0;
+      inc(p);
+      dec(pass);
+    end;
 end;
 
 procedure TMemoryRaster.ColorBlend(c: TRColor);
 var
-  i, j: Integer;
+  pass: Integer;
+  p: PRColor;
 begin
-  for i := 0 to width - 1 do
-    for j := 0 to height - 1 do
-        Pixel[i, j] := BlendReg(Pixel[i, j], c);
+  pass := width * height;
+  if pass <= 0 then
+      exit;
+  ReadyBits();
+  p := @FBits^[0];
+  while pass > 0 do
+    begin
+      p^ := BlendReg(p^, c);
+      inc(p);
+      dec(pass);
+    end;
 end;
 
 procedure TMemoryRaster.Grayscale;
@@ -2426,7 +2526,7 @@ procedure TMemoryRaster.FillPolygon(Polygon: T2DPolygon; Color: TRColor);
 {$ENDIF parallel}
 
   begin
-    r := Polygon.BoundRect();
+    r := Polygon.BoundBox();
 {$IFDEF parallel}
 {$IFDEF FPC}
     ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, height - 1);
@@ -2548,7 +2648,7 @@ procedure TMemoryRaster.FillPolygon(Polygon: T2DPolygonGraph; Color: TRColor);
 {$ENDIF parallel}
 
   begin
-    r := Polygon.BoundRect;
+    r := Polygon.BoundBox();
 {$IFDEF parallel}
 {$IFDEF FPC}
     ProcThreadPool.DoParallelLocalProc(@Nested_ParallelFor, 0, height - 1);
@@ -2744,7 +2844,7 @@ var
 begin
   nr := NewRaster();
   nr.SetSize(width, height, RColor(0, 0, 0, 0));
-  r := sour_Polygon.BoundRect();
+  r := sour_Polygon.BoundBox();
 
 {$IFDEF parallel}
 {$IFDEF FPC}
@@ -2799,7 +2899,7 @@ var
 begin
   nr := NewRaster();
   nr.SetSize(width, height, RColor(0, 0, 0, 0));
-  r := sour_Polygon.BoundRect;
+  r := sour_Polygon.BoundBox();
 
 {$IFDEF parallel}
 {$IFDEF FPC}
@@ -2886,9 +2986,7 @@ begin
     else
       begin
         stream.Position := bakPos;
-
         stream.ReadBuffer(Header, SizeOf(TBmpHeader));
-
         Result := (Header.bfType = $4D42) and (Header.biBitCount in [24, 32]) and (Header.biPlanes = 1) and (Header.biCompression = 0);
       end;
 
@@ -3215,7 +3313,7 @@ begin
   stream.Write(hflag, 2);
 
   m64 := TMemoryStream64.Create;
-  SaveToBmp24Stream(m64);
+  SaveToBmp32Stream(m64);
   m64.Position := 0;
   MaxCompressStream(m64, stream);
   DisposeObject(m64);
@@ -3230,7 +3328,7 @@ begin
   stream.Write(hflag, 2);
 
   m64 := TMemoryStream64.Create;
-  SaveToBmp24Stream(m64);
+  SaveToBmp32Stream(m64);
   m64.Position := 0;
   DeflateCompressStream(m64, stream);
   DisposeObject(m64);
@@ -3245,7 +3343,7 @@ begin
   stream.Write(hflag, 2);
 
   m64 := TMemoryStream64.Create;
-  SaveToBmp24Stream(m64);
+  SaveToBmp32Stream(m64);
   m64.Position := 0;
   BRRCCompressStream(m64, stream);
   DisposeObject(m64);
@@ -3783,11 +3881,12 @@ begin
         FStream.Position := r.FMemorySerializedPosition;
         // overwrite
         if FStream.Read(h2, SizeOf(TRasterSerializedHeader)) = SizeOf(TRasterSerializedHeader) then
-          if (h2.width = h1.height) and (h2.height = h1.height) then
+          if (h1.width * h1.height) = (h2.width * h2.height) then
               p := r.FMemorySerializedPosition;
       end;
 
     FStream.Position := p;
+
     // serialized write
     if FStream.Write(h1, SizeOf(TRasterSerializedHeader)) = SizeOf(TRasterSerializedHeader) then
       if FStream.Write(r.FBits^[0], h1.siz) = h1.siz then

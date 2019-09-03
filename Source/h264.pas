@@ -69,7 +69,7 @@ end;
 constructor TH264Writer.Create(const w, h, totalframe: int32_t; psf: Single; const stream: TCoreClassStream);
 begin
   inherited Create;
-  umlFileCreateAsStream('stream', stream, ioHandle);
+  umlFileCreateAsStream(stream, ioHandle);
   FFrameCount := 0;
   img := TPlanarImage.Create(w, h);
   Param := TEncodingParameters.Create;

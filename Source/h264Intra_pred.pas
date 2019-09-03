@@ -27,9 +27,6 @@ uses
   h264Types, h264Common, h264Util, h264Pixel, CoreClasses;
 
 type
-  TPredict4x4Func   = procedure(Src, Dst: uint8_p; stride: int32_t);
-  TPredict16x16Func = procedure(Src, Dst: uint8_p);
-
   TIntraPredictor = class
   private
     mbcmp_16x16, mbcmp_8x8, mbcmp_4x4: mbcmp_func_t;
@@ -58,6 +55,9 @@ type
     procedure Analyse_16x16(mbx, mby: int32_t; out Mode: int32_t; out score: int32_t);
   end;
 
+  TPredict4x4Func = procedure(Src, Dst: uint8_p; stride: int32_t);
+  TPredict16x16Func = procedure(Src, Dst: uint8_p);
+
 var
   predict_top16, predict_left16, predict_plane16: TPredict16x16Func;
 
@@ -70,7 +70,6 @@ uses DoStatusIO;
 const
   I4x4CACHE_STRIDE = 16;
 
-  (* top *)
 procedure predict_top4(Src, Dst: uint8_p; sstride: int32_t);
 var
   p: int32_t;
@@ -85,7 +84,6 @@ begin
     end;
 end;
 
-(* left *)
 procedure predict_left4(Src, Dst: uint8_p; sstride: int32_t);
 var
   i, p: int32_t;
@@ -100,7 +98,6 @@ begin
     end;
 end;
 
-(* dc *)
 procedure predict_dc4(Src, Dst: uint8_p; sstride: int32_t; mbx, mby, n: uint16_t);
 var
   has_top, has_left: Boolean;
@@ -138,7 +135,8 @@ begin
     end;
 end;
 
-{ 8.3.1.2.4  Specification of Intra_4x4_Diagonal_Down_Left prediction mode
+{
+  8.3.1.2.4  Specification of Intra_4x4_Diagonal_Down_Left prediction mode
   If x is equal to 3 and y is equal to 3,
   pred4x4L[x, y] = ( p[6, -1] + 3 * p[7, -1] + 2 ) >> 2
   Otherwise (x is not equal to 3 or y is not equal to 3),
@@ -157,7 +155,8 @@ begin
   Dst[3 * I4x4CACHE_STRIDE + 3] := (Src[6] + 3 * Src[7] + 2) shr 2
 end;
 
-{ 8.3.1.2.5  Specification of Intra_4x4_Diagonal_Down_Right prediction mode
+{
+  8.3.1.2.5  Specification of Intra_4x4_Diagonal_Down_Right prediction mode
   If x is greater than y,
   pred4x4L[x, y] = ( p[x - y - 2, -1]   + 2 * p[x - y - 1, -1]  + p[x - y, -1] + 2 ) >> 2
   Otherwise if x is less than y,
@@ -214,7 +213,6 @@ begin
       end;
 end;
 
-(* vertical left *)
 procedure predict_vl4(Src, Dst: uint8_p; stride: int32_t);
 var
   x, y: int32_t;
@@ -222,17 +220,11 @@ begin
   for x := 0 to 3 do
     for y := 0 to 3 do
       if (y and 1) = 1 then
-          Dst[x + y * I4x4CACHE_STRIDE] := (Src[x + (y div 2) - stride]
-          + Src[x + (y div 2) + 1 - stride] * 2
-          + Src[x + (y div 2) + 2 - stride] + 2) div 4
-        // P[x,y] = (S[x+(y/2),-1] + 2 * S[x+(y/2)+1,-1] + S[x+(y/2)+2,-1] + 2) / 4
+          Dst[x + y * I4x4CACHE_STRIDE] := (Src[x + (y div 2) - stride] + Src[x + (y div 2) + 1 - stride] * 2 + Src[x + (y div 2) + 2 - stride] + 2) div 4
       else
-          Dst[x + y * I4x4CACHE_STRIDE] := (Src[x + (y div 2) - stride]
-          + Src[x + (y div 2) + 1 - stride] + 1) div 2;
-  // P[x,y] = (S[x+(y/2),-1] + S[x+(y/2)+1,-1] + 1) / 2
+          Dst[x + y * I4x4CACHE_STRIDE] := (Src[x + (y div 2) - stride] + Src[x + (y div 2) + 1 - stride] + 1) div 2;
 end;
 
-(* horiz down *)
 procedure predict_hd4(Src, Dst: uint8_p; stride: int32_t);
 var
   z, x, y, i: int32_t;
@@ -245,30 +237,22 @@ begin
           begin
             i := y - (x div 2);
             if (z and 1) = 0 then
-                Dst[x + y * I4x4CACHE_STRIDE] := (Src[-1 + (i - 1) * stride]
-                + Src[-1 + i * stride] + 1) div 2
-              // P[x,y] = (S[-1,y-(x/2)-1] + S[-1,y-(x/2)] + 1) / 2
+                Dst[x + y * I4x4CACHE_STRIDE] := (Src[-1 + (i - 1) * stride] + Src[-1 + i * stride] + 1) div 2
             else
-                Dst[x + y * I4x4CACHE_STRIDE] := (Src[-1 + (i - 2) * stride]
-                + Src[-1 + (i - 1) * stride] * 2
-                + Src[-1 + i * stride] + 2) div 4
-              // P[x,y] = (S[-1,y-(x/2)-2] + 2 * S[-1,y-(x/2)-1] + S[-1,y-(x/2)] + 2) / 4
+                Dst[x + y * I4x4CACHE_STRIDE] := (Src[-1 + (i - 2) * stride] + Src[-1 + (i - 1) * stride] * 2 + Src[-1 + i * stride] + 2) div 4
           end
         else if z = -1 then
             Dst[x + y * I4x4CACHE_STRIDE] := (Src[-1] + Src[-1 - stride] * 2 + Src[-stride] + 2) div 4
-          // P[x,y] = (S[-1,0] + 2 * S[-1,-1] + S[0,-1] + 2) / 4
         else
           begin
             i := x - y - 1 - stride;
-            Dst[x + y * I4x4CACHE_STRIDE] := (Src[i]
-              + Src[i - 1] * 2
-              + Src[i - 2] + 2) div 4;
+            Dst[x + y * I4x4CACHE_STRIDE] := (Src[i] + Src[i - 1] * 2 + Src[i - 2] + 2) div 4;
           end;
-        // P[x,y] = (S[x-y-1,-1] + 2 * S[x-y-2,-1] + S[x-y-3,-1] + 2) / 4
       end;
 end;
 
-{ 8.3.1.2.9 Specification of Intra_4x4_Horizontal_Up prediction mode
+{
+  8.3.1.2.9 Specification of Intra_4x4_Horizontal_Up prediction mode
   zHU be set equal to x + 2 * y.
   - If zHU is equal to 0, 2, or 4
   pred4x4L[ x, y ] = ( p[ -1, y + ( x >> 1 ) ] + p[ -1, y + ( x >> 1 ) + 1 ] + 1 ) >> 1
@@ -291,16 +275,12 @@ begin
           begin
             i := y + (x div 2);
             if (z and 1) = 0 then
-                Dst[x + y * I4x4CACHE_STRIDE] := (Src[-1 + i * stride]
-                + Src[-1 + (i + 1) * stride] + 1) shr 1
+                Dst[x + y * I4x4CACHE_STRIDE] := (Src[-1 + i * stride] + Src[-1 + (i + 1) * stride] + 1) shr 1
             else
-                Dst[x + y * I4x4CACHE_STRIDE] := (Src[-1 + i * stride]
-                + Src[-1 + (i + 1) * stride] * 2
-                + Src[-1 + (i + 2) * stride] + 2) shr 2
+                Dst[x + y * I4x4CACHE_STRIDE] := (Src[-1 + i * stride] + Src[-1 + (i + 1) * stride] * 2 + Src[-1 + (i + 2) * stride] + 2) shr 2
           end
         else if z = 5 then
-            Dst[x + y * I4x4CACHE_STRIDE] := (Src[-1 + 2 * stride]
-            + Src[-1 + 3 * stride] * 3 + 2) shr 2
+            Dst[x + y * I4x4CACHE_STRIDE] := (Src[-1 + 2 * stride] + Src[-1 + 3 * stride] * 3 + 2) shr 2
         else
             Dst[x + y * I4x4CACHE_STRIDE] := Src[-1 + 3 * stride];
       end;
@@ -604,10 +584,7 @@ const
 {$IFDEF FPC}@{$ENDIF FPC}predict_vr4,
 {$IFDEF FPC}@{$ENDIF FPC}predict_hd4,
 {$IFDEF FPC}@{$ENDIF FPC}predict_vl4,
-{$IFDEF FPC}@{$ENDIF FPC}predict_hu4
-    );
-
-  { TIntraPredictor }
+{$IFDEF FPC}@{$ENDIF FPC}predict_hu4);
 
 constructor TIntraPredictor.Create;
 var
@@ -685,10 +662,10 @@ end;
 
 function TIntraPredictor.Analyse_4x4(const ref: uint8_p; const mbx, mby, n: int32_t): int32_t;
 const
-  TopMask        = 65484; { !(n in [0, 1, 4, 5]) }
-  LeftMask       = 64250; { !(n in [0, 2, 8, 10]) }
-  TopLeftMask    = 64200; { n in [3, 6, 7, 9, 11, 12, 13, 14, 15] }
-  InsideTTRMask  = 22340; { top/topright,      n in [2, 6, 8, 9, 10, 12, 14] }
+  TopMask = 65484;        { !(n in [0, 1, 4, 5]) }
+  LeftMask = 64250;       { !(n in [0, 2, 8, 10]) }
+  TopLeftMask = 64200;    { n in [3, 6, 7, 9, 11, 12, 13, 14, 15] }
+  InsideTTRMask = 22340;  { top/topright,      n in [2, 6, 8, 9, 10, 12, 14] }
   InsideLTTRMask = 21056; { left/top/topright, n in [6, 9, 12, 14] }
   OutsideTTRMask = 22391; { top/topright,      !(n in [3, 7, 11, 13, 15]) }
 var
@@ -851,16 +828,24 @@ begin
   score := mscore;
 end;
 
-(* ******************************************************************************
-*)
+{$IF Defined(WIN64)}
+{$L intra_pred_x64.obj}
+procedure predict_top16_sse2(Src, Dst: uint8_p); external name 'predict_top16_sse2';
+procedure predict_left16_ssse3(Src, Dst: uint8_p); external name 'predict_left16_ssse3';
+procedure predict_plane16_sse2(Src, Dst: uint8_p); external name 'predict_plane16_sse2';
+{$IFEND}
 
 procedure intra_pred_init;
 begin
   predict_top16 := @predict_top16_pas;
   predict_left16 := @predict_left16_pas;
   predict_plane16 := @predict_plane16_pas;
+
+{$IF Defined(WIN64)}
+      predict_top16   := @predict_top16_sse2;
+      predict_plane16 := @predict_plane16_sse2;
+      predict_left16  := @predict_left16_ssse3;
+{$IFEND}
 end;
 
-end.  
- 
- 
+end.

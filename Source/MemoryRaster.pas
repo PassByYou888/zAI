@@ -217,7 +217,9 @@ type
     procedure ReadyBits;
 
     { memory map }
+    procedure SetWorkMemory(Forever: Boolean; WorkMemory: Pointer; NewWidth, NewHeight: Integer); overload;
     procedure SetWorkMemory(WorkMemory: Pointer; NewWidth, NewHeight: Integer); overload;
+    procedure SetWorkMemory(Forever: Boolean; raster: TMemoryRaster); overload;
     procedure SetWorkMemory(raster: TMemoryRaster); overload;
     function IsMemoryMap: Boolean;
 
@@ -240,6 +242,8 @@ type
     function AggActivted: Boolean;
 
     { general }
+    procedure DiscardMemory;
+    procedure SetParam(sour: TMemoryRaster);
     procedure Reset; virtual;
     procedure Assign(sour: TMemoryRaster); virtual;
     procedure Clear; overload;
@@ -248,7 +252,9 @@ type
     procedure SetSize(NewWidth, NewHeight: Integer); overload; virtual;
     procedure SetSize(NewWidth, NewHeight: Integer; const ClearColor: TRColor); overload; virtual;
     procedure SetSizeF(NewWidth, NewHeight: TGeoFloat; const ClearColor: TRColor); overload;
+    procedure SetSizeF(NewWidth, NewHeight: TGeoFloat); overload;
     procedure SetSizeR(R: TRectV2; const ClearColor: TRColor); overload;
+    procedure SetSizeR(R: TRectV2); overload;
     function SizeOfPoint: TPoint;
     function SizeOf2DPoint: TVec2;
     function Size2D: TVec2;
@@ -292,7 +298,8 @@ type
     function BuildRGB(cSwapBR: Boolean): PRGBArray;
     procedure InputRGB(var buff; W, H: Integer; cSwapBR: Boolean);
     procedure OutputRGB(var buff; cSwapBR: Boolean);
-    procedure ColorTransparent(c: TRColor);
+    procedure ColorReplace(const old_c, new_c: TRColor);
+    procedure ColorTransparent(c_: TRColor);
     procedure ColorBlend(c: TRColor);
     procedure Grayscale;
     procedure ExtractGray(var output: TByteRaster);
@@ -856,7 +863,92 @@ type
     property Height: Integer read FHeight;
     property OnSegColor: TOnSegColor read FOnSegColor write FOnSegColor;
   end;
+
+  TRCLineStyle = (lsRow, lsCol);
+
+  TRCLine = record
+    Bp, Ep: TPoint;
+    Style: TRCLineStyle;
+  end;
+
+  PRCLine = ^TRCLine;
+
+  TRCLineList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC}TGenericsList<PRCLine>;
+
+  TRCLines = class(TRCLineList_Decl)
+  public
+    constructor Create(raster: TMemoryRaster; DetectorColor: TRColor; Threshold: TGeoFloat; MinLineLength: Integer);
+    destructor Destroy; override;
+    procedure AddRCLine(Bx, By, Ex, Ey: Integer; Style: TRCLineStyle);
+    function ProcessFormulaBox(var box: TRectV2): Boolean;
+
+    procedure Remove(p1, p2, p3, p4: PRCLine); overload;
+    procedure Remove(p: PRCLine); overload;
+    procedure Delete(index: Integer);
+    procedure Clear;
+  end;
+
 {$ENDREGION 'Color Segmentation'}
+{$REGION 'RasterizationIOProcessor'}
+
+
+type
+  TRaster_IO_Processor = class;
+
+  // async IO input define
+  TRaster_IO = class(TCoreClassInterfacedObject)
+  public
+    Owner: TRaster_IO_Processor;
+    InputRaster: TMemoryRaster;
+    OutputRaster: TMemoryRaster;
+    IndexNumber: UInt64;
+
+    constructor Create(Owner_: TRaster_IO_Processor); virtual;
+    destructor Destroy; override;
+    procedure ProcessBefore(UserData: Pointer); virtual;
+    function Process(UserData: Pointer): Boolean; virtual;
+    procedure ProcessAfter(UserData: Pointer); virtual;
+  end;
+
+  TRaster_IO_Buffer = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TRaster_IO>;
+
+  TRaster_IO_Class = class of TRaster_IO;
+
+  // async IO processor
+  TRaster_IO_Processor = class(TCoreClassInterfacedObject)
+  protected
+    FIO_Class: TRaster_IO_Class;
+    FInputBuffer, FOutputBuffer: TRaster_IO_Buffer;
+    FRuningThreadCounter: Integer;
+    FParallelProcessor: Boolean;
+    FIndexNumber: UInt64;
+    procedure LockInputBuffer;
+    procedure UnLockInputBuffer;
+    procedure IOProcessorThreadRun(ThSender: TComputeThread);
+    procedure IOProcessorThreadDone(ThSender: TComputeThread);
+  public
+    constructor Create(IO_Class_: TRaster_IO_Class); virtual;
+    destructor Destroy; override;
+
+    procedure Clear;
+
+    // input and process
+    procedure InputPicture(filename: TPascalString); overload;
+    procedure InputPicture(stream: TCoreClassStream); overload;
+    procedure Input(raster: TMemoryRaster; RasterInstance_: Boolean);
+    function InputCount: Integer;
+    procedure Process(UserData: Pointer);
+    function Finished: Boolean;
+
+    // output
+    function LockOutputBuffer: TRaster_IO_Buffer;
+    procedure UnLockOutputBuffer(freeObj_: Boolean);
+
+    // IO Class
+    property IO_Class: TRaster_IO_Class read FIO_Class write FIO_Class;
+    property ParallelProcessor: Boolean read FParallelProcessor write FParallelProcessor;
+  end;
+{$ENDREGION 'RasterizationIOProcessor'}
 {$REGION 'RasterAPI'}
 
 
@@ -864,7 +956,11 @@ procedure Wait_SystemFont_Init;
 
 function ClampInt(const Value, Min, Max: Integer): Integer; overload;
 function ClampByte3(const Value, Min, Max: Byte): Byte;
-function ClampByte(const Value: Integer): Byte;
+
+function ClampByte(const Value: Cardinal): Byte; overload;
+function ClampByte(const Value: Integer): Byte; overload;
+function ClampByte(const Value: UInt64): Byte; overload;
+function ClampByte(const Value: Int64): Byte; overload;
 
 procedure DisposeRasterArray(var arry: TMemoryRasterArray);
 
@@ -874,6 +970,7 @@ procedure BlockTransfer(Dst: TMemoryRaster; Dstx: Integer; Dsty: Integer; DstCli
 procedure FillRasterColor(var X; Count: Cardinal; Value: TRasterColor);
 procedure CopyRasterColor(const Source; var dest; Count: Cardinal);
 function RandomRasterColor(const A: Byte = $FF): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function RasterColor(const v: TVec4): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RasterColor(const R, G, B, A: Byte): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RasterColor(const R, G, B: Byte): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RasterColorInv(const c: TRasterColor): TRasterColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
@@ -894,6 +991,7 @@ function RasterColor2GrayD(const c: TRasterColor): Double; {$IFDEF INLINE_ASM} i
 procedure FillRColor(var X; Count: Cardinal; Value: TRColor);
 procedure CopyRColor(const Source; var dest; Count: Cardinal);
 function RandomRColor(const A: Byte = $FF): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function RColor(const v: TVec4): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RColor(const R, G, B, A: Byte): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RColor(const R, G, B: Byte): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF} overload;
 function RColorInv(const c: TRColor): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
@@ -909,6 +1007,7 @@ function RColor2Gray(const c: TRColor): Byte; {$IFDEF INLINE_ASM} inline; {$ENDI
 function RColor2GrayS(const c: TRColor): TGeoFloat; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RColor2GrayD(const c: TRColor): Double; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 
+function RColorDistanceSum(c1, c2: TRColor): Integer;
 function RColorDistance(c1, c2: TRColor): TGeoFloat;
 
 function RGBA2BGRA(const sour: TRColor): TRColor; {$IFDEF INLINE_ASM} inline; {$ENDIF}
@@ -1018,7 +1117,7 @@ function DecodeJpegLSGrayRasterFromStream(const stream: TCoreClassStream; var AR
   work only in defined part of image (useful when the document has text only in
   smaller area of page and non-text features outside the area confuse the rotation detector).
   Various calculations stats can be retrieved by passing Stats parameter. }
-function DocmentRotationDetected(const MaxAngle: TGeoFloat; const Treshold: Integer; raster: TMemoryRaster): TGeoFloat;
+function DocumentRotationDetected(const MaxAngle: TGeoFloat; const Treshold: Integer; raster: TMemoryRaster): TGeoFloat;
 
 {
   YV12
@@ -1135,6 +1234,9 @@ function IsRectEmpty_(const R: TRect): Boolean; forward;
 {$INCLUDE MemoryRaster_Font.inc}
 {$INCLUDE MemoryRaster_ExtApi.inc}
 {$INCLUDE MemoryRaster_ColorSegmentation.inc}
+{$INCLUDE MemoryRaster_IOProcessor.inc}
+
+{$REGION 'NewRasterAPI'}
 
 
 function NewRaster_: TMemoryRaster;
@@ -1171,6 +1273,7 @@ procedure SaveRaster_(mr: TMemoryRaster; const fn: string);
 begin
   mr.SaveToFile(fn);
 end;
+{$ENDREGION 'NewRasterAPI'}
 
 initialization
 

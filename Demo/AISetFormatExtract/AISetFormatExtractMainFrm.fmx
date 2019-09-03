@@ -22,8 +22,8 @@ object AISetFormatExtractMainForm: TAISetFormatExtractMainForm
     Size.Height = 412.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
-    Viewport.Width = 863.000000000000000000
-    Viewport.Height = 412.000000000000000000
+    Viewport.Width = 859.000000000000000000
+    Viewport.Height = 408.000000000000000000
   end
   object Timer1: TTimer
     Interval = 100

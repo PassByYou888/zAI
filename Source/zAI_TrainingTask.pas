@@ -24,7 +24,7 @@ unit zAI_TrainingTask;
 
 interface
 
-uses Types,
+uses Types, SysUtils,
   CoreClasses,
 {$IFDEF FPC}
   FPCGenericStructlist,
@@ -138,7 +138,7 @@ class function TTrainingTask.CreateTask: TTrainingTask;
 begin
   Result := TTrainingTask.Create;
   Result.DB_Stream := TMemoryStream64.CustomCreate($FFFF);
-  Result.DB_Engine := TObjectDataManagerOfCache.CreateAsStream(Result.DB_Stream, '', DBMarshal.ID, False, True, False);
+  Result.DB_Engine := TObjectDataManagerOfCache.CreateAsStream($FF, Result.DB_Stream, '', DBMarshal.ID, False, True, False);
   Result.LastWriteFileList := TPascalStringList.Create;
   Result.TaskLogStatus := TPascalStringList.Create;
 end;
@@ -158,7 +158,7 @@ var
   temp_db: TObjectDataManager;
 begin
   DB_Engine.UpdateIO;
-  temp_db := TObjectDataManagerOfCache.CreateAsStream(stream, '', DB_Engine.DefaultItemID, False, True, False);
+  temp_db := TObjectDataManagerOfCache.CreateAsStream(DB_Engine.Handle^.FixedStringL, stream, '', DB_Engine.DefaultItemID, False, True, False);
   DB_Engine.CopyTo(temp_db);
   DisposeObject(temp_db);
 end;
@@ -217,7 +217,11 @@ var
   m64: TMemoryStream64;
 begin
   m64 := TMemoryStream64.Create;
+{$IFDEF FPC}
   data.SaveToStream(m64);
+{$ELSE FPC}
+  data.SaveToStream(m64, TEncoding.UTF8);
+{$ENDIF FPC}
   Write(Name, m64);
   DisposeObject(m64);
 end;
@@ -247,7 +251,7 @@ var
   m64: TMemoryStream64;
 begin
   m64 := TMemoryStream64.Create;
-  data.SaveToStream(m64, True, False);
+  data.SaveToStream(m64, True, True, TRasterSave.rsJPEG_RGB_Qualily80);
   Write(Name, m64);
   DisposeObject(m64);
 end;
@@ -326,7 +330,11 @@ begin
   data.Clear;
   m64 := TMemoryStream64.Create;
   read(name, m64);
+{$IFDEF FPC}
   data.LoadFromStream(m64);
+{$ELSE FPC}
+  data.LoadFromStream(m64, TEncoding.UTF8);
+{$ENDIF FPC}
   DisposeObject(m64);
 end;
 

@@ -67,8 +67,8 @@ begin
   ai := TAI.OpenEngine();
 
   // 读取图片
-  r1 := NewRasterFromFile(umlCombineFileName(AI_Configure_Path, 'surf_1.bmp'));
-  r2 := NewRasterFromFile(umlCombineFileName(AI_Configure_Path, 'surf_2.bmp'));
+  r1 := NewRasterFromFile(WhereFileFromConfigure('surf_1.bmp'));
+  r2 := NewRasterFromFile(WhereFileFromConfigure('surf_2.bmp'));
 
   // 使用surf比对图片，并且输出到surf_out
   tk := GetTimeTick();

@@ -56,10 +56,11 @@ var
 
 {$ENDREGION 'GBKMediaCenterDecl'}
 
+procedure WaitGBKMediaInit;
+
 function LoadAndMergeDict(const ROOT: TPascalString): NativeInt;
 
 implementation
-
 
 type
   TDictStyle = (dsChar, dsPY, dsS2T, dsT2HK, dsT2S, dsT2TW,
@@ -202,6 +203,7 @@ var
   r: NativeInt;
   ph: TPascalString;
 begin
+  WaitGBKMediaInit;
   Result := 0;
   for DS in cAllDict do
     begin
@@ -277,7 +279,10 @@ begin
   DisposeObject(lst);
 end;
 
-procedure InitGBKMedia;
+var
+  GBKMediaInited: Boolean;
+
+procedure InitGBKMediaThread(th: TComputeThread);
 begin
   // base gbk dict
   CharDict := GetGBKHashStringDict(@C_CharDictPackageBuffer[0], SizeOf(T_CharDict_PackageBuffer), 20000);
@@ -307,10 +312,13 @@ begin
 
   // big word
   bigWordDict := GetGBKHashDict(@C_miniDictPackageBuffer[0], SizeOf(T_miniDict_PackageBuffer), 200 * 10000);
+
+  GBKMediaInited := True;
 end;
 
 procedure FreeGBKMedia;
 begin
+  WaitGBKMediaInit;
   DisposeObject([WordPartDict]);
   DisposeObject([WillVecDict, WordVecDict]);
   DisposeObject([BadEmotionDict, BadRepDict, GoodEmotionDict, GoodRepDict]);
@@ -319,14 +327,20 @@ begin
   DisposeObject(bigWordDict);
 end;
 
+procedure WaitGBKMediaInit;
+begin
+  while not GBKMediaInited do
+      CoreClasses.CheckThreadSynchronize(1);
+end;
+
 initialization
 
-InitGBKMedia;
+GBKMediaInited := False;
+TComputeThread.RunC({$IFDEF FPC}@{$ENDIF FPC}InitGBKMediaThread);
 
 finalization
 
 FreeGBKMedia;
+GBKMediaInited := False;
 
-end. 
- 
- 
+end.

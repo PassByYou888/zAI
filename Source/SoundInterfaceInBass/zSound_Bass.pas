@@ -24,7 +24,7 @@ unit zSound_Bass;
 interface
 
 uses CoreClasses, zSound, UnicodeMixedLib, MediaCenter,
-  ObjectDataManager, ItemStream, LibraryManager, ListEngine, PascalStrings, MemoryStream64,
+  ObjectDataManager, ItemStream, ObjectDataHashField, ListEngine, PascalStrings, MemoryStream64,
   SysUtils,
   Bass;
 

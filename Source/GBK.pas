@@ -49,6 +49,7 @@ uses FastGBK, GBKMediaCenter;
 
 function GBKChar(const c: TUPascalString): USystemString;
 begin
+  WaitGBKMediaInit;
 {$IFDEF FPC}
   Result := TUPascalString(CharDict.GetDefaultValue(TPascalString(c), TPascalString(c)));
 {$ELSE FPC}
@@ -67,6 +68,7 @@ end;
 
 function PY_Table(const s: TUPascalString; var Successed: Boolean): TUPascalString;
 begin
+  WaitGBKMediaInit;
   Result := PYDict.GetDefaultValue(s, '');
   Successed := Result.Len > 0;
   if Successed then
@@ -81,6 +83,7 @@ var
   i, j: Integer;
   Successed: Boolean;
 begin
+  WaitGBKMediaInit;
   ns := GBKString(s);
   i := 1;
 
@@ -134,6 +137,7 @@ end;
 
 function S2T_Table(const s: TUPascalString; var Successed: Boolean): TUPascalString;
 begin
+  WaitGBKMediaInit;
   Result := s2tDict.GetDefaultValue(s, '');
   Successed := Result.Len > 0;
   if not Successed then
@@ -146,6 +150,7 @@ var
   i, j: Integer;
   Successed: Boolean;
 begin
+  WaitGBKMediaInit;
   ns := GBKString(s);
   i := 1;
 
@@ -182,6 +187,7 @@ end;
 
 function t2HK_Table(const s: TUPascalString; var Successed: Boolean): TUPascalString;
 begin
+  WaitGBKMediaInit;
   Result := t2hkDict.GetDefaultValue(s, '');
   Successed := Result.Len > 0;
   if not Successed then
@@ -194,6 +200,7 @@ var
   i, j: Integer;
   Successed: Boolean;
 begin
+  WaitGBKMediaInit;
   ns := S2T(s);
   i := 1;
 
@@ -230,6 +237,7 @@ end;
 
 function t2s_Table(const s: TUPascalString; var Successed: Boolean): TUPascalString;
 begin
+  WaitGBKMediaInit;
   Result := t2sDict.GetDefaultValue(s, '');
   Successed := Result.Len > 0;
   if not Successed then
@@ -242,6 +250,7 @@ var
   i, j: Integer;
   Successed: Boolean;
 begin
+  WaitGBKMediaInit;
   ns := s;
   i := 1;
 
@@ -280,6 +289,7 @@ end;
 
 function t2tw_Table(const s: TUPascalString; var Successed: Boolean): TUPascalString;
 begin
+  WaitGBKMediaInit;
   Result := t2twDict.GetDefaultValue(s, '');
   Successed := Result.Len > 0;
   if not Successed then
@@ -292,6 +302,7 @@ var
   i, j: Integer;
   Successed: Boolean;
 begin
+  WaitGBKMediaInit;
   ns := S2T(s);
   i := 1;
 

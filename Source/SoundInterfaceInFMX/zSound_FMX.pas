@@ -14,7 +14,7 @@ unit zSound_FMX;
 interface
 
 uses CoreClasses, zSound, UnicodeMixedLib, MediaCenter,
-  ObjectDataManager, ItemStream, LibraryManager, ListEngine, PascalStrings, MemoryStream64,
+  ObjectDataManager, ItemStream, ObjectDataHashField, ListEngine, PascalStrings, MemoryStream64,
 
   FMX.Media,
 

@@ -48,6 +48,7 @@ var
   i, j     : Integer;
   Successed: Boolean;
 begin
+  WaitGBKMediaInit;
   Completed.Clear;
   ns := GBKString(s);
   Result := 0;
@@ -94,6 +95,7 @@ var
   Completed   : TListPascalString;
   i           : Integer;
 begin
+  WaitGBKMediaInit;
   Result := '';
   Unidentified := TListPascalString.Create;
   Completed := TListPascalString.Create;
@@ -115,6 +117,7 @@ var
   Completed   : TListPascalString;
   i           : Integer;
 begin
+  WaitGBKMediaInit;
   Result := '';
   Unidentified := TListPascalString.Create;
   Completed := TListPascalString.Create;
@@ -136,6 +139,7 @@ var
   Completed   : TListPascalString;
   i           : Integer;
 begin
+  WaitGBKMediaInit;
   Result := '';
   Unidentified := TListPascalString.Create;
   Completed := TListPascalString.Create;
@@ -157,6 +161,7 @@ var
   i, j, L   : Integer;
   Successed : Boolean;
 begin
+  WaitGBKMediaInit;
   ns := GBKString(s);
 
   Result := 0;
@@ -233,6 +238,7 @@ var
   i, r: Integer;
   pl  : TListPascalString;
 begin
+  WaitGBKMediaInit;
   ns := GBKString(s);
   Result := 0;
   pl := TListPascalString.Create;
@@ -247,31 +253,37 @@ end;
 
 function WillVec(const s: TUPascalString): Integer;
 begin
+  WaitGBKMediaInit;
   Result := FullQuery_Table(WillVecDict, s);
 end;
 
 function WordVec(const s: TUPascalString): Integer;
 begin
+  WaitGBKMediaInit;
   Result := FullQuery_Table(WordVecDict, s);
 end;
 
 function BadEmotion(const s: TUPascalString): Integer;
 begin
+  WaitGBKMediaInit;
   Result := FullQuery_Table(BadEmotionDict, s);
 end;
 
 function BadRep(const s: TUPascalString): Integer;
 begin
+  WaitGBKMediaInit;
   Result := FullQuery_Table(BadRepDict, s);
 end;
 
 function GoodEmotion(const s: TUPascalString): Integer;
 begin
+  WaitGBKMediaInit;
   Result := FullQuery_Table(GoodEmotionDict, s);
 end;
 
 function GoodRep(const s: TUPascalString): Integer;
 begin
+  WaitGBKMediaInit;
   Result := FullQuery_Table(GoodRepDict, s);
 end;
 

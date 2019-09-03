@@ -166,6 +166,25 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
+        <DCCReference Include="..\Source\CrossSocket\CommunicationFramework_Client_CrossSocket.pas"/>
+        <DCCReference Include="..\Source\CrossSocket\CommunicationFramework_Server_CrossSocket.pas"/>
+        <DCCReference Include="..\Source\DIOCP\CommunicationFramework_Client_DIOCP.pas"/>
+        <DCCReference Include="..\Source\DIOCP\CommunicationFramework_Server_DIOCP.pas"/>
+        <DCCReference Include="..\Source\ICS\CommunicationFramework_Client_ICS.pas"/>
+        <DCCReference Include="..\Source\ICS\CommunicationFramework_Server_ICS.pas"/>
+        <DCCReference Include="..\Source\ICS\CommunicationFramework_Server_ICSCustomSocket.pas"/>
+        <DCCReference Include="..\Source\Indy\CommunicationFramework_Client_Indy.pas"/>
+        <DCCReference Include="..\Source\Indy\CommunicationFramework_Server_Indy.pas"/>
+        <DCCReference Include="..\Source\Refrence\CommunicationFramework_Client_Refrence.pas"/>
+        <DCCReference Include="..\Source\Refrence\CommunicationFramework_Server_Refrence.pas"/>
+        <DCCReference Include="..\Source\SoundInterfaceInBass\Bass.pas"/>
+        <DCCReference Include="..\Source\SoundInterfaceInBass\zSound_Bass.pas"/>
+        <DCCReference Include="..\Source\SoundInterfaceInFMX\zSound_FMX.pas"/>
+        <DCCReference Include="..\Source\Synapse.FPC\CommunicationFramework_Client_Synapse.pas"/>
+        <DCCReference Include="..\Source\Synapse.FPC\CommunicationFramework_Server_Synapse.pas"/>
+        <DCCReference Include="..\Source\DrawInterfaceInFMX\zDrawControlBoxForFMX.pas"/>
+        <DCCReference Include="..\Source\DrawInterfaceInFMX\zDrawEngineInterface_FMX.pas"/>
+        <DCCReference Include="..\Source\DrawInterfaceInFMX\zDrawEngineInterface_SlowFMX.pas"/>
         <DCCReference Include="..\Source\Agg2D.pas"/>
         <DCCReference Include="..\Source\AggAlphaMaskUnpacked8.pas"/>
         <DCCReference Include="..\Source\AggArc.pas"/>
@@ -319,6 +338,8 @@
         <DCCReference Include="..\Source\CoreCompress.pas"/>
         <DCCReference Include="..\Source\DataFrameEngine.pas"/>
         <DCCReference Include="..\Source\DoStatusIO.pas"/>
+        <DCCReference Include="..\Source\Expert_Engine.pas"/>
+        <DCCReference Include="..\Source\Expret_Node.pas"/>
         <DCCReference Include="..\Source\Fast_MD5.pas"/>
         <DCCReference Include="..\Source\FastGBK.pas"/>
         <DCCReference Include="..\Source\FastHistogramSpace.pas"/>
@@ -330,6 +351,10 @@
         <DCCReference Include="..\Source\FastKDTreeI32.pas"/>
         <DCCReference Include="..\Source\FastKDTreeI64.pas"/>
         <DCCReference Include="..\Source\FastKDTreeS.pas"/>
+        <DCCReference Include="..\Source\FFMPEG.pas"/>
+        <DCCReference Include="..\Source\FFMPEG_Reader.pas"/>
+        <DCCReference Include="..\Source\FFMPEG_Writer.pas"/>
+        <DCCReference Include="..\Source\FileIndexPackage.pas"/>
         <DCCReference Include="..\Source\FilePackage.pas"/>
         <DCCReference Include="..\Source\FPCGenericStructlist.pas"/>
         <DCCReference Include="..\Source\GBK.pas"/>
@@ -380,7 +405,7 @@
         <DCCReference Include="..\Source\KM.pas"/>
         <DCCReference Include="..\Source\Learn.pas"/>
         <DCCReference Include="..\Source\LearnTypes.pas"/>
-        <DCCReference Include="..\Source\LibraryManager.pas"/>
+        <DCCReference Include="..\Source\LinearAction.pas"/>
         <DCCReference Include="..\Source\ListEngine.pas"/>
         <DCCReference Include="..\Source\MediaCenter.pas"/>
         <DCCReference Include="..\Source\MemoryRaster.pas"/>
@@ -393,12 +418,24 @@
         <DCCReference Include="..\Source\MovementEngine.pas"/>
         <DCCReference Include="..\Source\NotifyObjectBase.pas"/>
         <DCCReference Include="..\Source\ObjectData.pas"/>
+        <DCCReference Include="..\Source\ObjectDataHashField.pas"/>
+        <DCCReference Include="..\Source\ObjectDataHashItem.pas"/>
         <DCCReference Include="..\Source\ObjectDataManager.pas"/>
         <DCCReference Include="..\Source\OpCode.pas"/>
         <DCCReference Include="..\Source\PascalStrings.pas"/>
         <DCCReference Include="..\Source\PhysicsIO.pas"/>
         <DCCReference Include="..\Source\PyramidSpace.pas"/>
-        <DCCReference Include="..\Source\StreamList.pas"/>
+        <DCCReference Include="..\Source\Raster_JPEG.pas"/>
+        <DCCReference Include="..\Source\Raster_JPEG_BitStream.pas"/>
+        <DCCReference Include="..\Source\Raster_JPEG_Coder.pas"/>
+        <DCCReference Include="..\Source\Raster_JPEG_ColorTransforms.pas"/>
+        <DCCReference Include="..\Source\Raster_JPEG_DICT.pas"/>
+        <DCCReference Include="..\Source\Raster_JPEG_Huffman.pas"/>
+        <DCCReference Include="..\Source\Raster_JPEG_Image.pas"/>
+        <DCCReference Include="..\Source\Raster_JPEG_Lossless.pas"/>
+        <DCCReference Include="..\Source\Raster_JPEG_MapIterator.pas"/>
+        <DCCReference Include="..\Source\Raster_JPEG_Marker.pas"/>
+        <DCCReference Include="..\Source\Raster_JPEG_type.pas"/>
         <DCCReference Include="..\Source\TextDataEngine.pas"/>
         <DCCReference Include="..\Source\TextParsing.pas"/>
         <DCCReference Include="..\Source\TextTable.pas"/>
@@ -411,6 +448,8 @@
         <DCCReference Include="..\Source\Y4M.pas"/>
         <DCCReference Include="..\Source\zAI.pas"/>
         <DCCReference Include="..\Source\zAI_Common.pas"/>
+        <DCCReference Include="..\Source\zAI_Editor_Common.pas"/>
+        <DCCReference Include="..\Source\zAI_FFMPEG.pas"/>
         <DCCReference Include="..\Source\zAI_KeyIO.pas"/>
         <DCCReference Include="..\Source\zAI_TrainingTask.pas"/>
         <DCCReference Include="..\Source\ZDBEngine.pas"/>
@@ -425,25 +464,6 @@
         <DCCReference Include="..\Source\zNavigationScene.pas"/>
         <DCCReference Include="..\Source\ZS_JsonDataObjects.pas"/>
         <DCCReference Include="..\Source\zSound.pas"/>
-        <DCCReference Include="..\Source\CrossSocket\CommunicationFramework_Client_CrossSocket.pas"/>
-        <DCCReference Include="..\Source\CrossSocket\CommunicationFramework_Server_CrossSocket.pas"/>
-        <DCCReference Include="..\Source\DIOCP\CommunicationFramework_Client_DIOCP.pas"/>
-        <DCCReference Include="..\Source\DIOCP\CommunicationFramework_Server_DIOCP.pas"/>
-        <DCCReference Include="..\Source\ICS\CommunicationFramework_Client_ICS.pas"/>
-        <DCCReference Include="..\Source\ICS\CommunicationFramework_Server_ICS.pas"/>
-        <DCCReference Include="..\Source\ICS\CommunicationFramework_Server_ICSCustomSocket.pas"/>
-        <DCCReference Include="..\Source\Indy\CommunicationFramework_Client_Indy.pas"/>
-        <DCCReference Include="..\Source\Indy\CommunicationFramework_Server_Indy.pas"/>
-        <DCCReference Include="..\Source\Refrence\CommunicationFramework_Client_Refrence.pas"/>
-        <DCCReference Include="..\Source\Refrence\CommunicationFramework_Server_Refrence.pas"/>
-        <DCCReference Include="..\Source\SoundInterfaceInBass\Bass.pas"/>
-        <DCCReference Include="..\Source\SoundInterfaceInBass\zSound_Bass.pas"/>
-        <DCCReference Include="..\Source\SoundInterfaceInFMX\zSound_FMX.pas"/>
-        <DCCReference Include="..\Source\Synapse.FPC\CommunicationFramework_Client_Synapse.pas"/>
-        <DCCReference Include="..\Source\Synapse.FPC\CommunicationFramework_Server_Synapse.pas"/>
-        <DCCReference Include="..\Source\DrawInterfaceInFMX\zDrawControlBoxForFMX.pas"/>
-        <DCCReference Include="..\Source\DrawInterfaceInFMX\zDrawEngineInterface_FMX.pas"/>
-        <DCCReference Include="..\Source\DrawInterfaceInFMX\zDrawEngineInterface_SlowFMX.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

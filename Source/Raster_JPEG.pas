@@ -34,13 +34,11 @@ type
   // When loading half, quarter or 1/8 size, this performance setting is not used.
   TJpegPerformance = (jpBestQuality, jpBestSpeed);
 
-  // TMemoryJpegRaster is a Delphi and fpc class, which can be used
-  // to load Jpeg files into TMemoryRaster. It relays the Jpeg functionality in the non-Windows
-  // TJpegImage class to this TMemoryRaster component.
+  // TMemoryJpegRaster is a Delphi and fpc class, which can be used to load Jpeg files into TMemoryRaster.
+  // It relays the Jpeg functionality in the non-Windows TJpegImage class to this TMemoryRaster
   TMemoryJpegRaster = class(TCoreClassObject)
   private
-    // the temporary TMemoryRaster that can be either the full image or the
-    // tilesized bitmap when UseTiledDrawing is activated.
+    // the temporary TMemoryRaster that can be either the full image or the tilesized bitmap when UseTiledDrawing is activated.
     FRaster: TMemoryRaster;
     FImage: TJpegImage;
     FUseTiledDrawing: boolean;
@@ -59,8 +57,7 @@ type
     procedure SetScale(const Value: TJpegScale);
   protected
     // Assign this TJpegGraphic to Dest. The only valid type for Dest is TMemoryRaster.
-    // The internal jpeg image will be loaded from the data stream at the correct
-    // scale, then assigned to the bitmap in Dest.
+    // The internal jpeg image will be loaded from the data stream at the correct scale, then assigned to the bitmap in Dest.
     function GetEmpty: boolean;
     function GetHeight: Integer;
     function GetWidth: Integer;
@@ -72,50 +69,44 @@ type
 
     // Use Assign to assign a TMemoryRaster or other TJpegGraphic to this graphic. If
     // Source is a TMemoryRaster, the TMemoryRaster is compressed to the internal jpeg image.
-    // If Source is another TJpegGraphic,
-    // the data streams are copied and the internal Jpeg image is loaded from the
-    // data. It is also possible to assign a TJpegGraphic to a TMemoryRaster, like this:
-    // <code>
-    // MyBitmap.Assign(MyJpegGraphic)
-    // </code>
+    // If Source is another TJpegGraphic, the data streams are copied and the internal Jpeg image is loaded from the data.
+    // It is also possible to assign a TJpegGraphic to a TMemoryRaster, like this: MyBitmap.Assign(MyJpegGraphic)
     // In that case, the protected AssignTo method is called.
     procedure Assign(Source: TMemoryJpegRaster);
     procedure SetRaster(Source: PRGBArray; Source_width, Source_height: Integer); overload;
     procedure SetRaster(Source: TMemoryRaster); overload;
     procedure GetRaster(Dest: TMemoryRaster);
 
-    // Load a Jpeg graphic from the stream in Stream. Stream can be any stream
-    // type, as long as the size of the stream is known in advance. The stream
-    // should only contain *one* Jpeg graphic.
+    // Load a Jpeg graphic from the stream in Stream. Stream can be any stream type,
+    // as long as the size of the stream is known in advance. The stream should only contain *one* Jpeg graphic.
     procedure LoadFromStream(Stream: TMemoryStream64);
     procedure LoadFromFile(const AFileName: string);
 
     // In case of LoadOption [loTileMode] is included, after the LoadFromStream,
-    // individual tile blocks can be loaded which will be put in the resulting
-    // bitmap. The tile loaded will contain all the MCU blocks that fall within
-    // the specified bounds ALeft/ATop/ARight/ABottom. Note that these are var
-    // parameters, after calling this procedure they will be updated to the MCU
-    // block borders. ALeft/ATop can subsequently be used to draw the resulting
-    // TJpegFormat.Bitmap to a canvas.
+    // individual tile blocks can be loaded which will be put in the resulting bitmap.
+    // The tile loaded will contain all the MCU blocks that fall within the specified bounds ALeft/ATop/ARight/ABottom.
+    // Note that these are var parameters, after calling this procedure they will be updated to the MCU block borders.
+    // ALeft/ATop can subsequently be used to draw the resulting TJpegFormat.Bitmap to a canvas.
     procedure LoadTileBlock(var ALeft, ATop, ARight, ABottom: Integer);
 
-    // Save a Jpeg graphic to the stream in Stream. Stream can be any stream
-    // type, as long as the size of the stream is known in advance.
-    procedure SaveToStream(Stream: TMemoryStream64); // override;
+    // Save a Jpeg graphic to the stream in Stream. Stream can be any stream type
+    // as long as the size of the stream is known in advance.
+    procedure SaveToStream(Stream: TMemoryStream64);
     procedure SaveToFile(const AFileName: string);
     property Performance: TJpegPerformance read GetPerformance write SetPerformance;
-    // Downsizing scale when loading. When downsizing, the Jpeg compressor
-    // uses less memory and processing power to decode the DCT coefficients.
-    // jsFull is the 100% scale. jsDiv2 is 50% scale, jsDiv4 is 25% scale and jsDiv8
-    // is 12.5% scale (aka 1/8).
+
+    // Downsizing scale when loading. When downsizing,
+    // the Jpeg compressor uses less memory and processing power to decode the DCT coefficients.
+    // jsFull is the 100% scale. jsDiv2 is 50% scale, jsDiv4 is 25% scale and jsDiv8 is 12.5% scale (aka 1/8).
     property Scale: TJpegScale read GetScale write SetScale;
     property GrayScale: boolean read GetGrayScale write SetGrayScale;
     property CompressionQuality: TJpegQuality read GetCompressionQuality write SetCompressionQuality;
-    // When UseTiledDrawing is activated, the Jpeg graphic gets drawn by separate
-    // small tiled bitmaps when using TJpegGraphic.Draw. Only baseline jpeg images can
-    // use tiled drawing, so activating this setting takes no effect in other
-    // compression methods. The default tile size is 256x256 pixels.
+
+    // When UseTiledDrawing is activated, the Jpeg graphic gets drawn by separate small tiled bitmaps when using TJpegGraphic.Draw
+    // Only baseline jpeg images can use tiled drawing, so activating this setting takes no effect in other compression methods.
+    // The default tile size is 256x256 pixels.
     property UseTiledDrawing: boolean read FUseTiledDrawing write SetUseTiledDrawing;
+
     // disable debug info
     property Quiet: boolean read FQuiet write FQuiet;
     // Version returns the current version of the NativeJpeg library.
@@ -174,7 +165,7 @@ begin
   ImageDebug(Self, wsInfo, PFormat('create TMemoryRaster x=%d y=%d', [AIterator.Width, AIterator.Height]));
 
   // create a bitmap with iterator size and pixelformat
-  if (not Assigned(FRaster)) or (FRaster.Width <> AIterator.Width) or (FRaster.Height <> AIterator.Height) then
+  if (FRaster = nil) or (FRaster.Empty) or (FRaster.Width <> AIterator.Width) or (FRaster.Height <> AIterator.Height) then
     begin
       // create a new bitmap with iterator size and pixelformat
       DisposeObject(FRaster);
@@ -386,7 +377,9 @@ procedure TMemoryJpegRaster.GetRaster(Dest: TMemoryRaster);
 begin
   // the LoadLJpeg method will create the FRaster thru ImageCreateMap
   Image.LoadJpeg(Scale, True);
-  Dest.Assign(FRaster);
+  Dest.SetWorkMemory(True, FRaster);
+  DisposeObject(FRaster);
+  FRaster := nil;
 end;
 
 procedure TMemoryJpegRaster.LoadFromStream(Stream: TMemoryStream64);

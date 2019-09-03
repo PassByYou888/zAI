@@ -287,7 +287,6 @@ type
   public
     constructor Create(AOwner: TPeerIO); virtual;
     destructor Destroy; override;
-
     procedure Progress; virtual;
 
     property Owner: TPeerIO read FOwner;
@@ -368,7 +367,7 @@ type
     FBigStreamCmd: SystemString;
     FSyncBigStreamReceive: TCoreClassStream;
     FBigStreamSending: TCoreClassStream;
-    FBigStreamSendState: Int64;
+    FBigStreamSendCurrentPos: Int64;
     FBigStreamSendDoneTimeFree: Boolean;
     FCompleteBufferReceiveProcessing: Boolean;
     FCompleteBufferTotal: Cardinal;
@@ -827,7 +826,7 @@ type
     // user protocol support
     procedure FillCustomBuffer(Sender: TPeerIO; const th: TCoreClassThread; const buffer: PByte; const Size: NativeInt; var FillDone: Boolean); virtual;
   protected
-    // private vm and protocol stack support
+    // event
     procedure Framework_InternalSendByteBuffer(const Sender: TPeerIO; const buff: PByte; siz: NativeInt);
     procedure Framework_InternalSaveReceiveBuffer(const Sender: TPeerIO; const buff: Pointer; siz: Int64);
     procedure Framework_InternalProcessReceiveBuffer(const Sender: TPeerIO; const ACurrentActiveThread: TCoreClassThread; const RecvSync, SendSync: Boolean);
@@ -835,6 +834,7 @@ type
     procedure Framework_InternalIOCreate(const Sender: TPeerIO); virtual;
     procedure Framework_InternalIODestroy(const Sender: TPeerIO); virtual;
 
+    // private vm and protocol stack support
     procedure BuildP2PAuthTokenResult_OnIOIDLE(Sender: TCoreClassObject);
     procedure CommandResult_BuildP2PAuthToken(Sender: TPeerIO; ResultData: TDataFrameEngine);
     procedure Command_BuildP2PAuthToken(Sender: TPeerIO; InData, OutData: TDataFrameEngine);
@@ -980,6 +980,7 @@ type
     property PeerIOUserDefineClass: TPeerIOUserDefineClass read FPeerIOUserDefineClass write FPeerIOUserDefineClass;
     property UserDefineClass: TPeerIOUserDefineClass read FPeerIOUserDefineClass write FPeerIOUserDefineClass;
     property ExternalDefineClass: TPeerIOUserDefineClass read FPeerIOUserDefineClass write FPeerIOUserDefineClass;
+
     // custom special struct: user custom instance two
     property PeerClientUserSpecialClass: TPeerIOUserSpecialClass read FPeerIOUserSpecialClass write FPeerIOUserSpecialClass;
     property PeerIOUserSpecialClass: TPeerIOUserSpecialClass read FPeerIOUserSpecialClass write FPeerIOUserSpecialClass;
@@ -1222,7 +1223,13 @@ type
     procedure AsyncConnectM(addr: SystemString; Port: Word; OnResult: TStateMethod); virtual;
 {$IFNDEF FPC} procedure AsyncConnectP(addr: SystemString; Port: Word; OnResult: TStateProc); virtual; {$ENDIF FPC}
     function Connect(addr: SystemString; Port: Word): Boolean; virtual;
+
+    { disconnect }
     procedure Disconnect; virtual;
+    { delay close on now }
+    procedure DelayClose; overload;
+    { delay close on custom delay of double time }
+    procedure DelayClose(const t: double); overload;
 
     function Wait(ATimeOut: TTimeTick): SystemString; overload;
     function WaitC(ATimeOut: TTimeTick; OnResult: TStateCall): Boolean; overload;
@@ -1712,6 +1719,9 @@ var
   C_DataHeadToken: Cardinal = $F0F0F0F0;
   { user custom tail verify token }
   C_DataTailToken: Cardinal = $F1F1F1F1;
+
+  { send flush buffer }
+  C_SendFlushSize: NativeInt = 1 * 1024; // flush size = 1k byte
 
   // dostatus id
   C_DoStatusID: Integer = $0FFFFFFF;
@@ -3599,7 +3609,7 @@ begin
       if Queue.BigStream.Size - tmpPos > C_BigStream_ChunkSize then
         begin
           FBigStreamSending := Queue.BigStream;
-          FBigStreamSendState := tmpPos;
+          FBigStreamSendCurrentPos := tmpPos;
           FBigStreamSendDoneTimeFree := Queue.DoneAutoFree;
           Queue.BigStream := nil;
           FreeMemory(BigStream_Chunk);
@@ -3607,7 +3617,7 @@ begin
           if Assigned(FOwnerFramework.FOnBigStreamInterface) then
             begin
               FOwnerFramework.FOnBigStreamInterface.BeginStream(Self, FBigStreamSending.Size);
-              FOwnerFramework.FOnBigStreamInterface.Process(Self, FBigStreamSending.Size, FBigStreamSendState);
+              FOwnerFramework.FOnBigStreamInterface.Process(Self, FBigStreamSending.Size, FBigStreamSendCurrentPos);
             end;
 
           exit;
@@ -4534,15 +4544,15 @@ begin
               begin
                 BigStream_RealChunkSize := C_BigStream_ChunkSize;
 
-                BigStream_SendDone := FBigStreamSending.Size - FBigStreamSendState <= BigStream_RealChunkSize;
+                BigStream_SendDone := FBigStreamSending.Size - FBigStreamSendCurrentPos <= BigStream_RealChunkSize;
 
                 if BigStream_SendDone then
-                    BigStream_RealChunkSize := FBigStreamSending.Size - FBigStreamSendState;
+                    BigStream_RealChunkSize := FBigStreamSending.Size - FBigStreamSendCurrentPos;
 
                 BigStream_Chunk := GetMemory(BigStream_RealChunkSize);
 
                 try
-                  FBigStreamSending.Position := FBigStreamSendState;
+                  FBigStreamSending.Position := FBigStreamSendCurrentPos;
                   FBigStreamSending.read(BigStream_Chunk^, BigStream_RealChunkSize);
                 except
                   PrintError('BigStream IO read error!');
@@ -4553,7 +4563,7 @@ begin
                 try
                   SendBigStreamLittlePacket(BigStream_Chunk, BigStream_RealChunkSize);
                   FreeMemory(BigStream_Chunk);
-                  AtomInc(FBigStreamSendState, BigStream_RealChunkSize);
+                  AtomInc(FBigStreamSendCurrentPos, BigStream_RealChunkSize);
                 except
                   PrintError('BigStream send error!');
                   BreakAndDisconnect := True;
@@ -4568,13 +4578,13 @@ begin
                     if FBigStreamSendDoneTimeFree then
                         DisposeObject(FBigStreamSending);
                     FBigStreamSending := nil;
-                    FBigStreamSendState := -1;
+                    FBigStreamSendCurrentPos := -1;
                     FBigStreamSendDoneTimeFree := False;
                   end
                 else
                   begin
                     if Assigned(FOwnerFramework.FOnBigStreamInterface) then
-                        FOwnerFramework.FOnBigStreamInterface.Process(Self, FBigStreamSending.Size, FBigStreamSendState);
+                        FOwnerFramework.FOnBigStreamInterface.Process(Self, FBigStreamSending.Size, FBigStreamSendCurrentPos);
                   end;
               end
             else
@@ -5001,7 +5011,7 @@ begin
   FBigStreamCmd := '';
   FSyncBigStreamReceive := nil;
   FBigStreamSending := nil;
-  FBigStreamSendState := -1;
+  FBigStreamSendCurrentPos := -1;
   FBigStreamSendDoneTimeFree := False;
 
   FCompleteBufferReceiveProcessing := False;
@@ -5675,7 +5685,7 @@ begin
       Total := 0;
       Result := False;
     end;
-  Complete := FBigStreamSendState;
+  Complete := FBigStreamSendCurrentPos;
 end;
 
 procedure TPeerIO.SetID(const Value: Cardinal);
@@ -6067,8 +6077,6 @@ begin
 end;
 
 procedure TCommunicationFramework.Framework_InternalSendByteBuffer(const Sender: TPeerIO; const buff: PByte; siz: NativeInt);
-const
-  FlushBuffSize = 16 * 1024; // flush size = 16k byte
 var
   p: PByte;
 begin
@@ -6080,12 +6088,12 @@ begin
   p := buff;
 
   // fill fragment
-  while siz > FlushBuffSize do
+  while siz > C_SendFlushSize do
     begin
-      Sender.SendByteBuffer(p, FlushBuffSize);
-      inc(p, FlushBuffSize);
+      Sender.SendByteBuffer(p, C_SendFlushSize);
+      inc(p, C_SendFlushSize);
       Sender.WriteBufferFlush;
-      dec(siz, FlushBuffSize);
+      dec(siz, C_SendFlushSize);
     end;
 
   if siz > 0 then
@@ -8257,6 +8265,24 @@ end;
 
 procedure TCommunicationFrameworkClient.Disconnect;
 begin
+end;
+
+procedure TCommunicationFrameworkClient.DelayClose;
+begin
+  try
+    if ClientIO <> nil then
+        ClientIO.DelayClose;
+  except
+  end;
+end;
+
+procedure TCommunicationFrameworkClient.DelayClose(const t: double);
+begin
+  try
+    if ClientIO <> nil then
+        ClientIO.DelayClose(t);
+  except
+  end;
 end;
 
 // sync KeepAlive

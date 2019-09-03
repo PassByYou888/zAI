@@ -46,7 +46,7 @@ type
 
 var
   ColorSegmentationMainForm: TColorSegmentationMainForm;
-  color_threshold: TGeoFloat = 0.1;
+  color_threshold: TGeoFloat = 0.4;
 
 implementation
 
@@ -93,9 +93,7 @@ begin
   d.FillBox(d.ScreenRect, DEColor(0.2, 0.2, 0.2));
 
   LockObject(SegImgList);
-  d.BeginCaptureShadow(Vec2(-5, 5), 0.9);
   r := d.DrawPicturePackingInScene(SegImgList, 10, Vec2(0, 0), 1.0);
-  d.EndCaptureShadow;
   UnLockObject(SegImgList);
 
   d.DrawText('像素分割后', 16, d.ScreenRect, DEColor(0.5, 1.0, 0.5), False);
@@ -151,7 +149,7 @@ begin
   tex_box := d.FitDrawPicture(tex, tex.BoundsRectV2, RectEdge(d.ScreenRect, -20), 1.0);
 
   for i := 0 to length(LastSegBox) - 1 do
-      d.DrawBox(RectTransformToDest(tex.BoundsRectV2, tex_box, LastSegBox[i]), DEColor(1, 0.5, 0.5, 1), 2);
+      d.DrawBox(RectTransform(tex.BoundsRectV2, tex_box, LastSegBox[i]), DEColor(1, 0.5, 0.5, 1), 2);
 
   d.DrawDotLineBox(tex_box, Vec2(0.5, 0.5), 0, DEColor(0.8, 0.1, 0.4), 3);
 
@@ -239,11 +237,9 @@ begin
       for i := 0 to s.count - 1 do
         begin
           sp := s[i];
-          LastSegBox[i] := sp.BoundsRectV2(True);
+          LastSegBox[i] := sp.BoundsRectV2;
           // BuildDatamap方法会将分割数据投影到一个新光栅中
           nm := sp.BuildClipDatamap(RColor(0, 0, 0, 0), pickColor);
-          // 在显示的分割结果上给分割图形画上边框
-          // nm.FillNoneBGColorBorder(RColor(0, 0, 0, 0), RColorInv(pickColor), 4);
 
           LockObject(SegImgList);
           SegImgList.Add(nm);

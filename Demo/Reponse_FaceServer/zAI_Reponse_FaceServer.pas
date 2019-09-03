@@ -112,7 +112,7 @@ begin
   // run alignment
   Alignment.Alignment(imgL);
   // Calibration face label
-  imgL.CalibrationNullDefineToken(face_label);
+  imgL.CalibrationNullToken(face_label);
   imgL.FileInfo := face_label;
   // free alignment
   disposeObject(Alignment);
@@ -371,7 +371,7 @@ begin
   if not umlFileExists(AI_TrainingTool) then
       exit;
 
-  if FaceDB.FoundNoTokenDetectorDefine then
+  if FaceDB.FoundNoTokenDefine then
       exit;
 
   tokens := FaceDB.DetectorTokens;
@@ -415,7 +415,7 @@ begin
     end;
   SetLength(tokens, 0);
 
-  if FaceDB.FoundNoTokenDetectorDefine then
+  if FaceDB.FoundNoTokenDefine then
     begin
       report := 'invalid face label.';
       exit;

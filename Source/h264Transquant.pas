@@ -38,7 +38,6 @@ procedure itrans_dc(Block: int16_p);
 
 implementation
 
-
 const
   table_qp_div6: array [0 .. 51] of uint8_t =
     (0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8);
@@ -81,13 +80,12 @@ const
     );
 
 type
-  matrix_t    = array [0 .. 3, 0 .. 3] of int16_t;
+  matrix_t = array [0 .. 3, 0 .. 3] of int16_t;
   dc_matrix_t = array [0 .. 1, 0 .. 1] of int16_t;
   dc_matrix_p = ^dc_matrix_t;
 
 var
-  resc_factor,
-    mult_factor: array [0 .. 5, 0 .. 15] of int16_t;
+  resc_factor, mult_factor: array [0 .. 5, 0 .. 15] of int16_t;
 
 procedure init_tables;
 var
@@ -453,6 +451,4 @@ initialization
 
 init_tables;
 
-end.  
- 
- 
+end.

@@ -209,7 +209,7 @@ begin
       vl.ConvexHull();
 
       poly := TDeflectionPolygon.Create;
-      poly.RebuildPoly(vl);
+      poly.Rebuild(vl, True);
       geoBuff.Add(poly);
 
       // 几何颜色,线条宽等等绘图参数
@@ -230,7 +230,7 @@ begin
           vl.Add(umlRandomRange(edge, round(width) - edge), umlRandomRange(edge, round(height) - edge));
 
       poly := TDeflectionPolygon.Create;
-      poly.RebuildPoly(vl);
+      poly.Rebuild(vl, True);
       geoBuff.Add(poly);
 
       // 几何颜色,线条宽等等绘图参数

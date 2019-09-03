@@ -73,17 +73,17 @@ begin
 
           DoStatus('');
 
-          DoStatus('正在解析 %s 中的数据', [editor_ImgData.FileName]);
+          DoStatus('正在解析 %s 中的数据', [editor_ImgData.FileName.Text]);
 
           // 原始光栅数据
           editor_ImgData_raster := editor_ImgData.Raster;
-          DoStatus(' %s 原始的光栅尺寸 %d * %d', [editor_ImgData.FileName, editor_ImgData_raster.Width, editor_ImgData_raster.Height]);
+          DoStatus(' %s 原始的光栅尺寸 %d * %d', [editor_ImgData.FileName.Text, editor_ImgData_raster.Width, editor_ImgData_raster.Height]);
 
           for j := 0 to editor_ImgData.DetectorDefineList.Count - 1 do
             begin
               // editor_ImgData_Det里面是检测器框体定义和ShapePredictor数据
               editor_ImgData_Det := editor_ImgData.DetectorDefineList[j];
-              DoStatus(' %s 中的检测器框体%d: %d %d %d %d shapePredictor数据有 %d 个', [editor_ImgData.FileName, j,
+              DoStatus(' %s 中的检测器框体%d: %d %d %d %d shapePredictor数据有 %d 个', [editor_ImgData.FileName.Text, j,
                 editor_ImgData_Det.R.Left, editor_ImgData_Det.R.Top,
                 editor_ImgData_Det.R.Right, editor_ImgData_Det.R.Bottom, editor_ImgData_Det.Part.Count]);
             end;
@@ -94,7 +94,7 @@ begin
               // 它的数据原型来自Geometry2DUnit中的T2DPolygonGraph
               // T2DPolygonGraph由一个包围多边形和n个塌陷多边形共同组成
               editor_ImgData_Geo := editor_ImgData.GeometryList[j];
-              DoStatus(' %s 中的几何描述体 %s 有 %d 个塌陷 ', [editor_ImgData.FileName, editor_ImgData_Geo.Token, editor_ImgData_Geo.CollapsesCount]);
+              DoStatus(' %s 中的几何描述体 %s 有 %d 个塌陷 ', [editor_ImgData.FileName.Text, editor_ImgData_Geo.Token.Text, editor_ImgData_Geo.CollapsesCount]);
             end;
 
           for j := 0 to editor_ImgData.SegmentationMaskList.Count - 1 do
@@ -102,7 +102,7 @@ begin
               // editor_ImgData_SegMask 里面是用于图像语义分割的输入蒙版
               // 这些蒙版可以是多个联合的像素描绘体，也可以是单独像素描绘体，他们的最终作用和几何描述结果一致
               editor_ImgData_SegMask := editor_ImgData.SegmentationMaskList[j];
-              DoStatus(' %s 中有一个叫 %s 的分割蒙版描述对象 ', [editor_ImgData.FileName, editor_ImgData_SegMask.Token]);
+              DoStatus(' %s 中有一个叫 %s 的分割蒙版描述对象 ', [editor_ImgData.FileName.Text, editor_ImgData_SegMask.Token.Text]);
             end;
 
           // 现在我们开始重构一次数据结构

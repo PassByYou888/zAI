@@ -250,34 +250,38 @@ begin
 end;
 
 procedure MemoryBitmapToSurface(bmp: TMemoryRaster; Surface: TBitmapSurface);
-var
-  i: Integer;
-  p1, p2: PCardinal;
-  c: TRasterColorEntry;
-  DC: TAlphaColor;
 begin
 {$IF Defined(ANDROID) or Defined(IOS)}
   Surface.SetSize(bmp.width, bmp.height, TPixelFormat.RGBA);
 {$ELSE}
   Surface.SetSize(bmp.width, bmp.height, TPixelFormat.BGRA);
 {$ENDIF}
-  p1 := PCardinal(@bmp.Bits[0]);
-  p2 := PCardinal(Surface.Bits);
-  for i := bmp.width * bmp.height - 1 downto 0 do
+  TParallel.For(0, Surface.height - 1, procedure(y: Integer)
+    var
+      i: Integer;
+      p1, p2: PCardinal;
+      c: TRasterColorEntry;
     begin
+      p1 := PCardinal(bmp.ScanLine[y]);
+      p2 := PCardinal(Surface.ScanLine[y]);
+      for i := 0 to bmp.width - 1 do
+        begin
 {$IF Defined(ANDROID) or Defined(IOS) or Defined(OSX)}
-      c.BGRA := RGBA2BGRA(TRasterColor(p1^));
+          c.BGRA := RGBA2BGRA(TRasterColor(p1^));
 {$ELSE}
-      c.BGRA := TRasterColor(p1^);
+          c.BGRA := TRasterColor(p1^);
 {$IFEND}
-      TAlphaColorRec(DC).r := c.r;
-      TAlphaColorRec(DC).g := c.g;
-      TAlphaColorRec(DC).b := c.b;
-      TAlphaColorRec(DC).a := c.a;
-      p2^ := DC;
-      inc(p1);
-      inc(p2);
-    end;
+          with TAlphaColorRec(p2^) do
+            begin
+              r := c.r;
+              g := c.g;
+              b := c.b;
+              a := c.a;
+            end;
+          inc(p1);
+          inc(p2);
+        end;
+    end);
 end;
 
 procedure MemoryBitmapToSurface(bmp: TMemoryRaster; sourRect: TRect; Surface: TBitmapSurface);

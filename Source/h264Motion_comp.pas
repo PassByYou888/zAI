@@ -154,11 +154,17 @@ begin
     end;
 end;
 
+{$IF Defined(WIN64)}
+{$L motion_comp_x64.obj}
+procedure mc_chroma_8x8_sse2(Src, Dst: pbyte; const stride: integer; coef: pbyte); external name 'mc_chroma_8x8_sse2';
+{$IFEND}
+
 procedure motion_compensate_init;
 begin
   mc_chroma_8x8 := @mc_chroma_8x8_pas;
+{$IF Defined(WIN64)}
+  mc_chroma_8x8 := @mc_chroma_8x8_sse2;
+{$IFEND}
 end;
 
-end.  
- 
- 
+end.

@@ -56,7 +56,7 @@ begin
       DemoPolygon.Surround.Add(umlRandomRangeF(edge, round(pb1.width) - edge), umlRandomRangeF(edge, round(pb1.height) - edge));
   DemoPolygon.Surround.ConvexHull();
 
-  r := DemoPolygon.Surround.BoundRect;
+  r := DemoPolygon.Surround.BoundBox();
 
   while DemoPolygon.CollapsesCount < 1 do
     begin

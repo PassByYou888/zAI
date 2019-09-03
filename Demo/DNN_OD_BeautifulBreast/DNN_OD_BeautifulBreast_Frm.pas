@@ -85,7 +85,7 @@ end;
 procedure TForm1.PaintBox1Paint(Sender: TObject; Canvas: TCanvas);
   procedure Raster_DetectAndDraw(mr: TMemoryRaster);
   begin
-    ai.DrawMMOD(mmod_hnd, mr, DEColor(1, 0, 0, 1));
+    ai.DrawMMOD(mmod_hnd, mr, DEColor(0.5, 0.5, 1, 1), 48);
 
     // 这里演示了对视频输出做后期处理的部分方法
 

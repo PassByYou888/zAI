@@ -51,7 +51,16 @@ object Form1: TForm1
     Size.Width = 161.000000000000000000
     Size.Height = 19.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 2
+    TabOrder = 3
     Text = 'used AGG Render'
+  end
+  object TriCheckBox: TCheckBox
+    Position.X = 280.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 161.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    Text = 'Show triangle '
   end
 end

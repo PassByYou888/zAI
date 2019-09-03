@@ -24,7 +24,7 @@ unit zSound;
 interface
 
 uses CoreClasses, MemoryStream64, UnicodeMixedLib,
-  ObjectDataManager, LibraryManager, PascalStrings, ListEngine;
+  ObjectDataManager, ObjectDataHashField, PascalStrings, ListEngine;
 
 type
   TzSound = class(TCoreClassPersistent)

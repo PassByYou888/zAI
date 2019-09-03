@@ -32,10 +32,26 @@ procedure pixel_save_4x4(Src, dest: uint8_p; stride: int32_t);
 procedure pixel_init;
 
 var
-  sad_16x16, sad_8x8, sad_4x4, ssd_16x16, ssd_8x8, satd_4x4, satd_8x8, satd_16x16: mbcmp_func_t;
+  sad_16x16: mbcmp_func_t;
+  sad_8x8: mbcmp_func_t;
+  sad_4x4: mbcmp_func_t;
+  ssd_16x16: mbcmp_func_t;
+  ssd_8x8: mbcmp_func_t;
+  satd_4x4: mbcmp_func_t;
+  satd_8x8: mbcmp_func_t;
+  satd_16x16: mbcmp_func_t;
+
   var_16x16: mbstat_func_t;
-  pixel_load_16x16, pixel_loadu_16x16, pixel_load_8x8, pixel_save_16x16, pixel_save_8x8: pixmove_func_t;
-  pixel_add_4x4, pixel_sub_4x4: pixoper_func_t;
+
+  pixel_load_16x16: pixmove_func_t;
+  pixel_loadu_16x16: pixmove_func_t;
+  pixel_load_8x8: pixmove_func_t;
+  pixel_save_16x16: pixmove_func_t;
+  pixel_save_8x8: pixmove_func_t;
+
+  pixel_add_4x4: pixoper_func_t;
+  pixel_sub_4x4: pixoper_func_t;
+
   pixel_avg_16x16: pixavg_func_t;
 
 implementation
@@ -334,6 +350,33 @@ begin
     end;
 end;
 
+{$IF Defined(WIN64)}
+{$L pixel_x64.obj}
+function sad_16x16_sse2(pix1, pix2: pbyte; stride: integer): integer; external name 'sad_16x16_sse2';
+function sad_8x8_mmx(pix1, pix2: pbyte; stride: integer): integer; external name 'sad_8x8_mmx';
+function sad_4x4_mmx(pix1, pix2: pbyte; stride: integer): integer; external name 'sad_4x4_mmx';
+
+function ssd_16x16_sse2(pix1, pix2: pbyte; stride: integer): integer; external name 'ssd_16x16_sse2';
+function ssd_8x8_sse2(pix1, pix2: pbyte; stride: integer): integer; external name 'ssd_8x8_sse2';
+
+function satd_16x16_sse2(pix1, pix2: pbyte; stride: integer): integer; external name 'satd_16x16_sse2';
+function satd_8x8_mmx(pix1, pix2: pbyte; stride: integer): integer; external name 'satd_8x8_mmx';
+function satd_4x4_mmx(pix1, pix2: pbyte; stride: integer): integer; external name 'satd_4x4_mmx';
+
+function var_16x16_sse2(pix: pbyte): UInt32; external name 'var_16x16_sse2';
+
+procedure pixel_loadu_16x16_sse2(dest, Src: uint8_p; stride: integer); external name 'pixel_loadu_16x16_sse2';
+procedure pixel_load_16x16_sse2(dest, Src: uint8_p; stride: integer); external name 'pixel_load_16x16_sse2';
+procedure pixel_load_8x8_sse2(dest, Src: uint8_p; stride: integer); external name 'pixel_load_8x8_sse2';
+procedure pixel_save_16x16_sse2(Src, dest: uint8_p; stride: integer); external name 'pixel_save_16x16_sse2';
+procedure pixel_save_8x8_sse2(Src, dest: uint8_p; stride: integer); external name 'pixel_save_8x8_sse2';
+
+procedure pixel_sub_4x4_mmx(pix1, pix2: pbyte; Diff: int16_p); external name 'pixel_sub_4x4_mmx';
+procedure pixel_add_4x4_mmx(pix1, pix2: pbyte; Diff: int16_p); external name 'pixel_add_4x4_mmx';
+procedure pixel_avg_16x16_sse2(src1, src2, dest: uint8_p; stride: integer); external name 'pixel_avg_16x16_sse2';
+{$IFEND}
+
+
 procedure pixel_init;
 begin
   sad_16x16 := @sad_16x16_pas;
@@ -356,6 +399,31 @@ begin
   pixel_add_4x4 := @pixel_add_4x4_pas;
   pixel_sub_4x4 := @pixel_sub_4x4_pas;
   pixel_avg_16x16 := @pixel_avg_16x16_pas;
+
+{$IF Defined(WIN64)}
+  sad_16x16 := @sad_16x16_sse2;
+  sad_8x8 := @sad_8x8_mmx;
+  sad_4x4 := @sad_4x4_mmx;
+  ssd_16x16 := @ssd_16x16_sse2;
+  ssd_8x8 := @ssd_8x8_sse2;
+
+  satd_4x4 := @satd_4x4_mmx;
+  satd_8x8 := @satd_8x8_mmx;
+  satd_16x16 := @satd_16x16_sse2;
+
+  var_16x16 := @var_16x16_sse2;
+
+  pixel_loadu_16x16 := @pixel_loadu_16x16_sse2;
+  pixel_load_16x16 := @pixel_load_16x16_sse2;
+  pixel_save_16x16 := @pixel_save_16x16_sse2;
+  pixel_load_8x8 := @pixel_load_8x8_sse2;
+  pixel_save_8x8 := @pixel_save_8x8_sse2;
+
+  pixel_add_4x4 := @pixel_add_4x4_mmx;
+  pixel_sub_4x4 := @pixel_sub_4x4_mmx;
+  pixel_avg_16x16 := @pixel_avg_16x16_sse2;
+{$IFEND}
+
 end;
 
 end.

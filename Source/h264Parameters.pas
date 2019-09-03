@@ -41,18 +41,21 @@ type
     fps: Single;              // fps
     qp: uint8_t;              // quantization parameter
     chroma_qp_offset: int8_t; // chroma qp offset
+
     subme: uint8_t;           // subpixel ME refinement
     { 0 - none (fpel only)
       1 - hpel
       2 - qpel
       3 - qpel SATD
     }
+
     analyse: uint8_t; // mb type decision quality
     { 0 - none
       1 - heuristics - SAD
       2 - heuristics - SATD
       3 - bitcost
     }
+
     ref: uint8_t;           // reference frame count
     key_interval: uint16_t; // maximum keyframe interval
     loopfilter: Boolean;    // deblocking
@@ -194,10 +197,10 @@ begin
   chroma_qp_offset := 0;
   key_interval := 100;
   subme := 3;
-  analyse := 2;
+  analyse := 1;
   ref := 1;
   RC.Enabled := False;
-  aq := False;
+  aq := True;
   loopfilter := False;
   filter_thread := False;
   luma_only := False;

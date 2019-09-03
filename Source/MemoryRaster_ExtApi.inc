@@ -1,3 +1,24 @@
+{ ****************************************************************************** }
+{ * memory Rasterization                                                       * }
+{ * by QQ 600585@qq.com                                                        * }
+{ ****************************************************************************** }
+{ * https://zpascal.net                                                        * }
+{ * https://github.com/PassByYou888/zAI                                        * }
+{ * https://github.com/PassByYou888/ZServer4D                                  * }
+{ * https://github.com/PassByYou888/PascalString                               * }
+{ * https://github.com/PassByYou888/zRasterization                             * }
+{ * https://github.com/PassByYou888/CoreCipher                                 * }
+{ * https://github.com/PassByYou888/zSound                                     * }
+{ * https://github.com/PassByYou888/zChinese                                   * }
+{ * https://github.com/PassByYou888/zExpression                                * }
+{ * https://github.com/PassByYou888/zGameWare                                  * }
+{ * https://github.com/PassByYou888/zAnalysis                                  * }
+{ * https://github.com/PassByYou888/FFMPEG-Header                              * }
+{ * https://github.com/PassByYou888/zTranslate                                 * }
+{ * https://github.com/PassByYou888/InfiniteIoT                                * }
+{ * https://github.com/PassByYou888/FastMD5                                    * }
+{ ****************************************************************************** }
+
 function ClampInt(const Value, Min, Max: Integer): Integer;
 begin
   if Value > Max then
@@ -18,7 +39,33 @@ begin
       Result := Value;
 end;
 
+function ClampByte(const Value: Cardinal): Byte;
+begin
+  if Value > $FF then
+      Result := $FF
+  else
+      Result := Value;
+end;
+
 function ClampByte(const Value: Integer): Byte;
+begin
+  if Value > $FF then
+      Result := $FF
+  else if Value < 0 then
+      Result := 0
+  else
+      Result := Value;
+end;
+
+function ClampByte(const Value: UInt64): Byte;
+begin
+  if Value > $FF then
+      Result := $FF
+  else
+      Result := Value;
+end;
+
+function ClampByte(const Value: Int64): Byte;
 begin
   if Value > $FF then
       Result := $FF
@@ -195,6 +242,14 @@ begin
   Result := RasterColor(Random($FF), Random($FF), Random($FF), a);
 end;
 
+function RasterColor(const v: TVec4): TRColor;
+begin
+  TRColorEntry(Result).r := ClampByte(Round(v[0] * $FF));
+  TRColorEntry(Result).g := ClampByte(Round(v[1] * $FF));
+  TRColorEntry(Result).b := ClampByte(Round(v[2] * $FF));
+  TRColorEntry(Result).a := ClampByte(Round(v[3] * $FF));
+end;
+
 function RasterColor(const r, g, b, a: Byte): TRasterColor;
 begin
   TRasterColorEntry(Result).r := r;
@@ -328,6 +383,14 @@ begin
   Result := RColor(Random($FF), Random($FF), Random($FF), a);
 end;
 
+function RColor(const v: TVec4): TRColor;
+begin
+  TRColorEntry(Result).r := ClampByte(Round(v[0] * $FF));
+  TRColorEntry(Result).g := ClampByte(Round(v[1] * $FF));
+  TRColorEntry(Result).b := ClampByte(Round(v[2] * $FF));
+  TRColorEntry(Result).a := ClampByte(Round(v[3] * $FF));
+end;
+
 function RColor(const r, g, b, a: Byte): TRColor;
 begin
   TRColorEntry(Result).r := r;
@@ -418,13 +481,31 @@ begin
       Result := (r + g + b) / 3 / $FF;
 end;
 
-function RColorDistance(c1, c2: TRColor): TGeoFloat;
+function RColorDistanceSum(c1, c2: TRColor): Integer;
 var
-  v1, v2: TVector4;
+  ce1: TRColorEntry absolute c1;
+  ce2: TRColorEntry absolute c2;
 begin
-  v1 := RColor2Vector4(c1);
-  v2 := RColor2Vector4(c2);
-  Result := v1.Distance4D(v2);
+  Result := 0;
+  if ce1.r > ce2.r then
+      inc(Result, ce1.r - ce2.r)
+  else
+      inc(Result, ce2.r - ce1.r);
+
+  if ce1.g > ce2.g then
+      inc(Result, ce1.g - ce2.g)
+  else
+      inc(Result, ce2.g - ce1.g);
+
+  if ce1.b > ce2.b then
+      inc(Result, ce1.b - ce2.b)
+  else
+      inc(Result, ce2.b - ce1.b);
+end;
+
+function RColorDistance(c1, c2: TRColor): TGeoFloat;
+begin
+  Result := RColor2Vector3(c1).Distance3D(RColor2Vector3(c2));
 end;
 
 function RGBA2BGRA(const sour: TRColor): TRColor;
@@ -1890,7 +1971,7 @@ begin
   if Transparent then
       c := RColor(0, 0, 0, 0)
   else
-      c := RColor(0, 0, 0, 1);
+      c := RColor(0, 0, 0, $FF);
 
   Result.SetSize(AMaxWidth * Column, AMaxHeight * rowcnt, c);
 
@@ -2536,7 +2617,7 @@ end;
   (useful when the document has text only in smaller area of page and non-text features outside the area confuse the rotation detector).
   Various calculations stats can be retrieved by passing Stats parameter.
 }
-function DocmentRotationDetected(const MaxAngle: TGeoFloat; const Treshold: Integer; raster: TMemoryRaster): TGeoFloat;
+function DocumentRotationDetected(const MaxAngle: TGeoFloat; const Treshold: Integer; raster: TMemoryRaster): TGeoFloat;
 const
   // Number of "best" lines we take into account when determining
   // resulting rotation angle (lines with most votes).
@@ -2675,13 +2756,6 @@ begin
       SumAngles := SumAngles + BestLines[i].alpha;
 
   Result := NormalizeDegAngle(SumAngles / BestLinesCount);
-  (*
-    Stats.BestCount := BestLines[0].Count;
-    Stats.PixelCount := PageWidth * PageHeight;
-    Stats.AccumulatorSize := AccumulatorSize;
-    Stats.AccumulatedCounts := AccumulatedCounts;
-    Stats.TestedPixels := AccumulatedCounts div AlphaSteps;
-  *)
 end;
 
 procedure YV12ToRasterization(sour: TCoreClassStream; dest: TMemoryRaster);

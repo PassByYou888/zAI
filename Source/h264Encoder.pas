@@ -43,7 +43,7 @@ type
     mb_width, mb_height, mb_count: int32_t;
 
     // encoder configuration
-    _param: TEncodingParameters;
+    FParam: TEncodingParameters;
     stats_file: textfile;
 
     // classes
@@ -61,9 +61,9 @@ type
   public
     {
       Create encoder with desired parameters.
-      Param instance is bound to encoder and shouldn't be modified until the encoder is freed
+      Param_ instance is bound to encoder and shouldn't be modified until the encoder is freed
     }
-    constructor Create(var Param: TEncodingParameters);
+    constructor Create(var Param_: TEncodingParameters);
     destructor Destroy; override;
     procedure EncodeFrame(const img: TPlanarImage; buffer: uint8_p; out stream_size: uint32_t);
     procedure GetLastFrameSSD(out ssd: array of Int64_t);
@@ -73,17 +73,17 @@ type
 implementation
 
 
-constructor TFevh264Encoder.Create(var Param: TEncodingParameters);
+constructor TFevh264Encoder.Create(var Param_: TEncodingParameters);
 begin
   inherited Create;
 
-  _param := Param;
+  FParam := Param_;
 
   // check&set params
-  width := Param.FrameWidth;
-  height := Param.FrameHeight;
-  num_ref_frames := Param.NumReferenceFrames;
-  key_interval := Param.KeyFrameInterval;
+  width := Param_.FrameWidth;
+  height := Param_.FrameHeight;
+  num_ref_frames := Param_.NumReferenceFrames;
+  key_interval := Param_.KeyFrameInterval;
 
   frame_num := 0;
   last_keyframe_num := 0;
@@ -97,11 +97,11 @@ begin
 
   // stream settings
   h264s := TH264Stream.Create(width, height, mb_width, mb_height);
-  h264s.qp := Param.QParam;
-  h264s.ChromaQPOffset := Param.ChromaQParamOffset;
+  h264s.qp := Param_.QParam;
+  h264s.ChromaQPOffset := Param_.ChromaQParamOffset;
   h264s.KeyInterval := key_interval;
   h264s.NumRefFrames := num_ref_frames;
-  if not Param.LoopFilterEnabled then
+  if not Param_.LoopFilterEnabled then
       h264s.DisableLoopFilter;
 
   // allocate frames
@@ -110,17 +110,17 @@ begin
   // inter pred
   mc := TMotionCompensation.Create;
   me := TMotionEstimator.Create(width, height, mb_width, mb_height, mc, h264s.GetInterPredCostEvaluator);
-  me.subme := Param.SubpixelMELevel;
+  me.subme := Param_.SubpixelMELevel;
 
   // ratecontrol
   RC := TRatecontrol.Create;
-  if Param.ABRRateControlEnabled then
-      RC.Set2pass(Param.Bitrate, Param.FrameCount, Param.FrameRate)
+  if Param_.ABRRateControlEnabled then
+      RC.Set2pass(Param_.Bitrate, Param_.FrameCount, Param_.FrameRate)
   else
-      RC.SetConstQP(Param.QParam);
+      RC.SetConstQP(Param_.QParam);
 
   // mb encoder
-  case Param.AnalysisLevel of
+  case Param_.AnalysisLevel of
     0: mb_enc := TMBEncoderNoAnalyse.Create;
     1: mb_enc := TMBEncoderQuickAnalyse.Create;
     2: mb_enc := TMBEncoderQuickAnalyseSATD.Create;
@@ -131,13 +131,13 @@ begin
   mb_enc.mc := mc;
   mb_enc.me := me;
   mb_enc.h264s := h264s;
-  mb_enc.ChromaQPOffset := Param.ChromaQParamOffset;
-  mb_enc.chroma_coding := not Param.IgnoreChroma;
-  mb_enc.loopfilter := Param.LoopFilterEnabled;
+  mb_enc.ChromaQPOffset := Param_.ChromaQParamOffset;
+  mb_enc.chroma_coding := not Param_.IgnoreChroma;
+  mb_enc.loopfilter := Param_.LoopFilterEnabled;
 
   // stats
   stats := TStreamStats.Create;
-  h264s.SEIString := Param.ToPascalString;
+  h264s.SEIString := Param_.ToPascalString;
 end;
 
 destructor TFevh264Encoder.Destroy;
@@ -173,7 +173,7 @@ begin
 
   // prepare reference frame for ME
   frame_paint_edges(fenc);
-  if _param.SubpixelMELevel > 0 then
+  if FParam.SubpixelMELevel > 0 then
       frame_hpel_interpolate(fenc);
 
   // convert bitstream to bytestream of NAL units
@@ -221,9 +221,9 @@ begin
   // frame encoding setup
   fenc.stats.Clear;
   mb_enc.SetFrame(fenc);
-  loopfilter := _param.LoopFilterEnabled;
+  loopfilter := FParam.LoopFilterEnabled;
   if loopfilter then
-      deblocker := GetNewDeblocker(fenc, not(_param.AdaptiveQuant), _param.FilterThreadEnabled);
+      deblocker := GetNewDeblocker(fenc, not(FParam.AdaptiveQuant), FParam.FilterThreadEnabled);
 
   // encode rows
   for y := 0 to (mb_height - 1) do

@@ -66,7 +66,7 @@ begin
   FillBlackGrayBackgroundTexture(background, 32);
 
   sourL := TAI_ImageList.Create;
-  sourL.LoadFromFile(umlCombineFileName(AI_Configure_Path, 'lady_face.ImgDataSet'));
+  sourL.LoadFromFile(WhereFileFromConfigure('lady_face.ImgDataSet'));
 
   AddDoStatusHook(Self, DoStatusMethod);
 end;
@@ -94,7 +94,7 @@ begin
       fi := fi + background.width - 1;
     end;
 
-  sourL.DrawTo(d, 10, Vec2(0, 20), 1.0);
+  sourL.DrawToPictureList(d, 10, Vec2(0, 20), 1.0);
 
   d.Flush;
 end;

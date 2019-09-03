@@ -257,7 +257,7 @@ begin
       for i := 0 to imgMat.Count - 1 do
         begin
           imgL := imgMat[i];
-          imgL.CalibrationNullDefineToken(imgL.FileInfo);
+          imgL.CalibrationNullToken(imgL.FileInfo);
           for j := 0 to imgL.Count - 1 do
             if imgL[j].DetectorDefineList.Count = 0 then
               begin

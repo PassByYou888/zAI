@@ -8530,7 +8530,7 @@ begin
   Result := -1;
 
   for i := 0 to FList.Count - 1 do
-    if (PListPascalStringData(FList[i])^.hash = h) and (PListPascalStringData(FList[i])^.Data.Same(Value)) then
+    if (PListPascalStringData(FList[i])^.hash = h) and (PListPascalStringData(FList[i])^.Data.Same(@Value)) then
       begin
         Result := i;
         Break;

@@ -28,7 +28,7 @@ uses
 
 const
   FRAME_PADDING_W = 16;
-  FRAME_EDGE_W    = FRAME_PADDING_W div 2;
+  FRAME_EDGE_W = FRAME_PADDING_W div 2;
 
 type
   TFrameManager = class
@@ -269,9 +269,9 @@ end;
 *)
 procedure frame_setup_adapt_q(var frame: TFrame; pixbuffer: uint8_p; const base_qp: uint8_t);
 const
-  QP_RANGE  = 10;
-  QP_MIN    = 15;
-  QP_MAX    = 51;
+  QP_RANGE = 10;
+  QP_MIN = 15;
+  QP_MAX = 51;
   VAR_SHIFT = 14;
 
 var
@@ -408,6 +408,58 @@ end;
 (* ******************************************************************************
   h.264 6tap hpel filter
 *)
+{$IF Defined(WIN64)}
+{$L frame_x64.obj}
+procedure filter_horiz_line_sse2(Src, Dst: pbyte; width: integer); external name 'filter_horiz_line_sse2';
+procedure filter_vert_line_sse2(Src, Dst: pbyte; width, stride: integer; tmp: psmallint); external name 'filter_vert_line_sse2';
+procedure filter_hvtemp_line_sse2(Src: psmallint; Dst: pbyte; width: integer); external name 'filter_hvtemp_line_sse2';
+
+{$POINTERMATH ON}
+
+
+procedure frame_hpel_interpolate(var frame: TFrame);
+
+  procedure filter_asm(tmp: psmallint);
+  var
+    width, height: integer;
+    stride: integer;
+    Src: pbyte;
+    Dst: array [0 .. 2] of pbyte;
+    y, i: integer;
+    edge_offset: integer;
+  begin
+    width := frame.w;
+    height := frame.h;
+    stride := frame.stride;
+    edge_offset := FRAME_EDGE_W + FRAME_EDGE_W * stride;
+    Src := frame.plane_dec[0] - edge_offset;
+    for i := 0 to 2 do
+        Dst[i] := frame.luma_mc[i + 1] - edge_offset;
+
+    for y := -FRAME_EDGE_W to height - 1 + FRAME_EDGE_W do
+      begin
+        // horiz
+        filter_horiz_line_sse2(Src, Dst[0], width + FRAME_EDGE_W * 2);
+        // vert: +8 pre dalsie temp hodnoty pre hvtemp filter
+        filter_vert_line_sse2(Src, Dst[1], width + FRAME_EDGE_W * 2 + 8, stride, tmp);
+        // h+v
+        tmp[-1] := tmp[0];
+        tmp[-2] := tmp[0];
+        filter_hvtemp_line_sse2(tmp, Dst[2], width + FRAME_EDGE_W * 2);
+        // next
+        inc(Src, stride);
+        for i := 0 to 2 do
+            inc(Dst[i], stride);
+      end;
+  end;
+
+begin
+  filter_asm(frame.filter_hv_temp + 2)
+end;
+
+{$ELSE}
+
+
 procedure frame_hpel_interpolate(var frame: TFrame);
 var
   width, height: int32_t;
@@ -487,7 +539,7 @@ begin
           inc(Row[i], stride);
     end;
 end;
+{$IFEND}
 
-end.  
- 
- 
+
+end.

@@ -28,7 +28,7 @@ object ProjectionForm: TProjectionForm
     end
     object d_RightTop: TCircle
       Position.X = 472.000000000000000000
-      Position.Y = 184.000000000000000000
+      Position.Y = 192.000000000000000000
       Size.Width = 50.000000000000000000
       Size.Height = 50.000000000000000000
       Size.PlatformDefault = False
@@ -60,7 +60,7 @@ object ProjectionForm: TProjectionForm
       OnPaint = cPaint
     end
     object d_RightBottom: TCircle
-      Position.X = 480.000000000000000000
+      Position.X = 472.000000000000000000
       Position.Y = 464.000000000000000000
       Size.Width = 50.000000000000000000
       Size.Height = 50.000000000000000000
@@ -100,7 +100,7 @@ object ProjectionForm: TProjectionForm
     end
     object s_RightTop: TCircle
       Position.X = 408.000000000000000000
-      Position.Y = 120.000000000000000000
+      Position.Y = 128.000000000000000000
       Size.Width = 50.000000000000000000
       Size.Height = 50.000000000000000000
       Size.PlatformDefault = False
@@ -110,7 +110,7 @@ object ProjectionForm: TProjectionForm
       OnPaint = cPaint
     end
     object s_LeftBottom: TCircle
-      Position.X = 168.000000000000000000
+      Position.X = 160.000000000000000000
       Position.Y = 472.000000000000000000
       Size.Width = 50.000000000000000000
       Size.Height = 50.000000000000000000

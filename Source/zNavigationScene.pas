@@ -187,7 +187,7 @@ end;
 procedure TNavigationScene.SetScene(PointList: TVec2List);
 begin
   PointList.RemoveSame;
-  FPolyManager.Scene.RebuildPoly(PointList);
+  FPolyManager.Scene.Rebuild(PointList, True);
   ResetCollisionState;
   ClearPass;
 end;
@@ -214,11 +214,11 @@ var
   i: Integer;
   p: TPolyManagerChildren;
 begin
-  FPolyManager.Scene.RebuildPoly;
+  FPolyManager.Scene.Rebuild;
   for i := 0 to FPolyManager.Count - 1 do
     begin
       p := FPolyManager[i];
-      p.RebuildPoly;
+      p.Rebuild;
     end;
 end;
 
@@ -331,7 +331,4 @@ begin
   DisposeObject(s);
 end;
 
-end. 
- 
- 
- 
+end.

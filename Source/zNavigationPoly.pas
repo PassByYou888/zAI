@@ -66,7 +66,7 @@ type
     function GetNearLine(AExtandDistance: TGeoFloat; const pt: TVec2): TVec2;
     function Collision2Circle(cp: TVec2; r: TGeoFloat; OutputList: TDeflectionPolygonLines): Boolean;
 
-    procedure RebuildPoly;
+    procedure Rebuild;
     procedure Reverse;
     procedure SetScale(v: TGeoFloat);
     procedure SetAngle(v: TGeoFloat);
@@ -127,7 +127,7 @@ var
 begin
   APoly := TPolyManagerChildren.Create(Self);
   APoly.ExpandMode := emConvex;
-  APoly.RebuildPoly(pl);
+  APoly.Rebuild(pl, True);
   Add(APoly);
   Result := APoly;
 end;
@@ -138,7 +138,7 @@ var
 begin
   APoly := TPolyManagerChildren.Create(Self);
   APoly.ExpandMode := emConvex;
-  APoly.ConvexHullFromPoint(pl);
+  APoly.ConvexHullFrom(pl);
   Add(APoly);
 end;
 
@@ -262,13 +262,13 @@ begin
       Result := True;
 end;
 
-procedure TPolyManager.RebuildPoly;
+procedure TPolyManager.Rebuild;
 var
   i: Integer;
 begin
   for i := 0 to Count - 1 do
-      Poly[i].RebuildPoly;
-  FScene.RebuildPoly;
+      Poly[i].Rebuild;
+  FScene.Rebuild;
 end;
 
 procedure TPolyManager.Reverse;
