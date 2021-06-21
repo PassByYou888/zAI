@@ -82,6 +82,8 @@ type
     DrawBox: TRectV2;
     texInfo: U_String;
     hInfo: TRasterHistogramInfos;
+    UserData: Pointer;
+    UserObject: TCoreClassObject;
     constructor Create;
     destructor Destroy; override;
   end;
@@ -127,6 +129,7 @@ type
     property Items[index: Integer]: TPictureViewerData read GetItems; default;
     function First: TPictureViewerData;
     function Last: TPictureViewerData;
+    function FoundPicture(Raster: TMemoryRaster): TPictureViewerData;
 
     function AtPicture(pt: TVec2): TPictureViewerData;
     function AtPictureOffset(data_: TPictureViewerData; pt: TVec2): TPoint;
@@ -146,6 +149,7 @@ type
 
     // scale
     procedure ScaleCamera(f: TGeoFloat);
+    procedure ScaleCameraFromWheelDelta(WheelDelta: Integer);
 
     // prepare
     procedure ComputeDrawBox();
@@ -156,6 +160,7 @@ type
     procedure Render(showPicture_, flush_: Boolean); overload;
     procedure Render(showPicture_: Boolean); overload;
     procedure Render(); overload;
+    procedure Flush();
 
     // viewer options
     property ShowHistogramInfo: Boolean read FShowHistogramInfo write FShowHistogramInfo;
@@ -418,17 +423,17 @@ end;
 class procedure TRasterHistogramInfos.DrawArry(Box: TRectV2; arry: TRasterHistogramInfoArray; d: TDrawEngine);
 var
   w, h: TGeoFloat;
-  l, i: Integer;
+  Len_, i: Integer;
   pic_r, r: TRectV2;
   n: U_String;
   texSiz: TVec2;
   text_r: TRectV2;
 begin
-  l := Length(arry);
-  w := (RectWidth(Box) - (l * 10)) / (l);
+  Len_ := Length(arry);
+  w := (RectWidth(Box) - (Len_ * 10)) / (Len_);
   h := RectHeight(Box);
   pic_r[0] := Box[0];
-  for i := 0 to l - 1 do
+  for i := 0 to Len_ - 1 do
     if not arry[i].Busy.V then
       begin
         pic_r[1] := Vec2Add(pic_r[0], vec2(w, h));
@@ -439,7 +444,7 @@ begin
         arry[i].DrawBox := r;
 
         texSiz := d.GetTextSize(n, 10);
-        while (texSiz[0] > RectWidth(r)) and (n.l > 0) do
+        while (texSiz[0] > RectWidth(r)) and (n.L > 0) do
           begin
             texSiz := d.GetTextSize(n, 10);
             n.DeleteLast;
@@ -472,6 +477,8 @@ begin
   DrawBox := RectV2(0, 0, 0, 0);
   texInfo := '';
   hInfo := nil;
+  UserData := nil;
+  UserObject := nil;
 end;
 
 destructor TPictureViewerData.Destroy;
@@ -578,7 +585,7 @@ var
   i: Integer;
   sData: TPictureViewerData;
   h: TRasterHistogramInfo;
-  l: TRasterHistogramInfoList;
+  L: TRasterHistogramInfoList;
 begin
   WaitThread();
   if Count < Integer(High(TMorphologyPixel)) then
@@ -592,29 +599,29 @@ begin
     end;
   WaitThread();
 
-  l := TRasterHistogramInfoList.Create;
+  L := TRasterHistogramInfoList.Create;
   for i := 0 to Count - 1 do
     begin
       sData := Items[i];
       if (sData.hInfo <> nil) and (not sData.hInfo.Busy) then
         begin
           for h in sData.hInfo.GrayAndYIQ do
-              l.Add(h);
+              L.Add(h);
           for h in sData.hInfo.HSI do
-              l.Add(h);
+              L.Add(h);
           for h in sData.hInfo.CMYK do
-              l.Add(h);
+              L.Add(h);
           for h in sData.hInfo.RGBA do
-              l.Add(h);
+              L.Add(h);
           for h in sData.hInfo.Approximate do
-              l.Add(h);
+              L.Add(h);
         end;
     end;
 
-  for i := 0 to l.Count - 1 do
-      InputPicture(l[i].MorphData.BuildViewer(), l[i].info, True, False);
+  for i := 0 to L.Count - 1 do
+      InputPicture(L[i].MorphData.BuildViewer(), L[i].info, True, False);
 
-  DisposeObject(l);
+  DisposeObject(L);
 end;
 
 procedure TPictureViewerInterface.Clear;
@@ -656,6 +663,19 @@ end;
 function TPictureViewerInterface.Last: TPictureViewerData;
 begin
   Result := Items[Count - 1];
+end;
+
+function TPictureViewerInterface.FoundPicture(Raster: TMemoryRaster): TPictureViewerData;
+var
+  i: Integer;
+begin
+  for i := 0 to Count - 1 do
+    if Items[i].Raster = Raster then
+      begin
+        Result := Items[i];
+        exit;
+      end;
+  Result := nil;
 end;
 
 function TPictureViewerInterface.AtPicture(pt: TVec2): TPictureViewerData;
@@ -728,6 +748,13 @@ begin
       exit;
 
   FDrawEng.ScaleCamera(f);
+end;
+
+procedure TPictureViewerInterface.ScaleCameraFromWheelDelta(WheelDelta: Integer);
+begin
+  if FDrawEng = nil then
+      exit;
+  FDrawEng.ScaleCameraFromWheelDelta(WheelDelta);
 end;
 
 procedure TPictureViewerInterface.ComputeDrawBox;
@@ -807,7 +834,6 @@ begin
   ComputeDrawBox();
 
   FDrawEng.FPSFontSize := 16;
-  FDrawEng.ScreenFrameColor := DEColor(1, 1, 1, 1);
 
   // draw tile
   if FShowBackground then
@@ -820,7 +846,8 @@ begin
     for j := 0 to Count - 1 do
       begin
         sData := Items[j];
-        FDrawEng.DrawPictureInScene(sData.Raster, sData.Raster.BoundsRectV2, sData.DrawBox, 1.0);
+        if not sData.Raster.IsEmpty then
+            FDrawEng.DrawPictureInScene(sData.Raster, sData.Raster.BoundsRectV2, sData.DrawBox, 1.0);
       end;
 
   if showPicture_ then
@@ -828,46 +855,49 @@ begin
       begin
         sData := Items[j];
 
-        if FShowPictureInfo then
+        if not sData.Raster.IsEmpty then
           begin
-            n := PFormat('%s' + #13#10 + 'size:%d * %d', [sData.texInfo.Text, sData.Raster.width, sData.Raster.height]);
-            n := FDrawEng.RebuildTextColor(n, tsText, '', '', '', '', '|color(0.5,1.0,0.5)|', '||', '', '', '', '');
-            text_siz := FDrawEng.GetTextSize(n, FShowPictureInfoFontSize);
-            if text_siz[0] < RectWidth(FDrawEng.SceneToScreen(sData.DrawBox)) then
+            if FShowPictureInfo then
               begin
-                FDrawEng.BeginCaptureShadow(vec2(2, 2), 1.0);
-                FDrawEng.DrawText(n, FShowPictureInfoFontSize, FDrawEng.SceneToScreen(sData.DrawBox), DEColor(1, 1, 1), False);
-                FDrawEng.EndCaptureShadow;
+                n := PFormat('%s' + #13#10 + 'size:%d * %d', [sData.texInfo.Text, sData.Raster.width, sData.Raster.height]);
+                n := FDrawEng.RebuildTextColor(n, tsText, '', '', '', '', '|color(0.5,1.0,0.5)|', '||', '', '', '', '');
+                text_siz := FDrawEng.GetTextSize(n, FShowPictureInfoFontSize);
+                if text_siz[0] < RectWidth(FDrawEng.SceneToScreen(sData.DrawBox)) then
+                  begin
+                    FDrawEng.BeginCaptureShadow(vec2(2, 2), 1.0);
+                    FDrawEng.DrawText(n, FShowPictureInfoFontSize, FDrawEng.SceneToScreen(sData.DrawBox), DEColor(1, 1, 1), False);
+                    FDrawEng.EndCaptureShadow;
+                  end;
               end;
-          end;
 
-        if FShowPixelInfo and Vec2InRect(FMoveScenePT, sData.DrawBox) then
-          begin
-            tex_pt := RectProjection(sData.DrawBox, sData.Raster.BoundsRectV2, FMoveScenePT);
-            tex_color.BGRA := sData.Raster.PixelVec[tex_pt];
-            n := PFormat(#13#10 + 'X:%d Y:%d color:$%.8x' + #13#10 + 'R:$%.2x G:$%.2x B:$%.2x A:$%.2x' + #13#10,
-              [Round(tex_pt[0]), Round(tex_pt[1]), tex_color.BGRA, tex_color.r, tex_color.G, tex_color.B, tex_color.A]);
-            YIQ_.RGB := tex_color.BGRA;
-            HSI_.RGB := tex_color.BGRA;
-            CMYK_.RGB := tex_color.BGRA;
-            n.Append('YIQ Y:%f I:%f Q:%f' + #13#10, [YIQ_.Y, YIQ_.i, YIQ_.Q]);
-            n.Append('HSI H:%f S:%f I:%f' + #13#10, [HSI_.h, HSI_.S, HSI_.i]);
-            n.Append('CMYK C:%f M:%f Y:%f K:%f' + #13#10, [CMYK_.C, CMYK_.M, CMYK_.Y, CMYK_.k]);
-            n.Append('RGBA R:%f G:%f B:%f, A:%f', [tex_color.r / $FF, tex_color.G / $FF, tex_color.B / $FF, tex_color.A / $FF]);
-            n := FDrawEng.RebuildTextColor(n, tsText, '', '', '', '', '|color(0.5,1.0,0.5)|', '||', '', '', '', '');
-            FDrawEng.BeginCaptureShadow(vec2(2, 2), 1.0);
-            r4 := FDrawEng.DrawText(n, FShowPixelInfoFontSize, DEColor(1, 1, 1, 1), Vec2Add(FMoveScreenPT, 15), 5);
-            FDrawEng.EndCaptureShadow;
-            FDrawEng.DrawPoint(FMoveScreenPT, DEColor(1, 1, 1), 5, 1);
-            FDrawEng.DrawPoint(Vec2Add(FMoveScreenPT, 1), DEColor(0, 0, 0), 5, 1);
-          end;
+            if FShowPixelInfo and Vec2InRect(FMoveScenePT, sData.DrawBox) then
+              begin
+                tex_pt := RectProjection(sData.DrawBox, sData.Raster.BoundsRectV2, FMoveScenePT);
+                tex_color.BGRA := sData.Raster.PixelVec[tex_pt];
+                n := PFormat(#13#10 + 'X:%d Y:%d color:$%.8x' + #13#10 + 'R:$%.2x G:$%.2x B:$%.2x A:$%.2x' + #13#10,
+                  [Round(tex_pt[0]), Round(tex_pt[1]), tex_color.BGRA, tex_color.r, tex_color.G, tex_color.B, tex_color.A]);
+                YIQ_.RGB := tex_color.BGRA;
+                HSI_.RGB := tex_color.BGRA;
+                CMYK_.RGB := tex_color.BGRA;
+                n.Append('YIQ Y:%f I:%f Q:%f' + #13#10, [YIQ_.Y, YIQ_.i, YIQ_.Q]);
+                n.Append('HSI H:%f S:%f I:%f' + #13#10, [HSI_.h, HSI_.S, HSI_.i]);
+                n.Append('CMYK C:%f M:%f Y:%f K:%f' + #13#10, [CMYK_.C, CMYK_.M, CMYK_.Y, CMYK_.k]);
+                n.Append('RGBA R:%f G:%f B:%f, A:%f', [tex_color.r / $FF, tex_color.G / $FF, tex_color.B / $FF, tex_color.A / $FF]);
+                n := FDrawEng.RebuildTextColor(n, tsText, '', '', '', '', '|color(0.5,1.0,0.5)|', '||', '', '', '', '');
+                FDrawEng.BeginCaptureShadow(vec2(2, 2), 1.0);
+                r4 := FDrawEng.DrawText(n, FShowPixelInfoFontSize, DEColor(1, 1, 1, 1), Vec2Add(FMoveScreenPT, 15), 5);
+                FDrawEng.EndCaptureShadow;
+                FDrawEng.DrawPoint(FMoveScreenPT, DEColor(1, 1, 1), 5, 1);
+                FDrawEng.DrawPoint(Vec2Add(FMoveScreenPT, 1), DEColor(0, 0, 0), 5, 1);
+              end;
 
-        if (FShowHistogramInfo) and (sData.hInfo <> nil) and ((Count = 1) or PointInRect(FMoveScenePT, sData.DrawBox)) then
-            sData.hInfo.Draw(FDrawEng);
+            if (FShowHistogramInfo) and (sData.hInfo <> nil) and ((Count = 1) or PointInRect(FMoveScenePT, sData.DrawBox)) then
+                sData.hInfo.Draw(FDrawEng);
+          end;
       end;
 
   if flush_ then
-      FDrawEng.Flush;
+      Flush();
 end;
 
 procedure TPictureViewerInterface.Render(showPicture_: Boolean);
@@ -878,6 +908,11 @@ end;
 procedure TPictureViewerInterface.Render();
 begin
   Render(True);
+end;
+
+procedure TPictureViewerInterface.Flush;
+begin
+  FDrawEng.Flush;
 end;
 
 end.

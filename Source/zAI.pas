@@ -45,10 +45,8 @@ uses Types, Variants,
   zAI_Common, zAI_TrainingTask, zAI_KeyIO,
   zExpression, OpCode, MorphologyExpression;
 
-{$REGION 'BaseDefine'}
-
-
 type
+{$REGION 'BaseDefine'}
   TAI = class;
   TAI_DNN_Thread = class;
   TAI_DNN_Thread_Class = class of TAI_DNN_Thread;
@@ -66,25 +64,27 @@ type
 
   PAI_EntryAPI = ^TAI_EntryAPI;
 
-  TRGB_Image_Handle = Pointer;
-  TMatrix_Image_Handle = Pointer;
-  TOD6L_Handle = Pointer;
-  TOD3L_Handle = Pointer;
+  TRGB_Image_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TMatrix_Image_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TOD6L_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TOD3L_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
   TOD6L_Marshal_Handle = THashList;
-  TSP_Handle = Pointer;
-  TFACE_Handle = Pointer;
-  TMetric_Handle = Pointer;
-  TLMetric_Handle = Pointer;
-  TMMOD6L_Handle = Pointer;
-  TMMOD3L_Handle = Pointer;
-  TRNIC_Handle = Pointer;
-  TLRNIC_Handle = Pointer;
-  TGDCNIC_Handle = Pointer;
-  TGNIC_Handle = Pointer;
-  TSS_Handle = Pointer;
-  TTracker_Handle = Pointer;
-  TOCR_Handle = Pointer;
-  TZMetric_Handle = Pointer;
+  TSP_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TFACE_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TMetric_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TLMetric_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TMMOD6L_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TMMOD3L_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TRNIC_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TLRNIC_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TGDCNIC_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TGNIC_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TSS_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TTracker_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TTracker_Handle_Array = array of TTracker_Handle;
+  TTracker_Handle_ArrayOfArray = array of TTracker_Handle_Array;
+  TOCR_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
+  TZMetric_Handle = {$IFDEF DELPHI} type of {$ENDIF DELPHI} Pointer;
 
   TCutDataType = Byte;
   PCutDataType = PByte;
@@ -476,37 +476,37 @@ type
 
   TAlignment_OD6L = class(TAlignment)
   public
-    od_hnd: TOD6L_Handle;
+    OD_Hnd: TOD6L_Handle;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
   TAlignment_FastOD6L = class(TAlignment)
   public
-    od_hnd: TOD6L_Handle;
+    OD_Hnd: TOD6L_Handle;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
   TAlignment_OD3L = class(TAlignment)
   public
-    od_hnd: TOD3L_Handle;
+    OD_Hnd: TOD3L_Handle;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
   TAlignment_FastOD3L = class(TAlignment)
   public
-    od_hnd: TOD3L_Handle;
+    OD_Hnd: TOD3L_Handle;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
   TAlignment_OD6L_Marshal = class(TAlignment)
   public
-    od_hnd: TOD6L_Marshal_Handle;
+    OD_Hnd: TOD6L_Marshal_Handle;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
   TAlignment_FastOD6L_Marshal = class(TAlignment)
   public
-    od_hnd: TOD6L_Marshal_Handle;
+    OD_Hnd: TOD6L_Marshal_Handle;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
@@ -557,6 +557,7 @@ type
   public
     MetricHnd: TMetric_Handle;
     Learn_: TLearn;
+    MinK: TLFloat;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
@@ -565,6 +566,7 @@ type
     MetricHnd: TZMetric_Handle;
     Learn_: TLearn;
     SS_Width, SS_Height: Integer;
+    MinK: TLFloat;
     procedure Alignment(imgList: TAI_ImageList); override;
   end;
 
@@ -596,7 +598,7 @@ type
 
     { image buffer }
     OpenImageBuffer_RGB: function(hnd: TRGB_Image_Handle): TBGRA_Buffer_Handle; stdcall;
-    OpenImageBuffer_MatrixRGB: function(hnd: TMatrix_Image_Handle): TBGRA_Buffer_Handle; stdcall;
+    OpenImageBuffer_Matrix: function(hnd: TMatrix_Image_Handle): TBGRA_Buffer_Handle; stdcall;
     OpenImageBuffer_Hot: function(const raster_ptr: PRColorArray; const Width, Height: Integer): TBGRA_Buffer_Handle; stdcall;
     OpenImageBuffer_Jet: function(const raster_ptr: PRColorArray; const Width, Height: Integer): TBGRA_Buffer_Handle; stdcall;
     CloseImageBuffer: procedure(hnd: TBGRA_Buffer_Handle); stdcall;
@@ -692,7 +694,7 @@ type
     MMOD6L_DNN_Init_Memory: function(memory: Pointer; Size: Integer): TMMOD6L_Handle; stdcall;
     MMOD6L_DNN_Free: function(hnd: TMMOD6L_Handle): Integer; stdcall;
     MMOD6L_DNN_Process: function(hnd: TMMOD6L_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; const MMOD6L_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
-    MMOD6L_DNN_Process_Image: function(hnd: TMMOD6L_Handle; matrix_img: TMatrix_Image_Handle; const MMOD6L_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
+    MMOD6L_DNN_Process_Image: function(hnd: TMMOD6L_Handle; Matrix_IMG: TMatrix_Image_Handle; const MMOD6L_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
     MMOD6L_DebugInfo: procedure(hnd: TMMOD6L_Handle; var p: PPascalString); stdcall;
 
     { MMOD-DNN(max-margin DNN object detector) 3 Layer }
@@ -702,7 +704,7 @@ type
     MMOD3L_DNN_Init_Memory: function(memory: Pointer; Size: Integer): TMMOD3L_Handle; stdcall;
     MMOD3L_DNN_Free: function(hnd: TMMOD3L_Handle): Integer; stdcall;
     MMOD3L_DNN_Process: function(hnd: TMMOD3L_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; const MMOD3L_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
-    MMOD3L_DNN_Process_Image: function(hnd: TMMOD3L_Handle; matrix_img: TMatrix_Image_Handle; const MMOD3L_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
+    MMOD3L_DNN_Process_Image: function(hnd: TMMOD3L_Handle; Matrix_IMG: TMatrix_Image_Handle; const MMOD3L_AI_Rect: PAI_MMOD_Rect; const max_AI_Rect: Integer): Integer; stdcall;
     MMOD3L_DebugInfo: procedure(hnd: TMMOD3L_Handle; var p: PPascalString); stdcall;
 
     { ResNet-Image-Classifier }
@@ -711,7 +713,7 @@ type
     RNIC_Init_Memory: function(memory: Pointer; Size: Integer): TRNIC_Handle; stdcall;
     RNIC_Free: function(hnd: TRNIC_Handle): Integer; stdcall;
     RNIC_Process: function(hnd: TRNIC_Handle; num_crops: Integer; const raster_ptr: PRColorArray; const Width, Height: Integer; output: PDouble): Integer; stdcall;
-    RNIC_Process_Image: function(hnd: TRNIC_Handle; num_crops: Integer; matrix_img: TMatrix_Image_Handle; output: PDouble): Integer; stdcall;
+    RNIC_Process_Image: function(hnd: TRNIC_Handle; num_crops: Integer; Matrix_IMG: TMatrix_Image_Handle; output: PDouble): Integer; stdcall;
     RNIC_DebugInfo: procedure(hnd: TRNIC_Handle; var p: PPascalString); stdcall;
 
     { Large-ResNet-Image-Classifier }
@@ -720,7 +722,7 @@ type
     LRNIC_Init_Memory: function(memory: Pointer; Size: Integer): TLRNIC_Handle; stdcall;
     LRNIC_Free: function(hnd: TLRNIC_Handle): Integer; stdcall;
     LRNIC_Process: function(hnd: TLRNIC_Handle; num_crops: Integer; const raster_ptr: PRColorArray; const Width, Height: Integer; output: PDouble): Integer; stdcall;
-    LRNIC_Process_Image: function(hnd: TLRNIC_Handle; num_crops: Integer; matrix_img: TMatrix_Image_Handle; output: PDouble): Integer; stdcall;
+    LRNIC_Process_Image: function(hnd: TLRNIC_Handle; num_crops: Integer; Matrix_IMG: TMatrix_Image_Handle; output: PDouble): Integer; stdcall;
     LRNIC_DebugInfo: procedure(hnd: TLRNIC_Handle; var p: PPascalString); stdcall;
 
     { Going Deeper with Convolutions net-Image-Classifier }
@@ -745,7 +747,7 @@ type
     SS_Init_Memory: function(memory: Pointer; Size: Integer): TSS_Handle; stdcall;
     SS_Free: function(hnd: TSS_Handle): Integer; stdcall;
     SS_Process: function(hnd: TSS_Handle; const raster_ptr: PRColorArray; const Width, Height: Integer; output: PWORD): Integer; stdcall;
-    SS_Process_Image: function(hnd: TSS_Handle; matrix_img: TMatrix_Image_Handle; output: PWORD): Integer; stdcall;
+    SS_Process_Image: function(hnd: TSS_Handle; Matrix_IMG: TMatrix_Image_Handle; output: PWORD): Integer; stdcall;
     SS_DebugInfo: procedure(hnd: TSS_Handle; var p: PPascalString); stdcall;
 
     { correlation video tracker }
@@ -925,11 +927,11 @@ type
 {$ENDREGION 'general'}
 {$REGION 'graphics'}
     { structor draw }
-    procedure DrawOD6L(od_hnd: TOD6L_Handle; Raster: TMemoryRaster; color: TDEColor);
-    procedure DrawOD3L(od_hnd: TOD3L_Handle; Raster: TMemoryRaster; color: TDEColor);
-    procedure DrawOD(od_desc: TOD_Desc; Raster: TMemoryRaster; color: TDEColor);
+    procedure DrawOD6L(OD_Hnd: TOD6L_Handle; Raster: TMemoryRaster; color: TDEColor);
+    procedure DrawOD3L(OD_Hnd: TOD3L_Handle; Raster: TMemoryRaster; color: TDEColor);
+    procedure DrawOD(OD_Desc: TOD_Desc; Raster: TMemoryRaster; color: TDEColor);
     procedure DrawODM(odm_hnd: TOD6L_Marshal_Handle; Raster: TMemoryRaster; color: TDEColor);
-    procedure DrawSP(od_hnd: TOD6L_Handle; sp_hnd: TSP_Handle; Raster: TMemoryRaster);
+    procedure DrawSP(OD_Hnd: TOD6L_Handle; sp_hnd: TSP_Handle; Raster: TMemoryRaster);
     function DrawMMOD(MMOD_hnd: TMMOD6L_Handle; Raster: TMemoryRaster; color: TDEColor; fontSiz: TGeoFloat): TMMOD_Desc; overload;
     function DrawMMOD(MMOD_hnd: TMMOD6L_Handle; Raster: TMemoryRaster; color: TDEColor): TMMOD_Desc; overload;
     function DrawMMOD(MMOD_hnd: TMMOD6L_Handle; confidence: Double; Raster: TMemoryRaster; color: TDEColor; fontSiz: TGeoFloat): Integer; overload;
@@ -947,6 +949,14 @@ type
     procedure Close_RGB_Image(hnd: TRGB_Image_Handle);
     function Prepare_Matrix_Image(Raster: TMemoryRaster): TMatrix_Image_Handle;
     procedure Close_Matrix_Image(hnd: TMatrix_Image_Handle);
+
+    { Build-in RGB to Raster }
+    procedure BuildRGBRaster(hnd_RGB: TRGB_Image_Handle; output: TMemoryRaster); overload;
+    function BuildRGBRaster(hnd_RGB: TRGB_Image_Handle): TMemoryRaster; overload;
+
+    { Build-in Matrix to Raster }
+    procedure BuildMatrixRaster(hnd_Matrix: TMatrix_Image_Handle; output: TMemoryRaster); overload;
+    function BuildMatrixRaster(hnd_Matrix: TMatrix_Image_Handle): TMemoryRaster; overload;
 
     { Medical graphic support }
     procedure HotMap(Raster: TMemoryRaster);
@@ -1167,7 +1177,7 @@ type
     function OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster; const max_AI_Rect: Integer): TOD_Desc; overload;
     function OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster): TOD_List; overload;
     procedure OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster; output: TOD_List); overload;
-    function OD6L_Process(hnd: TOD6L_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc; overload;
+    function OD6L_ProcessRGB(hnd: TOD6L_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc; overload;
     function OD6L_ProcessScaleSpace(hnd: TOD6L_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Desc; overload;
 {$ENDREGION 'object detector 6 layer'}
 {$REGION 'object detector 3 layer'}
@@ -1190,7 +1200,7 @@ type
     function OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster; const max_AI_Rect: Integer): TOD_Desc; overload;
     function OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster): TOD_List; overload;
     procedure OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster; output: TOD_List); overload;
-    function OD3L_Process(hnd: TOD3L_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc; overload;
+    function OD3L_ProcessRGB(hnd: TOD3L_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc; overload;
     function OD3L_ProcessScaleSpace(hnd: TOD3L_Handle; Raster: TMemoryRaster; scale: TGeoFloat): TOD_Desc; overload;
 {$ENDREGION 'object detector 3 layer'}
 {$REGION 'object marshal(6 layer) detector'}
@@ -1227,11 +1237,11 @@ type
     function SP_Process_Vec2(hnd: TSP_Handle; Raster: TMemoryRaster; const R: TAI_Rect): TArrayVec2; overload;
     function SP_Process_Vec2(hnd: TSP_Handle; Raster: TMemoryRaster; const R: TOD_Rect): TArrayVec2; overload;
     function SP_Process_Face(Raster: TMemoryRaster; const R: TRectV2): TArrayVec2;
-    function SP_Process(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const AI_Rect: TAI_Rect; const max_AI_Point: Integer): TSP_Desc; overload;
-    function SP_Process_Vec2List(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TRectV2): TVec2List; overload;
-    function SP_Process_Vec2(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TRectV2): TArrayVec2; overload;
-    function SP_Process_Vec2(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TAI_Rect): TArrayVec2; overload;
-    function SP_Process_Vec2(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TOD_Rect): TArrayVec2; overload;
+    function SP_ProcessRGB(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const AI_Rect: TAI_Rect; const max_AI_Point: Integer): TSP_Desc; overload;
+    function SP_ProcessRGB_Vec2List(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TRectV2): TVec2List; overload;
+    function SP_ProcessRGB_Vec2(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TRectV2): TArrayVec2; overload;
+    function SP_ProcessRGB_Vec2(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TAI_Rect): TArrayVec2; overload;
+    function SP_ProcessRGB_Vec2(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TOD_Rect): TArrayVec2; overload;
 {$ENDREGION 'shape predictor and shape detector'}
 {$REGION 'face shape predictor'}
     { face shape predictor(cpu) }
@@ -1239,7 +1249,7 @@ type
     function Face_Detector(Raster: TMemoryRaster; R: TRect; extract_face_size: Integer): TFACE_Handle; overload;
     function Face_Detector(Raster: TMemoryRaster; desc: TAI_Rect_Desc; extract_face_size: Integer): TFACE_Handle; overload;
     function Face_Detector(Raster: TMemoryRaster; MMOD_Desc: TMMOD_Desc; extract_face_size: Integer): TFACE_Handle; overload;
-    function Face_Detector(Raster: TMemoryRaster; od_desc: TOD_Desc; extract_face_size: Integer): TFACE_Handle; overload;
+    function Face_Detector(Raster: TMemoryRaster; OD_Desc: TOD_Desc; extract_face_size: Integer): TFACE_Handle; overload;
     function Face_DetectorAsChips(Raster: TMemoryRaster; desc: TAI_Rect; extract_face_size: Integer): TMemoryRaster;
     function Face_Detector_All(Raster: TMemoryRaster): TFACE_Handle; overload;
     function Face_Detector_All(Raster: TMemoryRaster; extract_face_size: Integer): TFACE_Handle; overload;
@@ -1364,7 +1374,7 @@ type
     function MMOD6L_DNN_Open_Stream(train_file: SystemString): TMMOD6L_Handle; overload;
     function MMOD6L_DNN_Close(var hnd: TMMOD6L_Handle): Boolean;
     function MMOD6L_DNN_Process(hnd: TMMOD6L_Handle; Raster: TMemoryRaster): TMMOD_Desc;
-    function MMOD6L_DNN_Process_Matrix(hnd: TMMOD6L_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc;
+    function MMOD6L_DNN_Process_Matrix(hnd: TMMOD6L_Handle; Matrix_IMG: TMatrix_Image_Handle): TMMOD_Desc;
     function MMOD6L_DNN_DebugInfo(hnd: TMMOD6L_Handle): U_String;
 {$ENDREGION 'MMOD-DNN(DNN+SVM:max-margin object detector 6 layer)'}
 {$REGION 'MMOD-DNN(DNN+SVM:max-margin object detector 3 layer)'}
@@ -1393,7 +1403,7 @@ type
     function MMOD3L_DNN_Open_Stream(train_file: SystemString): TMMOD3L_Handle; overload;
     function MMOD3L_DNN_Close(var hnd: TMMOD3L_Handle): Boolean;
     function MMOD3L_DNN_Process(hnd: TMMOD3L_Handle; Raster: TMemoryRaster): TMMOD_Desc;
-    function MMOD3L_DNN_Process_Matrix(hnd: TMMOD3L_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc;
+    function MMOD3L_DNN_Process_Matrix(hnd: TMMOD3L_Handle; Matrix_IMG: TMatrix_Image_Handle): TMMOD_Desc;
     function MMOD3L_DNN_DebugInfo(hnd: TMMOD3L_Handle): U_String;
 {$ENDREGION 'MMOD-DNN(DNN+SVM:max-margin object detector 3 layer)'}
 {$REGION 'ResNet-Image-Classifier'}
@@ -1421,7 +1431,7 @@ type
     function RNIC_Close(var hnd: TRNIC_Handle): Boolean;
     function RNIC_Process(hnd: TRNIC_Handle; Raster: TMemoryRaster; num_crops: Integer): TLVec; overload;
     function RNIC_Process(hnd: TRNIC_Handle; Raster: TMemoryRaster): TLVec; overload;
-    function RNIC_Process(hnd: TRNIC_Handle; mat_hnd: TMatrix_Image_Handle; num_crops: Integer): TLVec; overload;
+    function RNIC_ProcessMatrix(hnd: TRNIC_Handle; mat_hnd: TMatrix_Image_Handle; num_crops: Integer): TLVec; overload;
     function RNIC_DebugInfo(hnd: TRNIC_Handle): U_String;
 {$ENDREGION 'ResNet-Image-Classifier'}
 {$REGION 'Large-ResNet-Image-Classifier'}
@@ -1449,7 +1459,7 @@ type
     function LRNIC_Close(var hnd: TLRNIC_Handle): Boolean;
     function LRNIC_Process(hnd: TLRNIC_Handle; Raster: TMemoryRaster; num_crops: Integer): TLVec; overload;
     function LRNIC_Process(hnd: TLRNIC_Handle; Raster: TMemoryRaster): TLVec; overload;
-    function LRNIC_Process(hnd: TLRNIC_Handle; mat_hnd: TMatrix_Image_Handle; num_crops: Integer): TLVec; overload;
+    function LRNIC_ProcessMatrix(hnd: TLRNIC_Handle; mat_hnd: TMatrix_Image_Handle; num_crops: Integer): TLVec; overload;
     function LRNIC_DebugInfo(hnd: TLRNIC_Handle): U_String;
 {$ENDREGION 'Large-ResNet-Image-Classifier'}
 {$REGION 'Going Deeper with Convolutions'}
@@ -1569,16 +1579,43 @@ type
     class function SS_TranslateColor(const c: WORD): TRColorEntry;
     function SS_Process(parallel_: Boolean; hnd: TSS_Handle; InputRaster: TMemoryRaster; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster; overload;
     function SS_Process(hnd: TSS_Handle; InputRaster: TMemoryRaster; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster; overload;
-    function SS_Process(hnd: TSS_Handle; mat_hnd: TMatrix_Image_Handle; Width, Height: Integer; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster; overload;
+    function SS_ProcessMatrix(hnd: TSS_Handle; mat_hnd: TMatrix_Image_Handle; Width, Height: Integer; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster; overload;
     procedure SS_ProcessAsync(hnd: TSS_Handle; SSInput: TMemoryRaster; colorPool: TSegmentationColorTable;
       OnResultC: TSS_ProcessOnResultCall; OnResultM: TSS_ProcessOnResultMethod; OnResultP: TSS_ProcessOnResultProc); overload;
     function SS_DebugInfo(hnd: TSS_Handle): U_String;
 {$ENDREGION 'Convolutional Networks for Biomedical Image Segmentation'}
 {$REGION 'correlation tracker'}
-    { video tracker(cpu),multi tracker from TRectV2 }
-    function Tracker_Open(mat_hnd: TMatrix_Image_Handle; const track_rect: TRectV2): TTracker_Handle; overload;
-    function Tracker_Update(hnd: TTracker_Handle; mat_hnd: TMatrix_Image_Handle; var track_rect: TRectV2): Double; overload;
-    function Tracker_Update_NoScale(hnd: TTracker_Handle; mat_hnd: TMatrix_Image_Handle; var track_rect: TRectV2): Double; overload;
+    { video tracker(cpu) from Matrix, tracker from TRectV2 }
+    function Tracker_Open_Matrix(mat_hnd: TMatrix_Image_Handle; const track_rect: TRectV2): TTracker_Handle;
+    function Tracker_Update_Matrix(hnd: TTracker_Handle; mat_hnd: TMatrix_Image_Handle; var track_rect: TRectV2): Double;
+    function Tracker_Update_NoScale_Matrix(hnd: TTracker_Handle; mat_hnd: TMatrix_Image_Handle; var track_rect: TRectV2): Double;
+    { video tracker(cpu) from RGBHnd, tracker from TRectV2 }
+    function Tracker_Open_RGB(RGB_Hnd: TRGB_Image_Handle; const track_rect: TRectV2): TTracker_Handle;
+    function Tracker_Update_RGB(hnd: TTracker_Handle; RGB_Hnd: TRGB_Image_Handle; var track_rect: TRectV2): Double;
+    function Tracker_Update_NoScale_RGB(hnd: TTracker_Handle; RGB_Hnd: TRGB_Image_Handle; var track_rect: TRectV2): Double;
+    { video tracker(cpu) from Matrix, multi tracker from TRectV2/TMMOD_Desc/TOD_Desc }
+    function Tracker_Open_Matrix_Multi(parallel_: Boolean; mat_hnd: TMatrix_Image_Handle; const track_rect: TArrayRectV2): TTracker_Handle_Array; overload;
+    function Tracker_Open_Matrix_Multi(parallel_: Boolean; mat_hnd: TMatrix_Image_Handle; const MMOD_Desc: TMMOD_Desc): TTracker_Handle_Array; overload;
+    function Tracker_Open_Matrix_Multi(parallel_: Boolean; mat_hnd: TMatrix_Image_Handle; const OD_Desc: TOD_Desc): TTracker_Handle_Array; overload;
+    function Tracker_Update_Matrix_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; mat_hnd: TMatrix_Image_Handle; var track_rect: TArrayRectV2): TLVec; overload;
+    procedure Tracker_Update_Matrix_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; mat_hnd: TMatrix_Image_Handle; var MMOD_Desc: TMMOD_Desc); overload;
+    procedure Tracker_Update_Matrix_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; mat_hnd: TMatrix_Image_Handle; var OD_Desc: TOD_Desc); overload;
+    { video tracker(cpu) from RGB, multi tracker from TRectV2/TMMOD_Desc/TOD_Desc }
+    function Tracker_Open_RGB_Multi(parallel_: Boolean; RGB_Hnd: TRGB_Image_Handle; const track_rect: TArrayRectV2): TTracker_Handle_Array; overload;
+    function Tracker_Open_RGB_Multi(parallel_: Boolean; RGB_Hnd: TRGB_Image_Handle; const MMOD_Desc: TMMOD_Desc): TTracker_Handle_Array; overload;
+    function Tracker_Open_RGB_Multi(parallel_: Boolean; RGB_Hnd: TRGB_Image_Handle; const OD_Desc: TOD_Desc): TTracker_Handle_Array; overload;
+    function Tracker_Update_RGB_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; RGB_Hnd: TRGB_Image_Handle; var track_rect: TArrayRectV2): TLVec; overload;
+    procedure Tracker_Update_RGB_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; RGB_Hnd: TRGB_Image_Handle; var MMOD_Desc: TMMOD_Desc); overload;
+    procedure Tracker_Update_RGB_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; RGB_Hnd: TRGB_Image_Handle; var OD_Desc: TOD_Desc); overload;
+    { video tracker(cpu) from raster, multi tracker from TRectV2/TMMOD_Desc/TOD_Desc }
+    function Tracker_Open_Multi(parallel_: Boolean; Raster: TMemoryRaster; const track_rect: TArrayRectV2): TTracker_Handle_Array; overload;
+    function Tracker_Open_Multi(parallel_: Boolean; Raster: TMemoryRaster; const MMOD_Desc: TMMOD_Desc): TTracker_Handle_Array; overload;
+    function Tracker_Open_Multi(parallel_: Boolean; Raster: TMemoryRaster; const MMOD_DescArray: TMMOD_Desc_Array): TTracker_Handle_ArrayOfArray; overload;
+    function Tracker_Open_Multi(parallel_: Boolean; Raster: TMemoryRaster; const OD_Desc: TOD_Desc): TTracker_Handle_Array; overload;
+    function Tracker_Update_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; Raster: TMemoryRaster; var track_rect: TArrayRectV2): TLVec; overload;
+    procedure Tracker_Update_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; Raster: TMemoryRaster; var MMOD_Desc: TMMOD_Desc); overload;
+    procedure Tracker_Update_Multi(parallel_: Boolean; hnd: TTracker_Handle_ArrayOfArray; Raster: TMemoryRaster; var MMOD_DescArray: TMMOD_Desc_Array); overload;
+    procedure Tracker_Update_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; Raster: TMemoryRaster; var OD_Desc: TOD_Desc); overload;
     { video tracker(cpu),single raster tracker from TRect }
     function Tracker_Open(Raster: TMemoryRaster; const track_rect: TRect): TTracker_Handle; overload;
     function Tracker_Update(hnd: TTracker_Handle; Raster: TMemoryRaster; var track_rect: TRect): Double; overload;
@@ -1588,7 +1625,9 @@ type
     function Tracker_Update(hnd: TTracker_Handle; Raster: TMemoryRaster; var track_rect: TRectV2): Double; overload;
     function Tracker_Update_NoScale(hnd: TTracker_Handle; Raster: TMemoryRaster; var track_rect: TRectV2): Double; overload;
     { close tracker handle }
-    function Tracker_Close(var hnd: TTracker_Handle): Boolean;
+    function Tracker_Close(var hnd: TTracker_Handle): Boolean; overload;
+    function Tracker_Close(var hnd: TTracker_Handle_Array): Boolean; overload;
+    function Tracker_Close(var hnd: TTracker_Handle_ArrayOfArray): Boolean; overload;
 {$ENDREGION 'correlation tracker'}
 {$REGION 'OCR'}
     (*
@@ -1720,21 +1759,34 @@ type
 {$ENDREGION 'AI Core'}
 {$REGION 'TAI_DNN_Thread'}
 
+  TAI_DNN_Thread_Trigger = record
+    p: Pointer;
+    Ev: TRunWithThreadMethod;
+    class function Init(p_: Pointer; Ev_: TRunWithThreadMethod): TAI_DNN_Thread_Trigger; static;
+  end;
+
+  // event trigger queue
+  TAI_DNN_Thread_Event_Trigger_Order = {$IFDEF FPC}specialize {$ENDIF FPC} TCriticalOrderPtrStruct<TAI_DNN_Thread_Trigger>;
+
   // AI parallel for GPU/MKL Platform
   TAI_DNN_Thread = class(TCoreClassObject)
   protected
+    FID: Integer;
     FAI: TAI;
     FThread: TCompute;
     FDevice: Integer;
     FThreadPost: TThreadPost;
     FActivted: TAtomBool;
-    FRuning: TAtomBool;
+    FDNNThreadRuning: TAtomBool;
     FThreadInfo: SystemString;
     FPSP: TGeoFloat;
     FMaxPSP: TGeoFloat;
     FCPUThreadCritical: Integer;
     FGPUPerformanceCritical: Integer;
     FName: SystemString;
+    // event thread
+    FEventThreadNum: Integer;
+    FEventQueue: TAI_DNN_Thread_Event_Trigger_Order;
     // process raster state
     FEnabledLastProcessRaster: Boolean;
     FLastProcessRasterCritical: TCritical;
@@ -1745,6 +1797,10 @@ type
     procedure ThreadFree; virtual;
     function GetTaskNum: Integer;
     procedure UpdateLastProcessRaster(raster_: TRaster);
+    procedure UpdateLastProcessMatrixRaster(Matrix_IMG: TMatrix_Image_Handle);
+    // event thread
+    procedure DoEventDone(ThSender: TCompute);
+    procedure DoRunEvent(p: Pointer; Ev: TRunWithThreadMethod);
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -1754,8 +1810,9 @@ type
     function CheckGPUPerformanceCritical(m: TTimeTick): Boolean; overload;
     function GetCPUAsyncThreadNum: Integer;
     property TaskNum: Integer read GetTaskNum;
-    function Busy: Boolean; virtual;
+    function Busy: Boolean;
     property Device: Integer read FDevice;
+    property ID: Integer read FID;
     property AI: TAI read FAI;
     property ThreadInfo: SystemString read FThreadInfo;
     property PSP: TGeoFloat read FPSP;
@@ -1781,7 +1838,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    procedure Remove(obj: TAI_DNN_Thread);
+    procedure Remove(Obj: TAI_DNN_Thread);
     procedure Delete(index: Integer);
     procedure Clear;
 
@@ -1807,7 +1864,8 @@ type
     function PSP: TGeoFloat;
     function MaxPSP: TGeoFloat;
     procedure Wait;
-    function StateInfo: U_String;
+    function StateInfo: U_String; overload;
+    function StateInfo(const Separator: Boolean): U_String; overload;
     procedure EnabledLastProcessRaster(value_: Boolean);
     function LockLastRasterList: TMemoryRasterList;
     procedure UnLockLastRasterList;
@@ -1847,7 +1905,6 @@ type
     PCMD_AsyncProcess = ^TCMD_AsyncProcess;
   private
     MetricHnd: TMetric_Handle;
-    FCPUAsyncThreadNum: Integer;
     procedure ThreadFree; override;
     procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_OpenShareFace();
@@ -1864,8 +1921,6 @@ type
     procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_Metric_AsyncProcess_C);
     procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_Metric_AsyncProcess_M);
     procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_Metric_AsyncProcess_P);
-    function Busy(): Boolean; override;
-    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
   end;
 {$ENDREGION 'TAI_DNN_Thread_Metric'}
 {$REGION 'TAI_DNN_Thread_LMetric'}
@@ -1900,7 +1955,6 @@ type
     PCMD_AsyncProcess = ^TCMD_AsyncProcess;
   private
     LMetricHnd: TLMetric_Handle;
-    FCPUAsyncThreadNum: Integer;
     procedure ThreadFree; override;
     procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
@@ -1915,18 +1969,20 @@ type
     procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LMetric_AsyncProcess_C);
     procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LMetric_AsyncProcess_M);
     procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LMetric_AsyncProcess_P);
-    function Busy(): Boolean; override;
-    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
   end;
 {$ENDREGION 'TAI_DNN_Thread_LMetric'}
 {$REGION 'TAI_DNN_Thread_MMOD6L'}
 
   TAI_DNN_Thread_MMOD6L_AsyncProcess_C = procedure(ThSender: TAI_DNN_Thread_MMOD6L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc);
   TAI_DNN_Thread_MMOD6L_AsyncProcess_M = procedure(ThSender: TAI_DNN_Thread_MMOD6L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc) of object;
+  TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_C = procedure(ThSender: TAI_DNN_Thread_MMOD6L; UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; output: TMMOD_Desc);
+  TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_M = procedure(ThSender: TAI_DNN_Thread_MMOD6L; UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; output: TMMOD_Desc) of object;
 {$IFDEF FPC}
   TAI_DNN_Thread_MMOD6L_AsyncProcess_P = procedure(ThSender: TAI_DNN_Thread_MMOD6L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc) is nested;
+  TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_P = procedure(ThSender: TAI_DNN_Thread_MMOD6L; UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; output: TMMOD_Desc) is nested;
 {$ELSE FPC}
   TAI_DNN_Thread_MMOD6L_AsyncProcess_P = reference to procedure(ThSender: TAI_DNN_Thread_MMOD6L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc);
+  TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_P = reference to procedure(ThSender: TAI_DNN_Thread_MMOD6L; UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; output: TMMOD_Desc);
 {$ENDIF FPC}
 
   TAI_DNN_Thread_MMOD6L = class(TAI_DNN_Thread)
@@ -1947,18 +2003,30 @@ type
       output: TMMOD_Desc;
     end;
 
+    TCMD_AsyncProcessMatrix = record
+      UserData: Pointer;
+      Matrix_IMG: TMatrix_Image_Handle;
+      FreeInput: Boolean;
+      OnResult_C: TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_C;
+      OnResult_M: TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_M;
+      OnResult_P: TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_P;
+      output: TMMOD_Desc;
+    end;
+
     PCMD_SyncProcess = ^TCMD_SyncProcess;
     PCMD_AsyncProcess = ^TCMD_AsyncProcess;
+    PCMD_AsyncProcessMatrix = ^TCMD_AsyncProcessMatrix;
   private
     MMOD6LHnd: TMMOD6L_Handle;
-    FCPUAsyncThreadNum: Integer;
     procedure ThreadFree; override;
     procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_OpenFace();
     procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_SyncProcess(data: Pointer);
-    procedure OnComputeThreadResult(ThSender: TCompute);
+    procedure CMD_AsyncProcess_Result(ThSender: TCompute);
     procedure CMD_AsyncProcess(data: Pointer);
+    procedure CMD_AsyncProcessMatrix_Result(ThSender: TCompute);
+    procedure CMD_AsyncProcessMatrix(data: Pointer);
   public
     constructor Create; override;
     procedure Open(train_file: SystemString);
@@ -1968,18 +2036,23 @@ type
     procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcess_C);
     procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcess_M);
     procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcess_P);
-    function Busy(): Boolean; override;
-    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
+    procedure ProcessMatrixC(UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_C);
+    procedure ProcessMatrixM(UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_M);
+    procedure ProcessMatrixP(UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_P);
   end;
 {$ENDREGION 'TAI_DNN_Thread_MMOD6L'}
 {$REGION 'TAI_DNN_Thread_MMOD3L'}
 
   TAI_DNN_Thread_MMOD3L_AsyncProcess_C = procedure(ThSender: TAI_DNN_Thread_MMOD3L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc);
   TAI_DNN_Thread_MMOD3L_AsyncProcess_M = procedure(ThSender: TAI_DNN_Thread_MMOD3L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc) of object;
+  TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_C = procedure(ThSender: TAI_DNN_Thread_MMOD3L; UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; output: TMMOD_Desc);
+  TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_M = procedure(ThSender: TAI_DNN_Thread_MMOD3L; UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; output: TMMOD_Desc) of object;
 {$IFDEF FPC}
   TAI_DNN_Thread_MMOD3L_AsyncProcess_P = procedure(ThSender: TAI_DNN_Thread_MMOD3L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc) is nested;
+  TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_P = procedure(ThSender: TAI_DNN_Thread_MMOD3L; UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; output: TMMOD_Desc) is nested;
 {$ELSE FPC}
   TAI_DNN_Thread_MMOD3L_AsyncProcess_P = reference to procedure(ThSender: TAI_DNN_Thread_MMOD3L; UserData: Pointer; Input: TMemoryRaster; output: TMMOD_Desc);
+  TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_P = reference to procedure(ThSender: TAI_DNN_Thread_MMOD3L; UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; output: TMMOD_Desc);
 {$ENDIF FPC}
 
   TAI_DNN_Thread_MMOD3L = class(TAI_DNN_Thread)
@@ -2000,17 +2073,29 @@ type
       output: TMMOD_Desc;
     end;
 
+    TCMD_AsyncProcessMatrix = record
+      UserData: Pointer;
+      Matrix_IMG: TMatrix_Image_Handle;
+      FreeInput: Boolean;
+      OnResult_C: TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_C;
+      OnResult_M: TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_M;
+      OnResult_P: TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_P;
+      output: TMMOD_Desc;
+    end;
+
     PCMD_SyncProcess = ^TCMD_SyncProcess;
     PCMD_AsyncProcess = ^TCMD_AsyncProcess;
+    PCMD_AsyncProcessMatrix = ^TCMD_AsyncProcessMatrix;
   private
     MMOD3LHnd: TMMOD3L_Handle;
-    FCPUAsyncThreadNum: Integer;
     procedure ThreadFree; override;
     procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_SyncProcess(data: Pointer);
-    procedure OnComputeThreadResult(ThSender: TCompute);
+    procedure CMD_AsyncProcess_Result(ThSender: TCompute);
     procedure CMD_AsyncProcess(data: Pointer);
+    procedure CMD_AsyncProcessMatrix_Result(ThSender: TCompute);
+    procedure CMD_AsyncProcessMatrix(data: Pointer);
   public
     constructor Create; override;
     procedure Open(train_file: SystemString);
@@ -2019,8 +2104,9 @@ type
     procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcess_C);
     procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcess_M);
     procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcess_P);
-    function Busy(): Boolean; override;
-    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
+    procedure ProcessMatrixC(UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_C);
+    procedure ProcessMatrixM(UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_M);
+    procedure ProcessMatrixP(UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_P);
   end;
 {$ENDREGION 'TAI_DNN_Thread_MMOD3L'}
 {$REGION 'TAI_DNN_Thread_RNIC'}
@@ -2057,7 +2143,6 @@ type
     PCMD_AsyncProcess = ^TCMD_AsyncProcess;
   private
     RNICHnd: TRNIC_Handle;
-    FCPUAsyncThreadNum: Integer;
     procedure ThreadFree; override;
     procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
@@ -2072,8 +2157,6 @@ type
     procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_RNIC_AsyncProcess_C);
     procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_RNIC_AsyncProcess_M);
     procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_RNIC_AsyncProcess_P);
-    function Busy(): Boolean; override;
-    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
   end;
 {$ENDREGION 'TAI_DNN_Thread_RNIC'}
 {$REGION 'TAI_DNN_Thread_LRNIC'}
@@ -2110,7 +2193,6 @@ type
     PCMD_AsyncProcess = ^TCMD_AsyncProcess;
   private
     LRNICHnd: TLRNIC_Handle;
-    FCPUAsyncThreadNum: Integer;
     procedure ThreadFree; override;
     procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
@@ -2125,8 +2207,6 @@ type
     procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LRNIC_AsyncProcess_C);
     procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LRNIC_AsyncProcess_M);
     procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; num_crops: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_LRNIC_AsyncProcess_P);
-    function Busy(): Boolean; override;
-    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
   end;
 {$ENDREGION 'TAI_DNN_Thread_LRNIC'}
 {$REGION 'TAI_DNN_Thread_GDCNIC'}
@@ -2163,7 +2243,6 @@ type
     PCMD_AsyncProcess = ^TCMD_AsyncProcess;
   private
     GDCNICHnd: TGDCNIC_Handle;
-    FCPUAsyncThreadNum: Integer;
     procedure ThreadFree; override;
     procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
@@ -2178,8 +2257,6 @@ type
     procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GDCNIC_AsyncProcess_C);
     procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GDCNIC_AsyncProcess_M);
     procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GDCNIC_AsyncProcess_P);
-    function Busy(): Boolean; override;
-    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
   end;
 {$ENDREGION 'TAI_DNN_Thread_GDCNIC'}
 {$REGION 'TAI_DNN_Thread_GNIC'}
@@ -2216,7 +2293,6 @@ type
     PCMD_AsyncProcess = ^TCMD_AsyncProcess;
   private
     GNICHnd: TGNIC_Handle;
-    FCPUAsyncThreadNum: Integer;
     procedure ThreadFree; override;
     procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
@@ -2231,8 +2307,6 @@ type
     procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GNIC_AsyncProcess_C);
     procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GNIC_AsyncProcess_M);
     procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_GNIC_AsyncProcess_P);
-    function Busy(): Boolean; override;
-    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
   end;
 {$ENDREGION 'TAI_DNN_Thread_GNIC'}
 {$REGION 'TAI_DNN_Thread_SS'}
@@ -2271,7 +2345,6 @@ type
     PCMD_AsyncProcess = ^TCMD_AsyncProcess;
   private
     SSHnd: TSS_Handle;
-    FCPUAsyncThreadNum: Integer;
     procedure ThreadFree; override;
     procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
@@ -2286,18 +2359,20 @@ type
     procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; colorPool: TSegmentationColorTable; FreeInput: Boolean; OnResult: TAI_DNN_Thread_SS_AsyncProcess_C);
     procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; colorPool: TSegmentationColorTable; FreeInput: Boolean; OnResult: TAI_DNN_Thread_SS_AsyncProcess_M);
     procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; colorPool: TSegmentationColorTable; FreeInput: Boolean; OnResult: TAI_DNN_Thread_SS_AsyncProcess_P);
-    function Busy(): Boolean; override;
-    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
   end;
 {$ENDREGION 'TAI_DNN_Thread_SS'}
 {$REGION 'TAI_DNN_Thread_ZMetric'}
 
   TAI_DNN_Thread_ZMetric_AsyncProcess_C = procedure(ThSender: TAI_DNN_Thread_ZMetric; UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; output: TLVec);
   TAI_DNN_Thread_ZMetric_AsyncProcess_M = procedure(ThSender: TAI_DNN_Thread_ZMetric; UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; output: TLVec) of object;
+  TAI_DNN_Thread_ZMetric_AsyncProcess_List_C = procedure(ThSender: TAI_DNN_Thread_ZMetric; UserData: Pointer; Input: TMemoryRasterList; output: TLMatrix);
+  TAI_DNN_Thread_ZMetric_AsyncProcess_List_M = procedure(ThSender: TAI_DNN_Thread_ZMetric; UserData: Pointer; Input: TMemoryRasterList; output: TLMatrix) of object;
 {$IFDEF FPC}
   TAI_DNN_Thread_ZMetric_AsyncProcess_P = procedure(ThSender: TAI_DNN_Thread_ZMetric; UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; output: TLVec) is nested;
+  TAI_DNN_Thread_ZMetric_AsyncProcess_List_P = procedure(ThSender: TAI_DNN_Thread_ZMetric; UserData: Pointer; Input: TMemoryRasterList; output: TLMatrix) is nested;
 {$ELSE FPC}
   TAI_DNN_Thread_ZMetric_AsyncProcess_P = reference to procedure(ThSender: TAI_DNN_Thread_ZMetric; UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; output: TLVec);
+  TAI_DNN_Thread_ZMetric_AsyncProcess_List_P = reference to procedure(ThSender: TAI_DNN_Thread_ZMetric; UserData: Pointer; Input: TMemoryRasterList; output: TLMatrix);
 {$ENDIF FPC}
 
   TAI_DNN_Thread_ZMetric = class(TAI_DNN_Thread)
@@ -2320,17 +2395,30 @@ type
       output: TLVec;
     end;
 
+    TCMD_AsyncProcess_List = record
+      UserData: Pointer;
+      Input: TMemoryRasterList;
+      SS_Width, SS_Height: Integer;
+      FreeInput: Boolean;
+      OnResult_C: TAI_DNN_Thread_ZMetric_AsyncProcess_List_C;
+      OnResult_M: TAI_DNN_Thread_ZMetric_AsyncProcess_List_M;
+      OnResult_P: TAI_DNN_Thread_ZMetric_AsyncProcess_List_P;
+      output: TLMatrix;
+    end;
+
     PCMD_SyncProcess = ^TCMD_SyncProcess;
     PCMD_AsyncProcess = ^TCMD_AsyncProcess;
+    PCMD_AsyncProcess_List = ^TCMD_AsyncProcess_List;
   private
     ZMetricHnd: TZMetric_Handle;
-    FCPUAsyncThreadNum: Integer;
     procedure ThreadFree; override;
     procedure CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_Open_Stream(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
     procedure CMD_SyncProcess(data: Pointer);
-    procedure OnComputeThreadResult(ThSender: TCompute);
+    procedure CMD_AsyncProcess_Result(ThSender: TCompute);
     procedure CMD_AsyncProcess(data: Pointer);
+    procedure CMD_AsyncProcess_List_Result(ThSender: TCompute);
+    procedure CMD_AsyncProcess_List(data: Pointer);
   public
     constructor Create; override;
     procedure Open(train_file: SystemString);
@@ -2339,8 +2427,9 @@ type
     procedure ProcessC(UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_ZMetric_AsyncProcess_C);
     procedure ProcessM(UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_ZMetric_AsyncProcess_M);
     procedure ProcessP(UserData: Pointer; Input: TMemoryRaster; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_ZMetric_AsyncProcess_P);
-    function Busy(): Boolean; override;
-    property CPUAsyncThreadNum: Integer read FCPUAsyncThreadNum;
+    procedure ProcessListC(UserData: Pointer; Input: TMemoryRasterList; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_ZMetric_AsyncProcess_List_C);
+    procedure ProcessListM(UserData: Pointer; Input: TMemoryRasterList; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_ZMetric_AsyncProcess_List_M);
+    procedure ProcessListP(UserData: Pointer; Input: TMemoryRasterList; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_ZMetric_AsyncProcess_List_P);
   end;
 {$ENDREGION 'TAI_DNN_Thread_ZMetric'}
 {$REGION 'Parallel'}
@@ -2355,7 +2444,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    procedure Remove(a: TAI);
+    procedure Remove(AI_: TAI);
     procedure Clear;
     procedure Delete(index: Integer);
 
@@ -2518,31 +2607,31 @@ function Alloc_P_Bytes_FromBuff(const buff: TBytes): P_Bytes; overload;
 procedure Free_P_Bytes(const buff: P_Bytes);
 function Get_P_Bytes_String(const buff: P_Bytes): U_String;
 
-function Rect(const v: TAI_Rect): TRect; overload;
-function Rect(const v: TOD_Rect): TRect; overload;
+function Rect(const V: TAI_Rect): TRect; overload;
+function Rect(const V: TOD_Rect): TRect; overload;
 
-function AIRect(const v: TRect): TAI_Rect; overload;
-function AIRect(const v: TRectV2): TAI_Rect; overload;
-function AIRect(const v: TOD_Rect): TAI_Rect; overload;
-function AIRect(const v: TAI_MMOD_Rect): TAI_Rect; overload;
+function AIRect(const V: TRect): TAI_Rect; overload;
+function AIRect(const V: TRectV2): TAI_Rect; overload;
+function AIRect(const V: TOD_Rect): TAI_Rect; overload;
+function AIRect(const V: TAI_MMOD_Rect): TAI_Rect; overload;
 
-function RectV2(const v: TAI_Rect): TRectV2; overload;
-function RectV2(const v: TOD_Rect): TRectV2; overload;
-function RectV2(const v: TAI_MMOD_Rect): TRectV2; overload;
+function RectV2(const V: TAI_Rect): TRectV2; overload;
+function RectV2(const V: TOD_Rect): TRectV2; overload;
+function RectV2(const V: TAI_MMOD_Rect): TRectV2; overload;
 
-function AI_Point(const v: TVec2): TAI_Point;
-function Point(const v: TAI_Point): TPoint; overload;
-function Vec2(const v: TAI_Point): TVec2; overload;
+function AI_Point(const V: TVec2): TAI_Point;
+function Point(const V: TAI_Point): TPoint; overload;
+function Vec2(const V: TAI_Point): TVec2; overload;
 
-function InRect(v: TAI_Point; R: TAI_Rect): Boolean; overload;
-function InRect(v: TSP_Desc; R: TAI_Rect): Boolean; overload;
-function InRect(v: TSP_Desc; R: TRectV2): Boolean; overload;
+function InRect(V: TAI_Point; R: TAI_Rect): Boolean; overload;
+function InRect(V: TSP_Desc; R: TAI_Rect): Boolean; overload;
+function InRect(V: TSP_Desc; R: TRectV2): Boolean; overload;
 
 procedure FilterOD_Desc(var desc: TOD_Desc);
 procedure FilterMMOD_Desc(var desc: TMMOD_Desc);
 
 { sp vector }
-procedure SPToVec(v: TSP_Desc; L: TVec2List); overload;
+procedure SPToVec(V: TSP_Desc; L: TVec2List); overload;
 function GetSPBound(desc: TSP_Desc; endge_threshold: TGeoFloat): TRectV2;
 procedure DrawSPLine(sp_desc: TSP_Desc; bp, ep: Integer; closeLine: Boolean; color: TDEColor; d: TDrawEngine); overload;
 procedure DrawFaceSP(sp_desc: TSP_Desc; color: TDEColor; d: TDrawEngine); overload;
@@ -3199,27 +3288,27 @@ begin
   try
       stream := TCoreClassResourceStream.Create(HInstance, 'zAI_BuildIn', RT_RCDATA);
   except
-    found_build_in.v := False;
+    found_build_in.V := False;
 {$IFDEF initializationStatus}
     DoStatus('warning: no found resource "zAI_BuildIn"');
 {$ENDIF initializationStatus}
-    done_build_in.v := True;
+    done_build_in.V := True;
     exit;
   end;
 {$ELSE Z_AI_Dataset_Build_In}
   fn := WhereFileFromConfigure('zAI_BuildIn.OXC');
   if not umlFileExists(fn) then
     begin
-      found_build_in.v := False;
+      found_build_in.V := False;
 {$IFDEF initializationStatus}
       DoStatus('warning: no found resource file: %s', [umlGetFileName(fn).Text]);
 {$ENDIF initializationStatus}
-      done_build_in.v := True;
+      done_build_in.V := True;
       exit;
     end;
   stream := TCoreClassFileStream.Create(fn, fmOpenRead or fmShareDenyNone);
 {$ENDIF Z_AI_Dataset_Build_In}
-  found_build_in.v := True;
+  found_build_in.V := True;
   stream.Position := 0;
   m64 := TMemoryStream64.Create;
   DecompressStream(stream, m64);
@@ -3302,7 +3391,7 @@ begin
 {$ENDIF initializationStatus}
     end;
 
-  done_build_in.v := True;
+  done_build_in.V := True;
 end;
 
 procedure Init_AI_BuildIn;
@@ -3330,8 +3419,8 @@ end;
 
 procedure Wait_AI_Init;
 begin
-  while not done_build_in.v do
-      CheckThreadSynchronize(10);
+  while not done_build_in.V do
+      TCompute.Sleep(1);
 end;
 
 procedure Free_AI_BuildIn;
@@ -3447,119 +3536,119 @@ begin
   SetLength(tmp, 0);
 end;
 
-function Rect(const v: TAI_Rect): TRect;
+function Rect(const V: TAI_Rect): TRect;
 begin
-  Result.Left := v.Left;
-  Result.Top := v.Top;
-  Result.Right := v.Right;
-  Result.Bottom := v.Bottom;
+  Result.Left := V.Left;
+  Result.Top := V.Top;
+  Result.Right := V.Right;
+  Result.Bottom := V.Bottom;
 end;
 
-function Rect(const v: TOD_Rect): TRect;
+function Rect(const V: TOD_Rect): TRect;
 begin
-  Result.Left := v.Left;
-  Result.Top := v.Top;
-  Result.Right := v.Right;
-  Result.Bottom := v.Bottom;
+  Result.Left := V.Left;
+  Result.Top := V.Top;
+  Result.Right := V.Right;
+  Result.Bottom := V.Bottom;
 end;
 
-function AIRect(const v: TRect): TAI_Rect;
+function AIRect(const V: TRect): TAI_Rect;
 begin
-  Result.Left := v.Left;
-  Result.Top := v.Top;
-  Result.Right := v.Right;
-  Result.Bottom := v.Bottom;
+  Result.Left := V.Left;
+  Result.Top := V.Top;
+  Result.Right := V.Right;
+  Result.Bottom := V.Bottom;
 end;
 
-function AIRect(const v: TRectV2): TAI_Rect;
+function AIRect(const V: TRectV2): TAI_Rect;
 begin
-  Result.Left := Round(v[0, 0]);
-  Result.Top := Round(v[0, 1]);
-  Result.Right := Round(v[1, 0]);
-  Result.Bottom := Round(v[1, 1]);
+  Result.Left := Round(V[0, 0]);
+  Result.Top := Round(V[0, 1]);
+  Result.Right := Round(V[1, 0]);
+  Result.Bottom := Round(V[1, 1]);
 end;
 
-function AIRect(const v: TOD_Rect): TAI_Rect;
+function AIRect(const V: TOD_Rect): TAI_Rect;
 begin
-  Result.Left := v.Left;
-  Result.Top := v.Top;
-  Result.Right := v.Right;
-  Result.Bottom := v.Bottom;
+  Result.Left := V.Left;
+  Result.Top := V.Top;
+  Result.Right := V.Right;
+  Result.Bottom := V.Bottom;
 end;
 
-function AIRect(const v: TAI_MMOD_Rect): TAI_Rect;
+function AIRect(const V: TAI_MMOD_Rect): TAI_Rect;
 begin
-  Result.Left := v.Left;
-  Result.Top := v.Top;
-  Result.Right := v.Right;
-  Result.Bottom := v.Bottom;
+  Result.Left := V.Left;
+  Result.Top := V.Top;
+  Result.Right := V.Right;
+  Result.Bottom := V.Bottom;
 end;
 
-function RectV2(const v: TAI_Rect): TRectV2;
+function RectV2(const V: TAI_Rect): TRectV2;
 begin
-  Result[0, 0] := v.Left;
-  Result[0, 1] := v.Top;
-  Result[1, 0] := v.Right;
-  Result[1, 1] := v.Bottom;
+  Result[0, 0] := V.Left;
+  Result[0, 1] := V.Top;
+  Result[1, 0] := V.Right;
+  Result[1, 1] := V.Bottom;
 end;
 
-function RectV2(const v: TOD_Rect): TRectV2;
+function RectV2(const V: TOD_Rect): TRectV2;
 begin
-  Result[0, 0] := v.Left;
-  Result[0, 1] := v.Top;
-  Result[1, 0] := v.Right;
-  Result[1, 1] := v.Bottom;
+  Result[0, 0] := V.Left;
+  Result[0, 1] := V.Top;
+  Result[1, 0] := V.Right;
+  Result[1, 1] := V.Bottom;
 end;
 
-function RectV2(const v: TAI_MMOD_Rect): TRectV2;
+function RectV2(const V: TAI_MMOD_Rect): TRectV2;
 begin
-  Result[0, 0] := v.Left;
-  Result[0, 1] := v.Top;
-  Result[1, 0] := v.Right;
-  Result[1, 1] := v.Bottom;
+  Result[0, 0] := V.Left;
+  Result[0, 1] := V.Top;
+  Result[1, 0] := V.Right;
+  Result[1, 1] := V.Bottom;
 end;
 
-function AI_Point(const v: TVec2): TAI_Point;
+function AI_Point(const V: TVec2): TAI_Point;
 begin
-  Result.X := Round(v[0]);
-  Result.Y := Round(v[1]);
+  Result.X := Round(V[0]);
+  Result.Y := Round(V[1]);
 end;
 
-function Point(const v: TAI_Point): TPoint;
+function Point(const V: TAI_Point): TPoint;
 begin
-  Result.X := v.X;
-  Result.Y := v.Y;
+  Result.X := V.X;
+  Result.Y := V.Y;
 end;
 
-function Vec2(const v: TAI_Point): TVec2;
+function Vec2(const V: TAI_Point): TVec2;
 begin
-  Result[0] := v.X;
-  Result[1] := v.Y;
+  Result[0] := V.X;
+  Result[1] := V.Y;
 end;
 
-function InRect(v: TAI_Point; R: TAI_Rect): Boolean;
+function InRect(V: TAI_Point; R: TAI_Rect): Boolean;
 begin
-  Result := PointInRect(Vec2(v), RectV2(R));
+  Result := PointInRect(Vec2(V), RectV2(R));
 end;
 
-function InRect(v: TSP_Desc; R: TAI_Rect): Boolean;
+function InRect(V: TSP_Desc; R: TAI_Rect): Boolean;
 var
   i: Integer;
 begin
   Result := False;
-  for i := 0 to Length(v) - 1 do
-    if not InRect(v[i], R) then
+  for i := 0 to Length(V) - 1 do
+    if not InRect(V[i], R) then
         exit;
   Result := True;
 end;
 
-function InRect(v: TSP_Desc; R: TRectV2): Boolean;
+function InRect(V: TSP_Desc; R: TRectV2): Boolean;
 var
   i: Integer;
 begin
   Result := False;
-  for i := 0 to Length(v) - 1 do
-    if not PointInRect(Vec2(v[i]), R) then
+  for i := 0 to Length(V) - 1 do
+    if not PointInRect(Vec2(V[i]), R) then
         exit;
   Result := True;
 end;
@@ -3637,12 +3726,12 @@ begin
   desc := NewDesc;
 end;
 
-procedure SPToVec(v: TSP_Desc; L: TVec2List);
+procedure SPToVec(V: TSP_Desc; L: TVec2List);
 var
   i: Integer;
 begin
-  for i := 0 to Length(v) - 1 do
-      L.Add(Vec2(v[i]));
+  for i := 0 to Length(V) - 1 do
+      L.Add(Vec2(V[i]));
 end;
 
 function GetSPBound(desc: TSP_Desc; endge_threshold: TGeoFloat): TRectV2;
@@ -5868,28 +5957,28 @@ var
   i, j: Integer;
   img: TAI_Image;
   detDef: TAI_DetectorDefine;
-  od_desc: TOD_Desc;
+  OD_Desc: TOD_Desc;
   mr: TMemoryRaster;
 begin
-  if od_hnd = nil then
+  if OD_Hnd = nil then
       exit;
   for i := 0 to imgList.Count - 1 do
     begin
       img := imgList[i];
       mr := NewRaster();
       mr.ZoomFrom(img.Raster, img.Raster.Width * 4, img.Raster.Height * 4);
-      od_desc := AI.OD6L_Process(od_hnd, mr, 8192);
+      OD_Desc := AI.OD6L_Process(OD_Hnd, mr, 8192);
       DisposeObject(mr);
 
       { remove overlap detector }
-      for j := 0 to Length(od_desc) - 1 do
-          img.RemoveDetectorFromRect(RectMul(RectV2(od_desc[j]), 0.25));
+      for j := 0 to Length(OD_Desc) - 1 do
+          img.RemoveDetectorFromRect(RectMul(RectV2(OD_Desc[j]), 0.25));
 
       { make detector }
-      for j := 0 to Length(od_desc) - 1 do
+      for j := 0 to Length(OD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
-          detDef.R := MakeRect(RectMul(RectV2(od_desc[j]), 0.25));
+          detDef.R := MakeRect(RectMul(RectV2(OD_Desc[j]), 0.25));
           img.DetectorDefineList.Add(detDef);
         end;
     end;
@@ -5900,24 +5989,24 @@ var
   i, j: Integer;
   img: TAI_Image;
   detDef: TAI_DetectorDefine;
-  od_desc: TOD_Desc;
+  OD_Desc: TOD_Desc;
 begin
-  if od_hnd = nil then
+  if OD_Hnd = nil then
       exit;
   for i := 0 to imgList.Count - 1 do
     begin
       img := imgList[i];
-      od_desc := AI.OD6L_Process(od_hnd, img.Raster, 8192);
+      OD_Desc := AI.OD6L_Process(OD_Hnd, img.Raster, 8192);
 
       { remove overlap detector }
-      for j := 0 to Length(od_desc) - 1 do
-          img.RemoveDetectorFromRect(RectV2(od_desc[j]));
+      for j := 0 to Length(OD_Desc) - 1 do
+          img.RemoveDetectorFromRect(RectV2(OD_Desc[j]));
 
       { make detector }
-      for j := 0 to Length(od_desc) - 1 do
+      for j := 0 to Length(OD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
-          detDef.R := Rect(od_desc[j]);
+          detDef.R := Rect(OD_Desc[j]);
           img.DetectorDefineList.Add(detDef);
         end;
     end;
@@ -5928,28 +6017,28 @@ var
   i, j: Integer;
   img: TAI_Image;
   detDef: TAI_DetectorDefine;
-  od_desc: TOD_Desc;
+  OD_Desc: TOD_Desc;
   mr: TMemoryRaster;
 begin
-  if od_hnd = nil then
+  if OD_Hnd = nil then
       exit;
   for i := 0 to imgList.Count - 1 do
     begin
       img := imgList[i];
       mr := NewRaster();
       mr.ZoomFrom(img.Raster, img.Raster.Width * 4, img.Raster.Height * 4);
-      od_desc := AI.OD3L_Process(od_hnd, mr, 8192);
+      OD_Desc := AI.OD3L_Process(OD_Hnd, mr, 8192);
       DisposeObject(mr);
 
       { remove overlap detector }
-      for j := 0 to Length(od_desc) - 1 do
-          img.RemoveDetectorFromRect(RectMul(RectV2(od_desc[j]), 0.25));
+      for j := 0 to Length(OD_Desc) - 1 do
+          img.RemoveDetectorFromRect(RectMul(RectV2(OD_Desc[j]), 0.25));
 
       { make detector }
-      for j := 0 to Length(od_desc) - 1 do
+      for j := 0 to Length(OD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
-          detDef.R := MakeRect(RectMul(RectV2(od_desc[j]), 0.25));
+          detDef.R := MakeRect(RectMul(RectV2(OD_Desc[j]), 0.25));
           img.DetectorDefineList.Add(detDef);
         end;
     end;
@@ -5960,24 +6049,24 @@ var
   i, j: Integer;
   img: TAI_Image;
   detDef: TAI_DetectorDefine;
-  od_desc: TOD_Desc;
+  OD_Desc: TOD_Desc;
 begin
-  if od_hnd = nil then
+  if OD_Hnd = nil then
       exit;
   for i := 0 to imgList.Count - 1 do
     begin
       img := imgList[i];
-      od_desc := AI.OD3L_Process(od_hnd, img.Raster, 8192);
+      OD_Desc := AI.OD3L_Process(OD_Hnd, img.Raster, 8192);
 
       { remove overlap detector }
-      for j := 0 to Length(od_desc) - 1 do
-          img.RemoveDetectorFromRect(RectV2(od_desc[j]));
+      for j := 0 to Length(OD_Desc) - 1 do
+          img.RemoveDetectorFromRect(RectV2(OD_Desc[j]));
 
       { make detector }
-      for j := 0 to Length(od_desc) - 1 do
+      for j := 0 to Length(OD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
-          detDef.R := Rect(od_desc[j]);
+          detDef.R := Rect(OD_Desc[j]);
           img.DetectorDefineList.Add(detDef);
         end;
     end;
@@ -5988,29 +6077,29 @@ var
   i, j: Integer;
   img: TAI_Image;
   detDef: TAI_DetectorDefine;
-  od_desc: TOD_Marshal_Desc;
+  OD_Desc: TOD_Marshal_Desc;
   mr: TMemoryRaster;
 begin
-  if od_hnd = nil then
+  if OD_Hnd = nil then
       exit;
   for i := 0 to imgList.Count - 1 do
     begin
       img := imgList[i];
       mr := NewRaster();
       mr.ZoomFrom(img.Raster, img.Raster.Width * 4, img.Raster.Height * 4);
-      od_desc := AI.OD6L_Marshal_Process(od_hnd, mr);
+      OD_Desc := AI.OD6L_Marshal_Process(OD_Hnd, mr);
       DisposeObject(mr);
 
       { remove overlap detector }
-      for j := 0 to Length(od_desc) - 1 do
-          img.RemoveDetectorFromRect(RectMul(od_desc[j].R, 0.25));
+      for j := 0 to Length(OD_Desc) - 1 do
+          img.RemoveDetectorFromRect(RectMul(OD_Desc[j].R, 0.25));
 
       { make detector }
-      for j := 0 to Length(od_desc) - 1 do
+      for j := 0 to Length(OD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
-          detDef.R := MakeRect(RectMul(od_desc[j].R, 0.25));
-          detDef.Token := od_desc[j].Token;
+          detDef.R := MakeRect(RectMul(OD_Desc[j].R, 0.25));
+          detDef.Token := OD_Desc[j].Token;
           img.DetectorDefineList.Add(detDef);
         end;
     end;
@@ -6021,25 +6110,25 @@ var
   i, j: Integer;
   img: TAI_Image;
   detDef: TAI_DetectorDefine;
-  od_desc: TOD_Marshal_Desc;
+  OD_Desc: TOD_Marshal_Desc;
 begin
-  if od_hnd = nil then
+  if OD_Hnd = nil then
       exit;
   for i := 0 to imgList.Count - 1 do
     begin
       img := imgList[i];
-      od_desc := AI.OD6L_Marshal_Process(od_hnd, img.Raster);
+      OD_Desc := AI.OD6L_Marshal_Process(OD_Hnd, img.Raster);
 
       { remove overlap detector }
-      for j := 0 to Length(od_desc) - 1 do
-          img.RemoveDetectorFromRect(od_desc[j].R);
+      for j := 0 to Length(OD_Desc) - 1 do
+          img.RemoveDetectorFromRect(OD_Desc[j].R);
 
       { make detector }
-      for j := 0 to Length(od_desc) - 1 do
+      for j := 0 to Length(OD_Desc) - 1 do
         begin
           detDef := TAI_DetectorDefine.Create(img);
-          detDef.R := MakeRect(od_desc[j].R);
-          detDef.Token := od_desc[j].Token;
+          detDef.R := MakeRect(OD_Desc[j].R);
+          detDef.Token := OD_Desc[j].Token;
           img.DetectorDefineList.Add(detDef);
         end;
     end;
@@ -6285,6 +6374,8 @@ var
 
   tmp: TRaster;
   vec: TLVec;
+  idx: Integer;
+  d: TLFloat;
 begin
   if MetricHnd = nil then
       exit;
@@ -6308,7 +6399,14 @@ begin
 
           vec := AI.Metric_ResNet_Process(MetricHnd, tmp);
           DisposeObject(tmp);
-          detDef.Token := Learn_.ProcessMaxIndexToken(vec);
+
+          if Length(vec) = Learn_.InSize then
+            begin
+              idx := Learn_.ProcessMaxIndex(vec);
+              d := LDistance(Learn_.MemorySource[idx]^.m_in, vec);
+              if d <= MinK then
+                  detDef.Token := Learn_.MemorySource[idx]^.Token;
+            end;
           SetLength(vec, 0);
         end;
     end;
@@ -6321,6 +6419,8 @@ var
   detDef: TAI_DetectorDefine;
   tmp: TRaster;
   vec: TLVec;
+  idx: Integer;
+  d: TLFloat;
 begin
   if MetricHnd = nil then
       exit;
@@ -6344,7 +6444,13 @@ begin
 
           vec := AI.ZMetric_Process(MetricHnd, tmp, SS_Width, SS_Height);
           DisposeObject(tmp);
-          detDef.Token := Learn_.ProcessMaxIndexToken(vec);
+          if Length(vec) = Learn_.InSize then
+            begin
+              idx := Learn_.ProcessMaxIndex(vec);
+              d := LDistance(Learn_.MemorySource[idx]^.m_in, vec);
+              if d <= MinK then
+                  detDef.Token := Learn_.MemorySource[idx]^.Token;
+            end;
           SetLength(vec, 0);
         end;
     end;
@@ -6486,7 +6592,10 @@ end;
 
 function TAI_EntryAPI.GetVersionTitle: TPascalString;
 begin
-  Result := PFormat('%d.%d %s%d', [MajorVer, MinorVer, GetVersionName().Text, VerID]);
+  if VerMode in [7, 8] then
+      Result := PFormat('%d.%d %s', [MajorVer, MinorVer, GetVersionName().Text])
+  else
+      Result := PFormat('%d.%d %s%d', [MajorVer, MinorVer, GetVersionName().Text, VerID]);
 end;
 
 function TAI_EntryAPI.GetVersionInfo: TPascalString;
@@ -6556,7 +6665,7 @@ destructor TAI.Destroy;
 begin
   if FFace_SP_Hnd <> nil then
     begin
-      if (FFace_SP_Hnd = Parallel_SP_Hnd) then
+      if Pointer(FFace_SP_Hnd) = Pointer(Parallel_SP_Hnd) then
           Parallel_SP_Hnd := nil;
       SP_Close(FFace_SP_Hnd);
     end;
@@ -6676,27 +6785,27 @@ end;
 
 function TAI.GetComputeDeviceNames(): U_StringArray;
 var
-  i, num: Integer;
+  i, Num: Integer;
 begin
   SetLength(Result, 0);
-  num := GetComputeDeviceNumOfProcess;
-  if num > 0 then
+  Num := GetComputeDeviceNumOfProcess;
+  if Num > 0 then
     begin
-      SetLength(Result, num);
-      for i := 0 to num - 1 do
+      SetLength(Result, Num);
+      for i := 0 to Num - 1 do
           Result[i] := GetComputeDeviceNameOfProcess(i);
     end;
 end;
 
 procedure TAI.GetComputeDeviceNames(output: TCoreClassStrings);
 var
-  i, num: Integer;
+  i, Num: Integer;
 begin
   output.Clear;
-  num := GetComputeDeviceNumOfProcess;
-  if num > 0 then
+  Num := GetComputeDeviceNumOfProcess;
+  if Num > 0 then
     begin
-      for i := 0 to num - 1 do
+      for i := 0 to Num - 1 do
           output.Add(GetComputeDeviceNameOfProcess(i));
     end;
 end;
@@ -6743,47 +6852,47 @@ begin
   Result := TrainingControl.pause <> 0;
 end;
 
-procedure TAI.DrawOD6L(od_hnd: TOD6L_Handle; Raster: TMemoryRaster; color: TDEColor);
+procedure TAI.DrawOD6L(OD_Hnd: TOD6L_Handle; Raster: TMemoryRaster; color: TDEColor);
 var
-  od_desc: TOD_Desc;
+  OD_Desc: TOD_Desc;
   i: Integer;
   d: TDrawEngine;
   dt: TTimeTick;
 begin
   dt := GetTimeTick();
-  od_desc := OD6L_Process(od_hnd, Raster, 8192);
+  OD_Desc := OD6L_Process(OD_Hnd, Raster, 8192);
   dt := GetTimeTick() - dt;
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
   d.Rasterization.UsedAgg := True;
-  for i := 0 to Length(od_desc) - 1 do
-      d.DrawLabelBox(PFormat('%f', [od_desc[i].confidence]), 20, DEColor(1, 1, 1, 1), RectV2(od_desc[i]), color, 2);
+  for i := 0 to Length(OD_Desc) - 1 do
+      d.DrawLabelBox(PFormat('%f', [OD_Desc[i].confidence]), 20, DEColor(1, 1, 1, 1), RectV2(OD_Desc[i]), color, 2);
   d.Flush;
   DisposeObject(d);
 end;
 
-procedure TAI.DrawOD3L(od_hnd: TOD3L_Handle; Raster: TMemoryRaster; color: TDEColor);
+procedure TAI.DrawOD3L(OD_Hnd: TOD3L_Handle; Raster: TMemoryRaster; color: TDEColor);
 var
-  od_desc: TOD_Desc;
+  OD_Desc: TOD_Desc;
   i: Integer;
   d: TDrawEngine;
   dt: TTimeTick;
 begin
   dt := GetTimeTick();
-  od_desc := OD3L_Process(od_hnd, Raster, 8192);
+  OD_Desc := OD3L_Process(OD_Hnd, Raster, 8192);
   dt := GetTimeTick() - dt;
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
   d.Rasterization.UsedAgg := True;
-  for i := 0 to Length(od_desc) - 1 do
-      d.DrawLabelBox(PFormat('%f', [od_desc[i].confidence]), 20, DEColor(1, 1, 1, 1), RectV2(od_desc[i]), color, 2);
+  for i := 0 to Length(OD_Desc) - 1 do
+      d.DrawLabelBox(PFormat('%f', [OD_Desc[i].confidence]), 20, DEColor(1, 1, 1, 1), RectV2(OD_Desc[i]), color, 2);
   d.Flush;
   DisposeObject(d);
 end;
 
-procedure TAI.DrawOD(od_desc: TOD_Desc; Raster: TMemoryRaster; color: TDEColor);
+procedure TAI.DrawOD(OD_Desc: TOD_Desc; Raster: TMemoryRaster; color: TDEColor);
 var
   i: Integer;
   d: TDrawEngine;
@@ -6792,8 +6901,8 @@ begin
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
   d.Rasterization.UsedAgg := True;
-  for i := 0 to Length(od_desc) - 1 do
-      d.DrawLabelBox(PFormat('%f', [od_desc[i].confidence]), 20, DEColor(1, 1, 1, 1), RectV2(od_desc[i]), color, 2);
+  for i := 0 to Length(OD_Desc) - 1 do
+      d.DrawLabelBox(PFormat('%f', [OD_Desc[i].confidence]), 20, DEColor(1, 1, 1, 1), RectV2(OD_Desc[i]), color, 2);
   d.Flush;
   DisposeObject(d);
 end;
@@ -6820,22 +6929,22 @@ begin
   DisposeObject(d);
 end;
 
-procedure TAI.DrawSP(od_hnd: TOD6L_Handle; sp_hnd: TSP_Handle; Raster: TMemoryRaster);
+procedure TAI.DrawSP(OD_Hnd: TOD6L_Handle; sp_hnd: TSP_Handle; Raster: TMemoryRaster);
 var
-  od_desc: TOD_Desc;
+  OD_Desc: TOD_Desc;
   sp_desc: TSP_Desc;
   i, j: Integer;
   d: TDrawEngine;
 begin
-  od_desc := OD6L_Process(od_hnd, Raster, 8192);
+  OD_Desc := OD6L_Process(OD_Hnd, Raster, 8192);
   d := TDrawEngine.Create;
   d.ViewOptions := [];
   d.Rasterization.SetWorkMemory(Raster);
   d.Rasterization.UsedAgg := True;
-  for i := 0 to Length(od_desc) - 1 do
+  for i := 0 to Length(OD_Desc) - 1 do
     begin
-      d.DrawBox(RectV2(od_desc[i]), DEColor(1, 0, 0, 0.9), 2);
-      sp_desc := SP_Process(sp_hnd, Raster, AIRect(od_desc[i]), 1024);
+      d.DrawBox(RectV2(OD_Desc[i]), DEColor(1, 0, 0, 0.9), 2);
+      sp_desc := SP_Process(sp_hnd, Raster, AIRect(OD_Desc[i]), 1024);
       for j := 0 to Length(sp_desc) - 1 do
           d.DrawPoint(Vec2(sp_desc[j]), DEColor(1, 0, 0, 0.9), 4, 2);
     end;
@@ -7162,6 +7271,74 @@ procedure TAI.Close_Matrix_Image(hnd: TMatrix_Image_Handle);
 begin
   if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.Close_Matrix_Image) then
       FAI_EntryAPI^.Close_Matrix_Image(hnd);
+end;
+
+procedure TAI.BuildRGBRaster(hnd_RGB: TRGB_Image_Handle; output: TMemoryRaster);
+var
+  hnd: TBGRA_Buffer_Handle;
+begin
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OpenImageBuffer_RGB) then
+    begin
+      hnd := FAI_EntryAPI^.OpenImageBuffer_RGB(hnd_RGB);
+      if hnd <> nil then
+        begin
+          output.SetSize(hnd^.Width, hnd^.Height);
+          CopyPtr(hnd^.Bits, output.Bits, (hnd^.Width * hnd^.Height) shl 2);
+          FAI_EntryAPI^.CloseImageBuffer(hnd);
+        end;
+    end;
+end;
+
+function TAI.BuildRGBRaster(hnd_RGB: TRGB_Image_Handle): TMemoryRaster;
+var
+  hnd: TBGRA_Buffer_Handle;
+begin
+  Result := nil;
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OpenImageBuffer_RGB) then
+    begin
+      hnd := FAI_EntryAPI^.OpenImageBuffer_RGB(hnd_RGB);
+      if hnd <> nil then
+        begin
+          Result := NewRaster();
+          Result.SetSize(hnd^.Width, hnd^.Height);
+          CopyPtr(hnd^.Bits, Result.Bits, (hnd^.Width * hnd^.Height) shl 2);
+          FAI_EntryAPI^.CloseImageBuffer(hnd);
+        end;
+    end;
+end;
+
+procedure TAI.BuildMatrixRaster(hnd_Matrix: TMatrix_Image_Handle; output: TMemoryRaster);
+var
+  hnd: TBGRA_Buffer_Handle;
+begin
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OpenImageBuffer_Matrix) then
+    begin
+      hnd := FAI_EntryAPI^.OpenImageBuffer_Matrix(hnd_Matrix);
+      if hnd <> nil then
+        begin
+          output.SetSize(hnd^.Width, hnd^.Height);
+          CopyPtr(hnd^.Bits, output.Bits, (hnd^.Width * hnd^.Height) shl 2);
+          FAI_EntryAPI^.CloseImageBuffer(hnd);
+        end;
+    end;
+end;
+
+function TAI.BuildMatrixRaster(hnd_Matrix: TMatrix_Image_Handle): TMemoryRaster;
+var
+  hnd: TBGRA_Buffer_Handle;
+begin
+  Result := nil;
+  if (FAI_EntryAPI <> nil) and Assigned(FAI_EntryAPI^.OpenImageBuffer_Matrix) then
+    begin
+      hnd := FAI_EntryAPI^.OpenImageBuffer_Matrix(hnd_Matrix);
+      if hnd <> nil then
+        begin
+          Result := NewRaster();
+          Result.SetSize(hnd^.Width, hnd^.Height);
+          CopyPtr(hnd^.Bits, Result.Bits, (hnd^.Width * hnd^.Height) shl 2);
+          FAI_EntryAPI^.CloseImageBuffer(hnd);
+        end;
+    end;
 end;
 
 procedure TAI.HotMap(Raster: TMemoryRaster);
@@ -8084,26 +8261,26 @@ end;
 
 function TAI.OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster): TOD_List;
 var
-  od_desc: TOD_Desc;
+  OD_Desc: TOD_Desc;
   i: Integer;
 begin
   Result := TOD_List.Create;
-  od_desc := OD6L_Process(hnd, Raster, 1024);
-  for i := Low(od_desc) to High(od_desc) do
-      Result.Add(od_desc[i]);
+  OD_Desc := OD6L_Process(hnd, Raster, 1024);
+  for i := Low(OD_Desc) to High(OD_Desc) do
+      Result.Add(OD_Desc[i]);
 end;
 
 procedure TAI.OD6L_Process(hnd: TOD6L_Handle; Raster: TMemoryRaster; output: TOD_List);
 var
-  od_desc: TOD_Desc;
+  OD_Desc: TOD_Desc;
   i: Integer;
 begin
-  od_desc := OD6L_Process(hnd, Raster, 1024);
-  for i := Low(od_desc) to High(od_desc) do
-      output.Add(od_desc[i]);
+  OD_Desc := OD6L_Process(hnd, Raster, 1024);
+  for i := Low(OD_Desc) to High(OD_Desc) do
+      output.Add(OD_Desc[i]);
 end;
 
-function TAI.OD6L_Process(hnd: TOD6L_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc;
+function TAI.OD6L_ProcessRGB(hnd: TOD6L_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc;
 var
   rect_num: Integer;
 begin
@@ -8464,26 +8641,26 @@ end;
 
 function TAI.OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster): TOD_List;
 var
-  od_desc: TOD_Desc;
+  OD_Desc: TOD_Desc;
   i: Integer;
 begin
   Result := TOD_List.Create;
-  od_desc := OD3L_Process(hnd, Raster, 1024);
-  for i := Low(od_desc) to High(od_desc) do
-      Result.Add(od_desc[i]);
+  OD_Desc := OD3L_Process(hnd, Raster, 1024);
+  for i := Low(OD_Desc) to High(OD_Desc) do
+      Result.Add(OD_Desc[i]);
 end;
 
 procedure TAI.OD3L_Process(hnd: TOD3L_Handle; Raster: TMemoryRaster; output: TOD_List);
 var
-  od_desc: TOD_Desc;
+  OD_Desc: TOD_Desc;
   i: Integer;
 begin
-  od_desc := OD3L_Process(hnd, Raster, 1024);
-  for i := Low(od_desc) to High(od_desc) do
-      output.Add(od_desc[i]);
+  OD_Desc := OD3L_Process(hnd, Raster, 1024);
+  for i := Low(OD_Desc) to High(OD_Desc) do
+      output.Add(OD_Desc[i]);
 end;
 
-function TAI.OD3L_Process(hnd: TOD3L_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc;
+function TAI.OD3L_ProcessRGB(hnd: TOD3L_Handle; rgb_img: TRGB_Image_Handle; const max_AI_Rect: Integer): TOD_Desc;
 var
   rect_num: Integer;
 begin
@@ -8635,7 +8812,7 @@ var
   dbEng: TObjectDataManager;
   itmSR: TItemSearch;
   itmHnd: TItemHandle;
-  od_hnd: TOD6L_Handle;
+  OD_Hnd: TOD6L_Handle;
 begin
   m64 := TMemoryStream64.Create;
   m64.SetPointerWithProtectedMode(stream.memory, stream.Size);
@@ -8653,11 +8830,11 @@ begin
         dbEng.ItemRead(itmHnd, itmHnd.Item.Size, m64.memory^);
         dbEng.ItemClose(itmHnd);
 
-        od_hnd := Result[itmHnd.Name];
-        if od_hnd <> nil then
-            OD6L_Close(od_hnd);
-        od_hnd := OD6L_Open_Stream(m64);
-        Result.Add(itmHnd.Name, od_hnd, False);
+        OD_Hnd := Result[itmHnd.Name];
+        if OD_Hnd <> nil then
+            OD6L_Close(OD_Hnd);
+        OD_Hnd := OD6L_Open_Stream(m64);
+        Result.Add(itmHnd.Name, OD_Hnd, False);
         DisposeObject(m64);
 
       until not dbEng.ItemFastFindNext(itmSR);
@@ -8712,15 +8889,15 @@ var
   var
     j: Integer;
     p: PHashListData;
-    od_desc: TOD_Desc;
+    OD_Desc: TOD_Desc;
     omr: TOD_Marshal_Rect;
   begin
     p := PHashListData(lst[pass]);
-    od_desc := OD6L_Process(p^.data, rgb_img, 1024);
-    for j := low(od_desc) to high(od_desc) do
+    OD_Desc := OD6L_ProcessRGB(p^.data, rgb_img, 1024);
+    for j := low(OD_Desc) to high(OD_Desc) do
       begin
-        omr.R := RectV2(od_desc[j]);
-        omr.confidence := od_desc[j].confidence;
+        omr.R := RectV2(OD_Desc[j]);
+        omr.confidence := OD_Desc[j].confidence;
         omr.Token := p^.OriginName;
         LockObject(output);
         output.Add(omr);
@@ -8733,17 +8910,17 @@ var
   var
     pass, j: Integer;
     p: PHashListData;
-    od_desc: TOD_Desc;
+    OD_Desc: TOD_Desc;
     omr: TOD_Marshal_Rect;
   begin
     for pass := 0 to lst.Count - 1 do
       begin
         p := PHashListData(lst[pass]);
-        od_desc := OD6L_Process(p^.data, rgb_img, 1024);
-        for j := low(od_desc) to high(od_desc) do
+        OD_Desc := OD6L_ProcessRGB(p^.data, rgb_img, 1024);
+        for j := low(OD_Desc) to high(OD_Desc) do
           begin
-            omr.R := RectV2(od_desc[j]);
-            omr.confidence := od_desc[j].confidence;
+            omr.R := RectV2(OD_Desc[j]);
+            omr.confidence := OD_Desc[j].confidence;
             omr.Token := p^.OriginName;
             output.Add(omr);
           end;
@@ -8775,15 +8952,15 @@ begin
     var
       j: Integer;
       p: PHashListData;
-      od_desc: TOD_Desc;
+      OD_Desc: TOD_Desc;
       omr: TOD_Marshal_Rect;
     begin
       p := PHashListData(lst[pass]);
-      od_desc := OD6L_Process(p^.data, rgb_img, 1024);
-      for j := low(od_desc) to high(od_desc) do
+      OD_Desc := OD6L_ProcessRGB(p^.data, rgb_img, 1024);
+      for j := low(OD_Desc) to high(OD_Desc) do
         begin
-          omr.R := RectV2(od_desc[j]);
-          omr.confidence := od_desc[j].confidence;
+          omr.R := RectV2(OD_Desc[j]);
+          omr.confidence := OD_Desc[j].confidence;
           omr.Token := p^.OriginName;
           LockObject(output);
           output.Add(omr);
@@ -9174,7 +9351,7 @@ begin
   Result := SP_Process_Vec2(FFace_SP_Hnd, Raster, R);
 end;
 
-function TAI.SP_Process(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const AI_Rect: TAI_Rect; const max_AI_Point: Integer): TSP_Desc;
+function TAI.SP_ProcessRGB(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const AI_Rect: TAI_Rect; const max_AI_Point: Integer): TSP_Desc;
 var
   point_num: Integer;
 begin
@@ -9197,45 +9374,45 @@ begin
   end;
 end;
 
-function TAI.SP_Process_Vec2List(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TRectV2): TVec2List;
+function TAI.SP_ProcessRGB_Vec2List(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TRectV2): TVec2List;
 var
   desc: TSP_Desc;
   i: Integer;
 begin
-  desc := SP_Process(hnd, rgb_img, AIRect(R), 8192);
+  desc := SP_ProcessRGB(hnd, rgb_img, AIRect(R), 8192);
   Result := TVec2List.Create;
   for i := 0 to Length(desc) - 1 do
       Result.Add(Vec2(desc[i]));
 end;
 
-function TAI.SP_Process_Vec2(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TRectV2): TArrayVec2;
+function TAI.SP_ProcessRGB_Vec2(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TRectV2): TArrayVec2;
 var
   desc: TSP_Desc;
   i: Integer;
 begin
-  desc := SP_Process(hnd, rgb_img, AIRect(R), 8192);
+  desc := SP_ProcessRGB(hnd, rgb_img, AIRect(R), 8192);
   SetLength(Result, Length(desc));
   for i := 0 to Length(desc) - 1 do
       Result[i] := Vec2(desc[i]);
 end;
 
-function TAI.SP_Process_Vec2(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TAI_Rect): TArrayVec2;
+function TAI.SP_ProcessRGB_Vec2(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TAI_Rect): TArrayVec2;
 var
   desc: TSP_Desc;
   i: Integer;
 begin
-  desc := SP_Process(hnd, rgb_img, R, 8192);
+  desc := SP_ProcessRGB(hnd, rgb_img, R, 8192);
   SetLength(Result, Length(desc));
   for i := 0 to Length(desc) - 1 do
       Result[i] := Vec2(desc[i]);
 end;
 
-function TAI.SP_Process_Vec2(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TOD_Rect): TArrayVec2;
+function TAI.SP_ProcessRGB_Vec2(hnd: TSP_Handle; rgb_img: TRGB_Image_Handle; const R: TOD_Rect): TArrayVec2;
 var
   desc: TSP_Desc;
   i: Integer;
 begin
-  desc := SP_Process(hnd, rgb_img, AIRect(R), 8192);
+  desc := SP_ProcessRGB(hnd, rgb_img, AIRect(R), 8192);
   SetLength(Result, Length(desc));
   for i := 0 to Length(desc) - 1 do
       Result[i] := Vec2(desc[i]);
@@ -9311,14 +9488,14 @@ begin
   SetLength(ai_rect_desc, 0);
 end;
 
-function TAI.Face_Detector(Raster: TMemoryRaster; od_desc: TOD_Desc; extract_face_size: Integer): TFACE_Handle;
+function TAI.Face_Detector(Raster: TMemoryRaster; OD_Desc: TOD_Desc; extract_face_size: Integer): TFACE_Handle;
 var
   i: Integer;
   ai_rect_desc: TAI_Rect_Desc;
 begin
-  SetLength(ai_rect_desc, Length(od_desc));
-  for i := 0 to Length(od_desc) - 1 do
-      ai_rect_desc[i] := AIRect(od_desc[i]);
+  SetLength(ai_rect_desc, Length(OD_Desc));
+  for i := 0 to Length(OD_Desc) - 1 do
+      ai_rect_desc[i] := AIRect(OD_Desc[i]);
   Result := Face_Detector(Raster, ai_rect_desc, extract_face_size);
   SetLength(ai_rect_desc, 0);
 end;
@@ -10146,7 +10323,7 @@ var
   imgData: TAI_Image;
   detDef: TAI_DetectorDefine;
   mr: TMemoryRaster;
-  v: TLVec;
+  V: TLVec;
 begin
   if lr.InSize <> C_Metric_Dim then
       RaiseInfo('Learn Engine Insize illegal');
@@ -10158,8 +10335,8 @@ begin
       if Snapshot_ then
         begin
           mr := imgData.Raster;
-          v := Metric_ResNet_Process(Metric_hnd, mr);
-          if Length(v) <> C_Metric_Dim then
+          V := Metric_ResNet_Process(Metric_hnd, mr);
+          if Length(V) <> C_Metric_Dim then
               DoStatus('Metric-ResNet vector error!')
           else
             begin
@@ -10167,7 +10344,7 @@ begin
                 begin
                   detDef := imgData.DetectorDefineList[j];
                   if detDef.Token.Len > 0 then
-                      lr.AddMemory(v, detDef.Token);
+                      lr.AddMemory(V, detDef.Token);
                 end;
             end;
         end
@@ -10180,18 +10357,18 @@ begin
                 if detDef.PrepareRaster.Empty then
                   begin
                     mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
-                    v := Metric_ResNet_Process(Metric_hnd, mr);
+                    V := Metric_ResNet_Process(Metric_hnd, mr);
                     DisposeObject(mr);
                   end
                 else
                   begin
                     mr := detDef.PrepareRaster;
-                    v := Metric_ResNet_Process(Metric_hnd, mr);
+                    V := Metric_ResNet_Process(Metric_hnd, mr);
                   end;
-                if Length(v) <> C_Metric_Dim then
+                if Length(V) <> C_Metric_Dim then
                     DoStatus('Metric-ResNet vector error!')
                 else
-                    lr.AddMemory(v, detDef.Token);
+                    lr.AddMemory(V, detDef.Token);
               end;
           end;
       if RSeri <> nil then
@@ -10223,7 +10400,7 @@ var
   imgData: TAI_Image;
   detDef: TAI_DetectorDefine;
   mr: TMemoryRaster;
-  v: TLVec;
+  V: TLVec;
 begin
   for i := 0 to imgList.Count - 1 do
     begin
@@ -10233,8 +10410,8 @@ begin
       if Snapshot_ then
         begin
           mr := imgData.Raster;
-          v := Metric_ResNet_Process(Metric_hnd, mr);
-          if Length(v) <> C_Metric_Dim then
+          V := Metric_ResNet_Process(Metric_hnd, mr);
+          if Length(V) <> C_Metric_Dim then
               DoStatus('Metric-ResNet vector error!')
           else
             begin
@@ -10242,7 +10419,7 @@ begin
                 begin
                   detDef := imgData.DetectorDefineList[j];
                   if detDef.Token.Len > 0 then
-                      kd.Add(v, detDef.Token);
+                      kd.Add(V, detDef.Token);
                 end;
             end;
         end
@@ -10255,19 +10432,19 @@ begin
                 if detDef.PrepareRaster.Empty then
                   begin
                     mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_Metric_Input_Size, C_Metric_Input_Size);
-                    v := Metric_ResNet_Process(Metric_hnd, mr);
+                    V := Metric_ResNet_Process(Metric_hnd, mr);
                     DisposeObject(mr);
                   end
                 else
                   begin
                     mr := detDef.PrepareRaster;
-                    v := Metric_ResNet_Process(Metric_hnd, mr);
+                    V := Metric_ResNet_Process(Metric_hnd, mr);
                   end;
 
-                if Length(v) <> C_Metric_Dim then
+                if Length(V) <> C_Metric_Dim then
                     DoStatus('Metric-ResNet vector error!')
                 else
-                    kd.Add(v, detDef.Token);
+                    kd.Add(V, detDef.Token);
               end;
           end;
       if RSeri <> nil then
@@ -10870,7 +11047,7 @@ var
   imgData: TAI_Image;
   detDef: TAI_DetectorDefine;
   mr: TMemoryRaster;
-  v: TLVec;
+  V: TLVec;
 begin
   if lr.InSize <> C_LMetric_Dim then
       RaiseInfo('Learn Engine Insize illegal');
@@ -10882,8 +11059,8 @@ begin
       if Snapshot_ then
         begin
           mr := imgData.Raster;
-          v := LMetric_ResNet_Process(LMetric_hnd, mr);
-          if Length(v) <> C_LMetric_Dim then
+          V := LMetric_ResNet_Process(LMetric_hnd, mr);
+          if Length(V) <> C_LMetric_Dim then
               DoStatus('LMetric-ResNet vector error!')
           else
             begin
@@ -10891,7 +11068,7 @@ begin
                 begin
                   detDef := imgData.DetectorDefineList[j];
                   if detDef.Token.Len > 0 then
-                      lr.AddMemory(v, detDef.Token);
+                      lr.AddMemory(V, detDef.Token);
                 end;
             end;
         end
@@ -10904,18 +11081,18 @@ begin
                 if detDef.PrepareRaster.Empty then
                   begin
                     mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
-                    v := LMetric_ResNet_Process(LMetric_hnd, mr);
+                    V := LMetric_ResNet_Process(LMetric_hnd, mr);
                     DisposeObject(mr);
                   end
                 else
                   begin
                     mr := detDef.PrepareRaster;
-                    v := LMetric_ResNet_Process(LMetric_hnd, mr);
+                    V := LMetric_ResNet_Process(LMetric_hnd, mr);
                   end;
-                if Length(v) <> C_LMetric_Dim then
+                if Length(V) <> C_LMetric_Dim then
                     DoStatus('LMetric-ResNet vector error!')
                 else
-                    lr.AddMemory(v, detDef.Token);
+                    lr.AddMemory(V, detDef.Token);
               end;
           end;
       if RSeri <> nil then
@@ -10947,7 +11124,7 @@ var
   imgData: TAI_Image;
   detDef: TAI_DetectorDefine;
   mr: TMemoryRaster;
-  v: TLVec;
+  V: TLVec;
 begin
   for i := 0 to imgList.Count - 1 do
     begin
@@ -10957,8 +11134,8 @@ begin
       if Snapshot_ then
         begin
           mr := imgData.Raster;
-          v := LMetric_ResNet_Process(LMetric_hnd, mr);
-          if Length(v) <> C_LMetric_Dim then
+          V := LMetric_ResNet_Process(LMetric_hnd, mr);
+          if Length(V) <> C_LMetric_Dim then
               DoStatus('LMetric-ResNet vector error!')
           else
             begin
@@ -10966,7 +11143,7 @@ begin
                 begin
                   detDef := imgData.DetectorDefineList[j];
                   if detDef.Token.Len > 0 then
-                      kd.Add(v, detDef.Token);
+                      kd.Add(V, detDef.Token);
                 end;
             end;
         end
@@ -10979,19 +11156,19 @@ begin
                 if detDef.PrepareRaster.Empty then
                   begin
                     mr := detDef.Owner.Raster.BuildAreaOffsetScaleSpace(detDef.R, C_LMetric_Input_Size, C_LMetric_Input_Size);
-                    v := LMetric_ResNet_Process(LMetric_hnd, mr);
+                    V := LMetric_ResNet_Process(LMetric_hnd, mr);
                     DisposeObject(mr);
                   end
                 else
                   begin
                     mr := detDef.PrepareRaster;
-                    v := LMetric_ResNet_Process(LMetric_hnd, mr);
+                    V := LMetric_ResNet_Process(LMetric_hnd, mr);
                   end;
 
-                if Length(v) <> C_LMetric_Dim then
+                if Length(V) <> C_LMetric_Dim then
                     DoStatus('LMetric-ResNet vector error!')
                 else
-                    kd.Add(v, detDef.Token);
+                    kd.Add(V, detDef.Token);
               end;
           end;
       if RSeri <> nil then
@@ -11508,7 +11685,7 @@ begin
   FilterMMOD_Desc(Result);
 end;
 
-function TAI.MMOD6L_DNN_Process_Matrix(hnd: TMMOD6L_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc;
+function TAI.MMOD6L_DNN_Process_Matrix(hnd: TMMOD6L_Handle; Matrix_IMG: TMatrix_Image_Handle): TMMOD_Desc;
 var
   rect_num: Integer;
   buff: TAI_MMOD_Desc;
@@ -11523,7 +11700,7 @@ begin
       exit;
   SetLength(buff, 8192);
 
-  rect_num := FAI_EntryAPI^.MMOD6L_DNN_Process_Image(hnd, matrix_img, @buff[0], Length(buff));
+  rect_num := FAI_EntryAPI^.MMOD6L_DNN_Process_Image(hnd, Matrix_IMG, @buff[0], Length(buff));
   if rect_num >= 0 then
     begin
       SetLength(Result, rect_num);
@@ -12017,7 +12194,7 @@ begin
   FilterMMOD_Desc(Result);
 end;
 
-function TAI.MMOD3L_DNN_Process_Matrix(hnd: TMMOD3L_Handle; matrix_img: TMatrix_Image_Handle): TMMOD_Desc;
+function TAI.MMOD3L_DNN_Process_Matrix(hnd: TMMOD3L_Handle; Matrix_IMG: TMatrix_Image_Handle): TMMOD_Desc;
 var
   rect_num: Integer;
   buff: TAI_MMOD_Desc;
@@ -12032,7 +12209,7 @@ begin
       exit;
   SetLength(buff, 8192);
 
-  rect_num := FAI_EntryAPI^.MMOD3L_DNN_Process_Image(hnd, matrix_img, @buff[0], Length(buff));
+  rect_num := FAI_EntryAPI^.MMOD3L_DNN_Process_Image(hnd, Matrix_IMG, @buff[0], Length(buff));
   if rect_num >= 0 then
     begin
       SetLength(Result, rect_num);
@@ -12483,7 +12660,7 @@ begin
   Result := RNIC_Process(hnd, Raster, 16);
 end;
 
-function TAI.RNIC_Process(hnd: TRNIC_Handle; mat_hnd: TMatrix_Image_Handle; num_crops: Integer): TLVec;
+function TAI.RNIC_ProcessMatrix(hnd: TRNIC_Handle; mat_hnd: TMatrix_Image_Handle; num_crops: Integer): TLVec;
 var
   R: Integer;
 begin
@@ -12936,7 +13113,7 @@ begin
   Result := LRNIC_Process(hnd, Raster, 24);
 end;
 
-function TAI.LRNIC_Process(hnd: TLRNIC_Handle; mat_hnd: TMatrix_Image_Handle; num_crops: Integer): TLVec;
+function TAI.LRNIC_ProcessMatrix(hnd: TLRNIC_Handle; mat_hnd: TMatrix_Image_Handle; num_crops: Integer): TLVec;
 var
   R: Integer;
 begin
@@ -14327,7 +14504,7 @@ begin
   Result := SS_Process(True, hnd, InputRaster, colorPool, SSTokenOutput);
 end;
 
-function TAI.SS_Process(hnd: TSS_Handle; mat_hnd: TMatrix_Image_Handle; Width, Height: Integer; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster;
+function TAI.SS_ProcessMatrix(hnd: TSS_Handle; mat_hnd: TMatrix_Image_Handle; Width, Height: Integer; colorPool: TSegmentationColorTable; SSTokenOutput: TPascalStringList): TMemoryRaster;
 var
   R: Integer;
   dr: TMemoryRaster;
@@ -14498,68 +14675,623 @@ begin
     end;
 end;
 
-function TAI.Tracker_Open(mat_hnd: TMatrix_Image_Handle; const track_rect: TRectV2): TTracker_Handle;
+function TAI.Tracker_Open_Matrix(mat_hnd: TMatrix_Image_Handle; const track_rect: TRectV2): TTracker_Handle;
 var
-  a: TAI_Rect;
+  A: TAI_Rect;
+begin
+  Result := nil;
+  if (FAI_EntryAPI = nil) then
+      exit;
+  if not Assigned(FAI_EntryAPI^.Start_Tracker_matrix) then
+      exit;
+  A := AIRect(ForwardRect(track_rect));
+
+  try
+    Result := FAI_EntryAPI^.Start_Tracker_matrix(mat_hnd, @A);
+    FAI_EntryAPI^.Update_Tracker_matrix(Result, mat_hnd, A);
+  except
+  end;
+end;
+
+function TAI.Tracker_Update_Matrix(hnd: TTracker_Handle; mat_hnd: TMatrix_Image_Handle; var track_rect: TRectV2): Double;
+var
+  A: TAI_Rect;
+begin
+  Result := 0;
+  if (FAI_EntryAPI = nil) then
+      exit;
+  if not Assigned(FAI_EntryAPI^.Update_Tracker_matrix) then
+      exit;
+  try
+      Result := FAI_EntryAPI^.Update_Tracker_matrix(hnd, mat_hnd, A);
+  except
+  end;
+  track_rect := RectV2(A);
+end;
+
+function TAI.Tracker_Update_NoScale_Matrix(hnd: TTracker_Handle; mat_hnd: TMatrix_Image_Handle; var track_rect: TRectV2): Double;
+var
+  A: TAI_Rect;
+begin
+  Result := 0;
+  if (FAI_EntryAPI = nil) then
+      exit;
+  if not Assigned(FAI_EntryAPI^.Update_Tracker_NoScale_matrix) then
+      exit;
+
+  try
+      Result := FAI_EntryAPI^.Update_Tracker_NoScale_matrix(hnd, mat_hnd, A);
+  except
+  end;
+  track_rect := RectV2(A);
+end;
+
+function TAI.Tracker_Open_RGB(RGB_Hnd: TRGB_Image_Handle; const track_rect: TRectV2): TTracker_Handle;
+var
+  A: TAI_Rect;
 begin
   Result := nil;
   if (FAI_EntryAPI = nil) then
       exit;
   if not Assigned(FAI_EntryAPI^.Start_Tracker) then
       exit;
-  a := AIRect(ForwardRect(track_rect));
-  Result := FAI_EntryAPI^.Start_Tracker_matrix(mat_hnd, @a);
+  A := AIRect(ForwardRect(track_rect));
+  try
+    Result := FAI_EntryAPI^.Start_Tracker(RGB_Hnd, @A);
+    FAI_EntryAPI^.Update_Tracker(Result, RGB_Hnd, A);
+  except
+  end;
 end;
 
-function TAI.Tracker_Update(hnd: TTracker_Handle; mat_hnd: TMatrix_Image_Handle; var track_rect: TRectV2): Double;
+function TAI.Tracker_Update_RGB(hnd: TTracker_Handle; RGB_Hnd: TRGB_Image_Handle; var track_rect: TRectV2): Double;
 var
-  a: TAI_Rect;
+  A: TAI_Rect;
 begin
   Result := 0;
   if (FAI_EntryAPI = nil) then
       exit;
-  if not Assigned(FAI_EntryAPI^.Update_Tracker) then
+  if not Assigned(FAI_EntryAPI^.Update_Tracker_matrix) then
       exit;
-  Result := FAI_EntryAPI^.Update_Tracker_matrix(hnd, mat_hnd, a);
-  track_rect := RectV2(a);
+  try
+    Result := FAI_EntryAPI^.Update_Tracker(hnd, RGB_Hnd, A);
+    track_rect := RectV2(A);
+  except
+  end;
 end;
 
-function TAI.Tracker_Update_NoScale(hnd: TTracker_Handle; mat_hnd: TMatrix_Image_Handle; var track_rect: TRectV2): Double;
+function TAI.Tracker_Update_NoScale_RGB(hnd: TTracker_Handle; RGB_Hnd: TRGB_Image_Handle; var track_rect: TRectV2): Double;
 var
-  a: TAI_Rect;
+  A: TAI_Rect;
 begin
   Result := 0;
   if (FAI_EntryAPI = nil) then
       exit;
-  if not Assigned(FAI_EntryAPI^.Update_Tracker) then
+  if not Assigned(FAI_EntryAPI^.Update_Tracker_NoScale) then
+      exit;
+  try
+    Result := FAI_EntryAPI^.Update_Tracker_NoScale(hnd, RGB_Hnd, A);
+    track_rect := RectV2(A);
+  except
+  end;
+end;
+
+function TAI.Tracker_Open_Matrix_Multi(parallel_: Boolean; mat_hnd: TMatrix_Image_Handle; const track_rect: TArrayRectV2): TTracker_Handle_Array;
+var
+  buff: TTracker_Handle_Array;
+
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    buff[pass] := Tracker_Open_Matrix(mat_hnd, track_rect[pass]);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(buff, Length(track_rect));
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(track_rect) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(track_rect) - 1, procedure(pass: Integer)
+    begin
+      buff[pass] := Tracker_Open_Matrix(mat_hnd, track_rect[pass]);
+    end);
+{$ENDIF FPC}
+  Result := buff;
+end;
+
+function TAI.Tracker_Open_Matrix_Multi(parallel_: Boolean; mat_hnd: TMatrix_Image_Handle; const MMOD_Desc: TMMOD_Desc): TTracker_Handle_Array;
+var
+  buff: TTracker_Handle_Array;
+
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    buff[pass] := Tracker_Open_Matrix(mat_hnd, MMOD_Desc[pass].R);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(buff, Length(MMOD_Desc));
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(MMOD_Desc) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(MMOD_Desc) - 1, procedure(pass: Integer)
+    begin
+      buff[pass] := Tracker_Open_Matrix(mat_hnd, MMOD_Desc[pass].R);
+    end);
+{$ENDIF FPC}
+  Result := buff;
+end;
+
+function TAI.Tracker_Open_Matrix_Multi(parallel_: Boolean; mat_hnd: TMatrix_Image_Handle; const OD_Desc: TOD_Desc): TTracker_Handle_Array;
+var
+  buff: TTracker_Handle_Array;
+
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    buff[pass] := Tracker_Open_Matrix(mat_hnd, RectV2(OD_Desc[pass]));
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(buff, Length(OD_Desc));
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(OD_Desc) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(OD_Desc) - 1, procedure(pass: Integer)
+    begin
+      buff[pass] := Tracker_Open_Matrix(mat_hnd, RectV2(OD_Desc[pass]));
+    end);
+{$ENDIF FPC}
+  Result := buff;
+end;
+
+function TAI.Tracker_Update_Matrix_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; mat_hnd: TMatrix_Image_Handle; var track_rect: TArrayRectV2): TLVec;
+var
+  buff: TArrayRectV2;
+  R_: TLVec;
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    R_[pass] := Tracker_Update_Matrix(hnd[pass], mat_hnd, buff[pass]);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(buff, Length(hnd));
+  SetLength(R_, Length(hnd));
+
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(hnd) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(hnd) - 1, procedure(pass: Integer)
+    begin
+      R_[pass] := Tracker_Update_Matrix(hnd[pass], mat_hnd, buff[pass]);
+    end);
+{$ENDIF FPC}
+  track_rect := buff;
+  Result := R_;
+end;
+
+procedure TAI.Tracker_Update_Matrix_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; mat_hnd: TMatrix_Image_Handle; var MMOD_Desc: TMMOD_Desc);
+var
+  buff: TMMOD_Desc;
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    buff[pass].confidence := Tracker_Update_Matrix(hnd[pass], mat_hnd, buff[pass].R);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(buff, Length(hnd));
+
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(hnd) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(hnd) - 1, procedure(pass: Integer)
+    begin
+      buff[pass].confidence := Tracker_Update_Matrix(hnd[pass], mat_hnd, buff[pass].R);
+    end);
+{$ENDIF FPC}
+  MMOD_Desc := buff;
+end;
+
+procedure TAI.Tracker_Update_Matrix_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; mat_hnd: TMatrix_Image_Handle; var OD_Desc: TOD_Desc);
+var
+  buff: TOD_Desc;
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  var
+    R_: TRectV2;
+  begin
+    buff[pass].confidence := Tracker_Update_Matrix(hnd[pass], mat_hnd, R_);
+    buff[pass].Left := Round(R_[0, 0]);
+    buff[pass].Top := Round(R_[0, 1]);
+    buff[pass].Right := Round(R_[1, 0]);
+    buff[pass].Bottom := Round(R_[1, 1]);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(buff, Length(hnd));
+
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(hnd) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(hnd) - 1, procedure(pass: Integer)
+    var
+      R_: TRectV2;
+    begin
+      buff[pass].confidence := Tracker_Update_Matrix(hnd[pass], mat_hnd, R_);
+      buff[pass].Left := Round(R_[0, 0]);
+      buff[pass].Top := Round(R_[0, 1]);
+      buff[pass].Right := Round(R_[1, 0]);
+      buff[pass].Bottom := Round(R_[1, 1]);
+    end);
+{$ENDIF FPC}
+  OD_Desc := buff;
+end;
+
+function TAI.Tracker_Open_RGB_Multi(parallel_: Boolean; RGB_Hnd: TRGB_Image_Handle; const track_rect: TArrayRectV2): TTracker_Handle_Array;
+var
+  buff: TTracker_Handle_Array;
+
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    buff[pass] := Tracker_Open_RGB(RGB_Hnd, track_rect[pass]);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(buff, Length(track_rect));
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(track_rect) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(track_rect) - 1, procedure(pass: Integer)
+    begin
+      buff[pass] := Tracker_Open_RGB(RGB_Hnd, track_rect[pass]);
+    end);
+{$ENDIF FPC}
+  Result := buff;
+end;
+
+function TAI.Tracker_Open_RGB_Multi(parallel_: Boolean; RGB_Hnd: TRGB_Image_Handle; const MMOD_Desc: TMMOD_Desc): TTracker_Handle_Array;
+var
+  buff: TTracker_Handle_Array;
+
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    buff[pass] := Tracker_Open_RGB(RGB_Hnd, MMOD_Desc[pass].R);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(buff, Length(MMOD_Desc));
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(MMOD_Desc) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(MMOD_Desc) - 1, procedure(pass: Integer)
+    begin
+      buff[pass] := Tracker_Open_RGB(RGB_Hnd, MMOD_Desc[pass].R);
+    end);
+{$ENDIF FPC}
+  Result := buff;
+end;
+
+function TAI.Tracker_Open_RGB_Multi(parallel_: Boolean; RGB_Hnd: TRGB_Image_Handle; const OD_Desc: TOD_Desc): TTracker_Handle_Array;
+var
+  buff: TTracker_Handle_Array;
+
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  var
+    R_: TRectV2;
+  begin
+    R_ := RectV2(OD_Desc[pass]);
+    buff[pass] := Tracker_Open_RGB(RGB_Hnd, R_);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(buff, Length(OD_Desc));
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(OD_Desc) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(OD_Desc) - 1, procedure(pass: Integer)
+    var
+      R_: TRectV2;
+    begin
+      R_ := RectV2(OD_Desc[pass]);
+      buff[pass] := Tracker_Open_RGB(RGB_Hnd, R_);
+    end);
+{$ENDIF FPC}
+  Result := buff;
+end;
+
+function TAI.Tracker_Update_RGB_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; RGB_Hnd: TRGB_Image_Handle; var track_rect: TArrayRectV2): TLVec;
+var
+  buff: TArrayRectV2;
+  R_: TLVec;
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    R_[pass] := Tracker_Update_RGB(hnd[pass], RGB_Hnd, buff[pass]);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(buff, Length(hnd));
+  SetLength(R_, Length(hnd));
+
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(hnd) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(hnd) - 1, procedure(pass: Integer)
+    begin
+      R_[pass] := Tracker_Update_RGB(hnd[pass], RGB_Hnd, buff[pass]);
+    end);
+{$ENDIF FPC}
+  track_rect := buff;
+  Result := R_;
+end;
+
+procedure TAI.Tracker_Update_RGB_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; RGB_Hnd: TRGB_Image_Handle; var MMOD_Desc: TMMOD_Desc);
+var
+  buff: TMMOD_Desc;
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    buff[pass].confidence := Tracker_Update_RGB(hnd[pass], RGB_Hnd, buff[pass].R);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(buff, Length(hnd));
+
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(hnd) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(hnd) - 1, procedure(pass: Integer)
+    begin
+      buff[pass].confidence := Tracker_Update_RGB(hnd[pass], RGB_Hnd, buff[pass].R);
+    end);
+{$ENDIF FPC}
+  MMOD_Desc := buff;
+end;
+
+procedure TAI.Tracker_Update_RGB_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; RGB_Hnd: TRGB_Image_Handle; var OD_Desc: TOD_Desc);
+var
+  buff: TOD_Desc;
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  var
+    R_: TRectV2;
+  begin
+    buff[pass].confidence := Tracker_Update_RGB(hnd[pass], RGB_Hnd, R_);
+    buff[pass].Left := Round(R_[0, 0]);
+    buff[pass].Top := Round(R_[0, 1]);
+    buff[pass].Right := Round(R_[1, 0]);
+    buff[pass].Bottom := Round(R_[1, 1]);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(buff, Length(hnd));
+
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(hnd) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(hnd) - 1, procedure(pass: Integer)
+    var
+      R_: TRectV2;
+    begin
+      buff[pass].confidence := Tracker_Update_RGB(hnd[pass], RGB_Hnd, R_);
+      buff[pass].Left := Round(R_[0, 0]);
+      buff[pass].Top := Round(R_[0, 1]);
+      buff[pass].Right := Round(R_[1, 0]);
+      buff[pass].Bottom := Round(R_[1, 1]);
+    end);
+{$ENDIF FPC}
+  OD_Desc := buff;
+end;
+
+function TAI.Tracker_Open_Multi(parallel_: Boolean; Raster: TMemoryRaster; const track_rect: TArrayRectV2): TTracker_Handle_Array;
+var
+  RGB_Hnd: TRGB_Image_Handle;
+begin
+  SetLength(Result, 0);
+  if (FAI_EntryAPI = nil) then
       exit;
 
-  Result := FAI_EntryAPI^.Update_Tracker_NoScale_matrix(hnd, mat_hnd, a);
-  track_rect := RectV2(a);
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
+      exit;
+  Result := Tracker_Open_RGB_Multi(parallel_, RGB_Hnd, track_rect);
+  Close_RGB_Image(RGB_Hnd);
+end;
+
+function TAI.Tracker_Open_Multi(parallel_: Boolean; Raster: TMemoryRaster; const MMOD_Desc: TMMOD_Desc): TTracker_Handle_Array;
+var
+  RGB_Hnd: TRGB_Image_Handle;
+begin
+  SetLength(Result, 0);
+  if (FAI_EntryAPI = nil) then
+      exit;
+
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
+      exit;
+  Result := Tracker_Open_RGB_Multi(parallel_, RGB_Hnd, MMOD_Desc);
+  Close_RGB_Image(RGB_Hnd);
+end;
+
+function TAI.Tracker_Open_Multi(parallel_: Boolean; Raster: TMemoryRaster; const MMOD_DescArray: TMMOD_Desc_Array): TTracker_Handle_ArrayOfArray;
+var
+  RGB_Hnd: TRGB_Image_Handle;
+  buff: TTracker_Handle_ArrayOfArray;
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    buff[pass] := Tracker_Open_RGB_Multi(parallel_, RGB_Hnd, MMOD_DescArray[pass]);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  SetLength(Result, 0);
+  if (FAI_EntryAPI = nil) then
+      exit;
+
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
+      exit;
+  SetLength(buff, Length(MMOD_DescArray));
+
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(MMOD_DescArray) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(MMOD_DescArray) - 1, procedure(pass: Integer)
+    begin
+      buff[pass] := Tracker_Open_RGB_Multi(parallel_, RGB_Hnd, MMOD_DescArray[pass]);
+    end);
+{$ENDIF FPC}
+  Close_RGB_Image(RGB_Hnd);
+  Result := buff;
+end;
+
+function TAI.Tracker_Open_Multi(parallel_: Boolean; Raster: TMemoryRaster; const OD_Desc: TOD_Desc): TTracker_Handle_Array;
+var
+  RGB_Hnd: TRGB_Image_Handle;
+begin
+  SetLength(Result, 0);
+  if (FAI_EntryAPI = nil) then
+      exit;
+
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
+      exit;
+  Result := Tracker_Open_RGB_Multi(parallel_, RGB_Hnd, OD_Desc);
+  Close_RGB_Image(RGB_Hnd);
+end;
+
+function TAI.Tracker_Update_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; Raster: TMemoryRaster; var track_rect: TArrayRectV2): TLVec;
+var
+  RGB_Hnd: TRGB_Image_Handle;
+begin
+  SetLength(Result, 0);
+  if (FAI_EntryAPI = nil) then
+      exit;
+
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
+      exit;
+  Result := Tracker_Update_RGB_Multi(parallel_, hnd, RGB_Hnd, track_rect);
+  Close_RGB_Image(RGB_Hnd);
+end;
+
+procedure TAI.Tracker_Update_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; Raster: TMemoryRaster; var MMOD_Desc: TMMOD_Desc);
+var
+  RGB_Hnd: TRGB_Image_Handle;
+begin
+  if (FAI_EntryAPI = nil) then
+      exit;
+
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
+      exit;
+  Tracker_Update_RGB_Multi(parallel_, hnd, RGB_Hnd, MMOD_Desc);
+  Close_RGB_Image(RGB_Hnd);
+end;
+
+procedure TAI.Tracker_Update_Multi(parallel_: Boolean; hnd: TTracker_Handle_ArrayOfArray; Raster: TMemoryRaster; var MMOD_DescArray: TMMOD_Desc_Array);
+var
+  RGB_Hnd: TRGB_Image_Handle;
+  buff: TMMOD_Desc_Array;
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+    Tracker_Update_RGB_Multi(parallel_, hnd[pass], RGB_Hnd, buff[pass]);
+  end;
+{$ENDIF FPC}
+
+
+begin
+  if (FAI_EntryAPI = nil) then
+      exit;
+
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
+      exit;
+  SetLength(buff, Length(hnd));
+
+{$IFDEF FPC}
+  FPCParallelFor(parallel_, @Nested_ParallelFor, 0, Length(MMOD_DescArray) - 1);
+{$ELSE FPC}
+  DelphiParallelFor(parallel_, 0, Length(hnd) - 1, procedure(pass: Integer)
+    begin
+      Tracker_Update_RGB_Multi(parallel_, hnd[pass], RGB_Hnd, buff[pass]);
+    end);
+{$ENDIF FPC}
+  Close_RGB_Image(RGB_Hnd);
+  MMOD_DescArray := buff;
+end;
+
+procedure TAI.Tracker_Update_Multi(parallel_: Boolean; hnd: TTracker_Handle_Array; Raster: TMemoryRaster; var OD_Desc: TOD_Desc);
+var
+  RGB_Hnd: TRGB_Image_Handle;
+begin
+  if (FAI_EntryAPI = nil) then
+      exit;
+
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
+      exit;
+  Tracker_Update_RGB_Multi(parallel_, hnd, RGB_Hnd, OD_Desc);
+  Close_RGB_Image(RGB_Hnd);
 end;
 
 function TAI.Tracker_Open(Raster: TMemoryRaster; const track_rect: TRect): TTracker_Handle;
 var
-  rgb_hnd: TRGB_Image_Handle;
-  a: TAI_Rect;
+  RGB_Hnd: TRGB_Image_Handle;
+  A: TAI_Rect;
 begin
   Result := nil;
   if (FAI_EntryAPI = nil) then
       exit;
   if not Assigned(FAI_EntryAPI^.Start_Tracker) then
       exit;
-  rgb_hnd := Prepare_RGB_Image(Raster);
-  if rgb_hnd = nil then
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
       exit;
-  a := AIRect(ForwardRect(track_rect));
-  Result := FAI_EntryAPI^.Start_Tracker(rgb_hnd, @a);
-  Close_RGB_Image(rgb_hnd);
+  A := AIRect(ForwardRect(track_rect));
+  try
+    Result := FAI_EntryAPI^.Start_Tracker(RGB_Hnd, @A);
+    FAI_EntryAPI^.Update_Tracker(Result, RGB_Hnd, A);
+    Close_RGB_Image(RGB_Hnd);
+  except
+  end;
 end;
 
 function TAI.Tracker_Update(hnd: TTracker_Handle; Raster: TMemoryRaster; var track_rect: TRect): Double;
 var
-  rgb_hnd: TRGB_Image_Handle;
-  a: TAI_Rect;
+  RGB_Hnd: TRGB_Image_Handle;
+  A: TAI_Rect;
 begin
   Result := 0;
   if (FAI_EntryAPI = nil) then
@@ -14567,55 +15299,65 @@ begin
   if not Assigned(FAI_EntryAPI^.Update_Tracker) then
       exit;
 
-  rgb_hnd := Prepare_RGB_Image(Raster);
-  if rgb_hnd = nil then
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
       exit;
-  Result := FAI_EntryAPI^.Update_Tracker(hnd, rgb_hnd, a);
-  track_rect := Rect(a);
-  Close_RGB_Image(rgb_hnd);
+  try
+    Result := FAI_EntryAPI^.Update_Tracker(hnd, RGB_Hnd, A);
+    track_rect := Rect(A);
+    Close_RGB_Image(RGB_Hnd);
+  except
+  end;
 end;
 
 function TAI.Tracker_Update_NoScale(hnd: TTracker_Handle; Raster: TMemoryRaster; var track_rect: TRect): Double;
 var
-  rgb_hnd: TRGB_Image_Handle;
-  a: TAI_Rect;
+  RGB_Hnd: TRGB_Image_Handle;
+  A: TAI_Rect;
 begin
   Result := 0;
   if (FAI_EntryAPI = nil) then
       exit;
-  if not Assigned(FAI_EntryAPI^.Update_Tracker) then
+  if not Assigned(FAI_EntryAPI^.Update_Tracker_NoScale) then
       exit;
 
-  rgb_hnd := Prepare_RGB_Image(Raster);
-  if rgb_hnd = nil then
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
       exit;
-  Result := FAI_EntryAPI^.Update_Tracker_NoScale(hnd, rgb_hnd, a);
-  track_rect := Rect(a);
-  Close_RGB_Image(rgb_hnd);
+  try
+    Result := FAI_EntryAPI^.Update_Tracker_NoScale(hnd, RGB_Hnd, A);
+    track_rect := Rect(A);
+    Close_RGB_Image(RGB_Hnd);
+  except
+  end;
 end;
 
 function TAI.Tracker_Open(Raster: TMemoryRaster; const track_rect: TRectV2): TTracker_Handle;
 var
-  rgb_hnd: TRGB_Image_Handle;
-  a: TAI_Rect;
+  RGB_Hnd: TRGB_Image_Handle;
+  A: TAI_Rect;
 begin
   Result := nil;
   if (FAI_EntryAPI = nil) then
       exit;
   if not Assigned(FAI_EntryAPI^.Start_Tracker) then
       exit;
-  rgb_hnd := Prepare_RGB_Image(Raster);
-  if rgb_hnd = nil then
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
       exit;
-  a := AIRect(ForwardRect(track_rect));
-  Result := FAI_EntryAPI^.Start_Tracker(rgb_hnd, @a);
-  Close_RGB_Image(rgb_hnd);
+  A := AIRect(ForwardRect(track_rect));
+  try
+    Result := FAI_EntryAPI^.Start_Tracker(RGB_Hnd, @A);
+    FAI_EntryAPI^.Update_Tracker(Result, RGB_Hnd, A);
+    Close_RGB_Image(RGB_Hnd);
+  except
+  end;
 end;
 
 function TAI.Tracker_Update(hnd: TTracker_Handle; Raster: TMemoryRaster; var track_rect: TRectV2): Double;
 var
-  rgb_hnd: TRGB_Image_Handle;
-  a: TAI_Rect;
+  RGB_Hnd: TRGB_Image_Handle;
+  A: TAI_Rect;
 begin
   Result := 0;
   if (FAI_EntryAPI = nil) then
@@ -14623,31 +15365,37 @@ begin
   if not Assigned(FAI_EntryAPI^.Update_Tracker) then
       exit;
 
-  rgb_hnd := Prepare_RGB_Image(Raster);
-  if rgb_hnd = nil then
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
       exit;
-  Result := FAI_EntryAPI^.Update_Tracker(hnd, rgb_hnd, a);
-  track_rect := RectV2(a);
-  Close_RGB_Image(rgb_hnd);
+  try
+    Result := FAI_EntryAPI^.Update_Tracker(hnd, RGB_Hnd, A);
+    track_rect := RectV2(A);
+    Close_RGB_Image(RGB_Hnd);
+  except
+  end;
 end;
 
 function TAI.Tracker_Update_NoScale(hnd: TTracker_Handle; Raster: TMemoryRaster; var track_rect: TRectV2): Double;
 var
-  rgb_hnd: TRGB_Image_Handle;
-  a: TAI_Rect;
+  RGB_Hnd: TRGB_Image_Handle;
+  A: TAI_Rect;
 begin
   Result := 0;
   if (FAI_EntryAPI = nil) then
       exit;
-  if not Assigned(FAI_EntryAPI^.Update_Tracker) then
+  if not Assigned(FAI_EntryAPI^.Update_Tracker_NoScale) then
       exit;
 
-  rgb_hnd := Prepare_RGB_Image(Raster);
-  if rgb_hnd = nil then
+  RGB_Hnd := Prepare_RGB_Image(Raster);
+  if RGB_Hnd = nil then
       exit;
-  Result := FAI_EntryAPI^.Update_Tracker_NoScale(hnd, rgb_hnd, a);
-  track_rect := RectV2(a);
-  Close_RGB_Image(rgb_hnd);
+  try
+    Result := FAI_EntryAPI^.Update_Tracker_NoScale(hnd, RGB_Hnd, A);
+    track_rect := RectV2(A);
+    Close_RGB_Image(RGB_Hnd);
+  except
+  end;
 end;
 
 function TAI.Tracker_Close(var hnd: TTracker_Handle): Boolean;
@@ -14657,10 +15405,32 @@ begin
       exit;
   if not Assigned(FAI_EntryAPI^.Stop_Tracker) then
       exit;
-
-  FAI_EntryAPI^.Stop_Tracker(hnd);
+  try
+      FAI_EntryAPI^.Stop_Tracker(hnd);
+  except
+  end;
   hnd := nil;
   Result := True;
+end;
+
+function TAI.Tracker_Close(var hnd: TTracker_Handle_Array): Boolean;
+var
+  i: Integer;
+begin
+  Result := True;
+  for i := 0 to Length(hnd) - 1 do
+      Result := Tracker_Close(hnd[i]) and Result;
+  SetLength(hnd, 0);
+end;
+
+function TAI.Tracker_Close(var hnd: TTracker_Handle_ArrayOfArray): Boolean;
+var
+  i: Integer;
+begin
+  Result := True;
+  for i := 0 to Length(hnd) - 1 do
+      Result := Tracker_Close(hnd[i]) and Result;
+  SetLength(hnd, 0);
 end;
 
 class procedure TAI.RebuildOCREngineMD5Label();
@@ -15580,7 +16350,10 @@ begin
       FAI_EntryAPI^.RasterSerialized := nil;
       FAI_EntryAPI^.SerializedTime := GetTimeTick();
 
-      Result := FAI_EntryAPI^.ZMetric_Process(hnd, PAI_Raster_Data_Array(@rArry[0]), Length(rArry), output);
+      try
+          Result := FAI_EntryAPI^.ZMetric_Process(hnd, PAI_Raster_Data_Array(@rArry[0]), Length(rArry), output);
+      except
+      end;
 
       for i := 0 to Length(rArry) - 1 do
         begin
@@ -15892,6 +16665,12 @@ begin
   OnResultP := nil;
 end;
 
+class function TAI_DNN_Thread_Trigger.Init(p_: Pointer; Ev_: TRunWithThreadMethod): TAI_DNN_Thread_Trigger;
+begin
+  Result.p := p_;
+  Result.Ev := Ev_;
+end;
+
 procedure TAI_DNN_Thread.Run_DNN_Thread(Sender: TCompute);
 var
   tk: TTimeTick;
@@ -15903,18 +16682,19 @@ begin
   FAI.SetComputeDeviceOfProcess(FDevice);
 
   if FAI.isGPU then
-      FThreadInfo := PFormat('%s GPU[%d] %s', [
+      FThreadInfo := PFormat('%s GPU[%d] %s thread:%d', [
       if_(FAI.GetComputeDeviceOfProcess = FDevice, 'OK', 'Error'),
       FAI.GetComputeDeviceOfProcess,
-      FAI.GetComputeDeviceNameOfProcess(FAI.GetComputeDeviceOfProcess).Text])
+      FAI.GetComputeDeviceNameOfProcess(FAI.GetComputeDeviceOfProcess).Text,
+      Sender.ThreadID])
   else if FAI.isMKL then
-      FThreadInfo := PFormat('%s INTEL-MKL[%d] %s', ['OK', 0, 'X86/X64'])
+      FThreadInfo := PFormat('%s INTEL-MKL[%d] %s thread:%d', ['OK', 0, 'X86/X64', Sender.ThreadID])
   else
-      FThreadInfo := PFormat('%s CPU[%d] %s', ['OK', 0, 'X86/X64']);
+      FThreadInfo := PFormat('%s CPU[%d] %s thread:%d', ['OK', 0, 'X86/X64', Sender.ThreadID]);
 
   tk := GetTimeTick();
   R := 0;
-  while FActivted.v do
+  while FActivted.V or Busy() do
     begin
       L := FThreadPost.Progress(FThreadPost.ThreadID);
       inc(R, L);
@@ -15925,6 +16705,19 @@ begin
           tk := GetTimeTick();
           R := 0;
         end;
+
+      while ((FCPUThreadCritical <= 0) or (FEventThreadNum < FCPUThreadCritical)) and (FEventQueue.Num > 0) and (FEventQueue.Current <> nil) do
+        begin
+          AtomInc(FEventThreadNum);
+          try
+              TCompute.RunM(FEventQueue.Current^.data^.p, nil, FEventQueue.Current^.data^.Ev);
+          except
+              AtomDec(FEventThreadNum);
+          end;
+          FEventQueue.Next;
+          inc(L, 1);
+        end;
+
       if L <= 0 then
           TCompute.Sleep(1);
     end;
@@ -15934,7 +16727,7 @@ begin
   except
   end;
 
-  FRuning.v := False;
+  FDNNThreadRuning.V := False;
   FThread := nil;
 end;
 
@@ -15959,21 +16752,46 @@ begin
   FLastProcessRasterCritical.UnLock;
 end;
 
+procedure TAI_DNN_Thread.UpdateLastProcessMatrixRaster(Matrix_IMG: TMatrix_Image_Handle);
+begin
+  if not FEnabledLastProcessRaster then
+      exit;
+  FLastProcessRasterCritical.Lock;
+  FAI.BuildMatrixRaster(Matrix_IMG, FLastProcessRaster);
+  FLastProcessRaster.UserToken := Name;
+  FLastProcessRaster.Update;
+  FLastProcessRasterCritical.UnLock;
+end;
+
+procedure TAI_DNN_Thread.DoEventDone(ThSender: TCompute);
+begin
+  AtomDec(FEventThreadNum);
+end;
+
+procedure TAI_DNN_Thread.DoRunEvent(p: Pointer; Ev: TRunWithThreadMethod);
+begin
+  FEventQueue.Push(TAI_DNN_Thread_Trigger.Init(p, Ev));
+end;
+
 constructor TAI_DNN_Thread.Create;
 begin
   inherited Create;
+  FID := 0;
   FAI := nil;
   FThread := nil;
   FThreadPost := nil;
   FActivted := nil;
-  FRuning := nil;
+  FDNNThreadRuning := nil;
 
   FThreadInfo := '';
   FPSP := 0;
   FMaxPSP := 0;
-  FCPUThreadCritical := 30;
+  FCPUThreadCritical := 50;
   FGPUPerformanceCritical := 20;
   FName := '';
+
+  FEventThreadNum := 0;
+  FEventQueue := nil;
 
   FEnabledLastProcessRaster := False;
   FLastProcessRasterCritical := TCritical.Create;
@@ -15985,16 +16803,17 @@ end;
 
 destructor TAI_DNN_Thread.Destroy;
 begin
-  FActivted.v := False;
-  while FRuning.v or Busy() do
-      CheckThreadSynchronize(1);
+  FActivted.V := False;
+  while FDNNThreadRuning.V or Busy() do
+      TCompute.Sleep(1);
 
-  DisposeObject(FLastProcessRasterCritical);
-  DisposeObject(FLastProcessRaster);
-  DisposeObject(FActivted);
-  DisposeObject(FRuning);
-  DisposeObject(FThreadPost);
-  DisposeObject(FAI);
+  DisposeObjectAndNil(FEventQueue);
+  DisposeObjectAndNil(FLastProcessRasterCritical);
+  DisposeObjectAndNil(FLastProcessRaster);
+  DisposeObjectAndNil(FActivted);
+  DisposeObjectAndNil(FDNNThreadRuning);
+  DisposeObjectAndNil(FThreadPost);
+  DisposeObjectAndNil(FAI);
   inherited Destroy;
 end;
 
@@ -16011,10 +16830,12 @@ begin
       FThreadPost.OneStep := True;
       FThreadPost.ResetRandomSeed := False;
       FActivted := TAtomBool.Create(True);
-      FRuning := TAtomBool.Create(True);
+      FDNNThreadRuning := TAtomBool.Create(True);
+      FEventQueue := TAI_DNN_Thread_Event_Trigger_Order.Create;
       TCompute.RunM(nil, nil, {$IFDEF FPC}@{$ENDIF FPC}Run_DNN_Thread);
     end;
   Owner.FCritical.Acquire;
+  TH_.FID := Owner.Count;
   Owner.Add(TH_);
   Owner.FCritical.Release;
   Result := TH_;
@@ -16043,35 +16864,18 @@ end;
 
 function TAI_DNN_Thread.GetCPUAsyncThreadNum: Integer;
 begin
-  Result := 0;
-  if Self is TAI_DNN_Thread_Metric then
-      Result := TAI_DNN_Thread_Metric(Self).CPUAsyncThreadNum
-  else if Self is TAI_DNN_Thread_LMetric then
-      Result := TAI_DNN_Thread_LMetric(Self).CPUAsyncThreadNum
-  else if Self is TAI_DNN_Thread_MMOD6L then
-      Result := TAI_DNN_Thread_MMOD6L(Self).CPUAsyncThreadNum
-  else if Self is TAI_DNN_Thread_MMOD3L then
-      Result := TAI_DNN_Thread_MMOD3L(Self).CPUAsyncThreadNum
-  else if Self is TAI_DNN_Thread_RNIC then
-      Result := TAI_DNN_Thread_RNIC(Self).CPUAsyncThreadNum
-  else if Self is TAI_DNN_Thread_LRNIC then
-      Result := TAI_DNN_Thread_LRNIC(Self).CPUAsyncThreadNum
-  else if Self is TAI_DNN_Thread_GDCNIC then
-      Result := TAI_DNN_Thread_GDCNIC(Self).CPUAsyncThreadNum
-  else if Self is TAI_DNN_Thread_GNIC then
-      Result := TAI_DNN_Thread_GNIC(Self).CPUAsyncThreadNum
-  else if Self is TAI_DNN_Thread_SS then
-      Result := TAI_DNN_Thread_SS(Self).CPUAsyncThreadNum;
+  Result := FEventThreadNum;
 end;
 
 function TAI_DNN_Thread.Busy: Boolean;
 begin
-  Result := FThreadPost.Busy;
+  Result := FThreadPost.Busy or (FEventThreadNum > 0) or (FEventQueue.Num > 0);
 end;
 
 function TAI_DNN_Thread.GetAndLockLastProcessRaster: TRaster;
 begin
   FLastProcessRasterCritical.Lock;
+  FLastProcessRaster.UserText := ThreadInfo;
   Result := FLastProcessRaster;
 end;
 
@@ -16100,12 +16904,12 @@ begin
   inherited Destroy;
 end;
 
-procedure TAI_DNN_ThreadPool.Remove(obj: TAI_DNN_Thread);
+procedure TAI_DNN_ThreadPool.Remove(Obj: TAI_DNN_Thread);
 begin
   FCritical.Acquire;
   try
-    DisposeObject(obj);
-    inherited Remove(obj);
+    DisposeObject(Obj);
+    inherited Remove(Obj);
   finally
       FCritical.Release;
   end;
@@ -16343,22 +17147,26 @@ begin
   thID := TCoreClassThread.CurrentThread.ThreadID;
   while Busy do
     if thID = MainThreadProgress.ThreadID then
-        CheckThreadSynchronize(1)
-    else
         TCompute.Sleep(1);
 end;
 
 function TAI_DNN_ThreadPool.StateInfo: U_String;
+begin
+  Result := StateInfo(True);
+end;
+
+function TAI_DNN_ThreadPool.StateInfo(const Separator: Boolean): U_String;
 var
   i: Integer;
 begin
   Result := '';
   for i := 0 to Count - 1 do
     with Items[i] do
-        Result.Append('%s %s queue: %d/%d - %s Thread Critical: %d/%d'#13#10,
-        [if_(Name = '', ClassName, Name), ThreadInfo, TaskNum, GPUPerformanceCritical, if_(Busy, 'Busy', 'IDLE'), GetCPUAsyncThreadNum(), CPUThreadCritical]);
+        Result.Append('%s %s DNN(%d): %d/%d - %s Event: %d/%d/%d'#13#10,
+        [if_(Name = '', ClassName, Name), ThreadInfo, ID, TaskNum, GPUPerformanceCritical, if_(Busy, 'Busy', 'IDLE'), GetCPUAsyncThreadNum(), FEventQueue.Num, CPUThreadCritical]);
   Result.Append('per second avg/max: %d/%d'#13#10, [Round(PSP), Round(MaxPSP)]);
-  Result.Append('----'#13#10);
+  if Separator then
+      Result.Append('----'#13#10);
 end;
 
 procedure TAI_DNN_ThreadPool.EnabledLastProcessRaster(value_: Boolean);
@@ -16387,8 +17195,7 @@ begin
     for i := 0 to Count - 1 do
       begin
         raster_ := Items[i].GetAndLockLastProcessRaster;
-        if not raster_.Empty then
-            FLastRasterList.Add(raster_);
+        FLastRasterList.Add(raster_);
       end;
   finally
       FCritical.Release;
@@ -16439,7 +17246,7 @@ begin
   p := data;
   p^.output := LVecCopy(FAI.Metric_ResNet_Process(MetricHnd, p^.Input));
   UpdateLastProcessRaster(p^.Input);
-  p^.Done.v := True;
+  p^.Done.V := True;
 end;
 
 procedure TAI_DNN_Thread_Metric.OnComputeThreadResult(ThSender: TCompute);
@@ -16460,27 +17267,23 @@ begin
       DisposeObject(p^.Input);
   SetLength(p^.output, 0);
   Dispose(p);
-  AtomDec(FCPUAsyncThreadNum);
+  DoEventDone(ThSender);
 end;
 
 procedure TAI_DNN_Thread_Metric.CMD_AsyncProcess(data: Pointer);
 var
   p: PCMD_AsyncProcess;
 begin
-  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
-      TCompute.Sleep(1);
   p := data;
   p^.output := LVecCopy(FAI.Metric_ResNet_Process(MetricHnd, p^.Input));
   UpdateLastProcessRaster(p^.Input);
-  AtomInc(FCPUAsyncThreadNum);
-  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+  DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
 end;
 
 constructor TAI_DNN_Thread_Metric.Create;
 begin
   inherited Create;
   MetricHnd := nil;
-  FCPUAsyncThreadNum := 0;
 end;
 
 procedure TAI_DNN_Thread_Metric.Open(train_file: SystemString);
@@ -16506,7 +17309,7 @@ begin
   CMD_.Done := TAtomBool.Create(False);
   CMD_.Input := Input;
   FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
-  while not CMD_.Done.v do
+  while not CMD_.Done.V do
       TCompute.Sleep(1);
   Result := CMD_.output;
   DisposeObject(CMD_.Done);
@@ -16560,11 +17363,6 @@ begin
   FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
 end;
 
-function TAI_DNN_Thread_Metric.Busy(): Boolean;
-begin
-  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
-end;
-
 procedure TAI_DNN_Thread_LMetric.ThreadFree;
 begin
   FAI.LMetric_ResNet_Close(LMetricHnd);
@@ -16587,7 +17385,7 @@ begin
   p := data;
   p^.output := LVecCopy(FAI.LMetric_ResNet_Process(LMetricHnd, p^.Input));
   UpdateLastProcessRaster(p^.Input);
-  p^.Done.v := True;
+  p^.Done.V := True;
 end;
 
 procedure TAI_DNN_Thread_LMetric.OnComputeThreadResult(ThSender: TCompute);
@@ -16608,27 +17406,23 @@ begin
       DisposeObject(p^.Input);
   SetLength(p^.output, 0);
   Dispose(p);
-  AtomDec(FCPUAsyncThreadNum);
+  DoEventDone(ThSender);
 end;
 
 procedure TAI_DNN_Thread_LMetric.CMD_AsyncProcess(data: Pointer);
 var
   p: PCMD_AsyncProcess;
 begin
-  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
-      TCompute.Sleep(1);
   p := data;
   p^.output := LVecCopy(FAI.LMetric_ResNet_Process(LMetricHnd, p^.Input));
   UpdateLastProcessRaster(p^.Input);
-  AtomInc(FCPUAsyncThreadNum);
-  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+  DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
 end;
 
 constructor TAI_DNN_Thread_LMetric.Create;
 begin
   inherited Create;
   LMetricHnd := nil;
-  FCPUAsyncThreadNum := 0;
 end;
 
 procedure TAI_DNN_Thread_LMetric.Open(train_file: SystemString);
@@ -16649,7 +17443,7 @@ begin
   CMD_.Done := TAtomBool.Create(False);
   CMD_.Input := Input;
   FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
-  while not CMD_.Done.v do
+  while not CMD_.Done.V do
       TCompute.Sleep(1);
   Result := CMD_.output;
   DisposeObject(CMD_.Done);
@@ -16703,14 +17497,9 @@ begin
   FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
 end;
 
-function TAI_DNN_Thread_LMetric.Busy(): Boolean;
-begin
-  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
-end;
-
 procedure TAI_DNN_Thread_MMOD6L.ThreadFree;
 begin
-  FAI.MMOD3L_DNN_Close(MMOD6LHnd);
+  FAI.MMOD6L_DNN_Close(MMOD6LHnd);
 end;
 
 procedure TAI_DNN_Thread_MMOD6L.CMD_Open(Data1: Pointer; Data2: TCoreClassObject; Data3: Variant);
@@ -16735,10 +17524,10 @@ begin
   p := data;
   p^.output := FAI.MMOD6L_DNN_Process(MMOD6LHnd, p^.Input);
   UpdateLastProcessRaster(p^.Input);
-  p^.Done.v := True;
+  p^.Done.V := True;
 end;
 
-procedure TAI_DNN_Thread_MMOD6L.OnComputeThreadResult(ThSender: TCompute);
+procedure TAI_DNN_Thread_MMOD6L.CMD_AsyncProcess_Result(ThSender: TCompute);
 var
   p: PCMD_AsyncProcess;
 begin
@@ -16756,27 +17545,54 @@ begin
       DisposeObject(p^.Input);
   SetLength(p^.output, 0);
   Dispose(p);
-  AtomDec(FCPUAsyncThreadNum);
+  DoEventDone(ThSender);
 end;
 
 procedure TAI_DNN_Thread_MMOD6L.CMD_AsyncProcess(data: Pointer);
 var
   p: PCMD_AsyncProcess;
 begin
-  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
-      TCompute.Sleep(1);
   p := data;
   p^.output := FAI.MMOD6L_DNN_Process(MMOD6LHnd, p^.Input);
   UpdateLastProcessRaster(p^.Input);
-  AtomInc(FCPUAsyncThreadNum);
-  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+  DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess_Result);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.CMD_AsyncProcessMatrix_Result(ThSender: TCompute);
+var
+  p: PCMD_AsyncProcessMatrix;
+begin
+  p := ThSender.UserData;
+  try
+    if Assigned(p^.OnResult_C) then
+        p^.OnResult_C(Self, p^.UserData, p^.Matrix_IMG, p^.output);
+    if Assigned(p^.OnResult_M) then
+        p^.OnResult_M(Self, p^.UserData, p^.Matrix_IMG, p^.output);
+    if Assigned(p^.OnResult_P) then
+        p^.OnResult_P(Self, p^.UserData, p^.Matrix_IMG, p^.output);
+  except
+  end;
+  if p^.FreeInput then
+      FAI.Close_Matrix_Image(p^.Matrix_IMG);
+  SetLength(p^.output, 0);
+  Dispose(p);
+  DoEventDone(ThSender);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.CMD_AsyncProcessMatrix(data: Pointer);
+var
+  p: PCMD_AsyncProcessMatrix;
+begin
+  p := data;
+  p^.output := FAI.MMOD6L_DNN_Process_Matrix(MMOD6LHnd, p^.Matrix_IMG);
+  UpdateLastProcessMatrixRaster(p^.Matrix_IMG);
+  Self.DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcessMatrix_Result);
 end;
 
 constructor TAI_DNN_Thread_MMOD6L.Create;
 begin
   inherited Create;
   MMOD6LHnd := nil;
-  FCPUAsyncThreadNum := 0;
 end;
 
 procedure TAI_DNN_Thread_MMOD6L.Open(train_file: SystemString);
@@ -16802,7 +17618,7 @@ begin
   CMD_.Done := TAtomBool.Create(False);
   CMD_.Input := Input;
   FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
-  while not CMD_.Done.v do
+  while not CMD_.Done.V do
       TCompute.Sleep(1);
   Result := CMD_.output;
   DisposeObject(CMD_.Done);
@@ -16856,9 +17672,52 @@ begin
   FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
 end;
 
-function TAI_DNN_Thread_MMOD6L.Busy(): Boolean;
+procedure TAI_DNN_Thread_MMOD6L.ProcessMatrixC(UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_C);
+var
+  p: PCMD_AsyncProcessMatrix;
 begin
-  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Matrix_IMG := Matrix_IMG;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := OnResult;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcessMatrix);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.ProcessMatrixM(UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_M);
+var
+  p: PCMD_AsyncProcessMatrix;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Matrix_IMG := Matrix_IMG;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := OnResult;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcessMatrix);
+end;
+
+procedure TAI_DNN_Thread_MMOD6L.ProcessMatrixP(UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD6L_AsyncProcessMatrix_P);
+var
+  p: PCMD_AsyncProcessMatrix;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Matrix_IMG := Matrix_IMG;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := OnResult;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcessMatrix);
 end;
 
 procedure TAI_DNN_Thread_MMOD3L.ThreadFree;
@@ -16883,10 +17742,10 @@ begin
   p := data;
   p^.output := FAI.MMOD3L_DNN_Process(MMOD3LHnd, p^.Input);
   UpdateLastProcessRaster(p^.Input);
-  p^.Done.v := True;
+  p^.Done.V := True;
 end;
 
-procedure TAI_DNN_Thread_MMOD3L.OnComputeThreadResult(ThSender: TCompute);
+procedure TAI_DNN_Thread_MMOD3L.CMD_AsyncProcess_Result(ThSender: TCompute);
 var
   p: PCMD_AsyncProcess;
 begin
@@ -16904,27 +17763,54 @@ begin
       DisposeObject(p^.Input);
   SetLength(p^.output, 0);
   Dispose(p);
-  AtomDec(FCPUAsyncThreadNum);
+  DoEventDone(ThSender);
 end;
 
 procedure TAI_DNN_Thread_MMOD3L.CMD_AsyncProcess(data: Pointer);
 var
   p: PCMD_AsyncProcess;
 begin
-  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
-      TCompute.Sleep(1);
   p := data;
   p^.output := FAI.MMOD3L_DNN_Process(MMOD3LHnd, p^.Input);
   UpdateLastProcessRaster(p^.Input);
-  AtomInc(FCPUAsyncThreadNum);
-  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+  DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess_Result);
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.CMD_AsyncProcessMatrix_Result(ThSender: TCompute);
+var
+  p: PCMD_AsyncProcessMatrix;
+begin
+  p := ThSender.UserData;
+  try
+    if Assigned(p^.OnResult_C) then
+        p^.OnResult_C(Self, p^.UserData, p^.Matrix_IMG, p^.output);
+    if Assigned(p^.OnResult_M) then
+        p^.OnResult_M(Self, p^.UserData, p^.Matrix_IMG, p^.output);
+    if Assigned(p^.OnResult_P) then
+        p^.OnResult_P(Self, p^.UserData, p^.Matrix_IMG, p^.output);
+  except
+  end;
+  if p^.FreeInput then
+      FAI.Close_Matrix_Image(p^.Matrix_IMG);
+  SetLength(p^.output, 0);
+  Dispose(p);
+  DoEventDone(ThSender);
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.CMD_AsyncProcessMatrix(data: Pointer);
+var
+  p: PCMD_AsyncProcessMatrix;
+begin
+  p := data;
+  p^.output := FAI.MMOD3L_DNN_Process_Matrix(MMOD3LHnd, p^.Matrix_IMG);
+  UpdateLastProcessMatrixRaster(p^.Matrix_IMG);
+  DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcessMatrix_Result);
 end;
 
 constructor TAI_DNN_Thread_MMOD3L.Create;
 begin
   inherited Create;
   MMOD3LHnd := nil;
-  FCPUAsyncThreadNum := 0;
 end;
 
 procedure TAI_DNN_Thread_MMOD3L.Open(train_file: SystemString);
@@ -16945,7 +17831,7 @@ begin
   CMD_.Done := TAtomBool.Create(False);
   CMD_.Input := Input;
   FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
-  while not CMD_.Done.v do
+  while not CMD_.Done.V do
       TCompute.Sleep(1);
   Result := CMD_.output;
   DisposeObject(CMD_.Done);
@@ -16999,9 +17885,52 @@ begin
   FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
 end;
 
-function TAI_DNN_Thread_MMOD3L.Busy(): Boolean;
+procedure TAI_DNN_Thread_MMOD3L.ProcessMatrixC(UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_C);
+var
+  p: PCMD_AsyncProcessMatrix;
 begin
-  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Matrix_IMG := Matrix_IMG;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := OnResult;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcessMatrix);
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.ProcessMatrixM(UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_M);
+var
+  p: PCMD_AsyncProcessMatrix;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Matrix_IMG := Matrix_IMG;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := OnResult;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcessMatrix);
+end;
+
+procedure TAI_DNN_Thread_MMOD3L.ProcessMatrixP(UserData: Pointer; Matrix_IMG: TMatrix_Image_Handle; FreeInput: Boolean; OnResult: TAI_DNN_Thread_MMOD3L_AsyncProcessMatrix_P);
+var
+  p: PCMD_AsyncProcessMatrix;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Matrix_IMG := Matrix_IMG;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := OnResult;
+  SetLength(p^.output, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcessMatrix);
 end;
 
 procedure TAI_DNN_Thread_RNIC.ThreadFree;
@@ -17026,7 +17955,7 @@ begin
   p := data;
   p^.output := FAI.RNIC_Process(RNICHnd, p^.Input, p^.num_crops);
   UpdateLastProcessRaster(p^.Input);
-  p^.Done.v := True;
+  p^.Done.V := True;
 end;
 
 procedure TAI_DNN_Thread_RNIC.OnComputeThreadResult(ThSender: TCompute);
@@ -17047,27 +17976,23 @@ begin
       DisposeObject(p^.Input);
   SetLength(p^.output, 0);
   Dispose(p);
-  AtomDec(FCPUAsyncThreadNum);
+  DoEventDone(ThSender);
 end;
 
 procedure TAI_DNN_Thread_RNIC.CMD_AsyncProcess(data: Pointer);
 var
   p: PCMD_AsyncProcess;
 begin
-  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
-      TCompute.Sleep(1);
   p := data;
   p^.output := FAI.RNIC_Process(RNICHnd, p^.Input, p^.num_crops);
   UpdateLastProcessRaster(p^.Input);
-  AtomInc(FCPUAsyncThreadNum);
-  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+  DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
 end;
 
 constructor TAI_DNN_Thread_RNIC.Create;
 begin
   inherited Create;
   RNICHnd := nil;
-  FCPUAsyncThreadNum := 0;
 end;
 
 procedure TAI_DNN_Thread_RNIC.Open(train_file: SystemString);
@@ -17089,7 +18014,7 @@ begin
   CMD_.Input := Input;
   CMD_.num_crops := num_crops;
   FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
-  while not CMD_.Done.v do
+  while not CMD_.Done.V do
       TCompute.Sleep(1);
   Result := CMD_.output;
   DisposeObject(CMD_.Done);
@@ -17146,11 +18071,6 @@ begin
   FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
 end;
 
-function TAI_DNN_Thread_RNIC.Busy(): Boolean;
-begin
-  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
-end;
-
 procedure TAI_DNN_Thread_LRNIC.ThreadFree;
 begin
   FAI.LRNIC_Close(LRNICHnd);
@@ -17173,7 +18093,7 @@ begin
   p := data;
   p^.output := FAI.LRNIC_Process(LRNICHnd, p^.Input, p^.num_crops);
   UpdateLastProcessRaster(p^.Input);
-  p^.Done.v := True;
+  p^.Done.V := True;
 end;
 
 procedure TAI_DNN_Thread_LRNIC.OnComputeThreadResult(ThSender: TCompute);
@@ -17194,27 +18114,23 @@ begin
       DisposeObject(p^.Input);
   SetLength(p^.output, 0);
   Dispose(p);
-  AtomDec(FCPUAsyncThreadNum);
+  DoEventDone(ThSender);
 end;
 
 procedure TAI_DNN_Thread_LRNIC.CMD_AsyncProcess(data: Pointer);
 var
   p: PCMD_AsyncProcess;
 begin
-  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
-      TCompute.Sleep(1);
   p := data;
   p^.output := FAI.LRNIC_Process(LRNICHnd, p^.Input, p^.num_crops);
   UpdateLastProcessRaster(p^.Input);
-  AtomInc(FCPUAsyncThreadNum);
-  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+  DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
 end;
 
 constructor TAI_DNN_Thread_LRNIC.Create;
 begin
   inherited Create;
   LRNICHnd := nil;
-  FCPUAsyncThreadNum := 0;
 end;
 
 procedure TAI_DNN_Thread_LRNIC.Open(train_file: SystemString);
@@ -17236,7 +18152,7 @@ begin
   CMD_.Input := Input;
   CMD_.num_crops := num_crops;
   FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
-  while not CMD_.Done.v do
+  while not CMD_.Done.V do
       TCompute.Sleep(1);
   Result := CMD_.output;
   DisposeObject(CMD_.Done);
@@ -17293,11 +18209,6 @@ begin
   FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
 end;
 
-function TAI_DNN_Thread_LRNIC.Busy(): Boolean;
-begin
-  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
-end;
-
 procedure TAI_DNN_Thread_GDCNIC.ThreadFree;
 begin
   FAI.GDCNIC_Close(GDCNICHnd);
@@ -17320,7 +18231,7 @@ begin
   p := data;
   p^.output := FAI.GDCNIC_Process(GDCNICHnd, p^.SS_Width, p^.SS_Height, p^.Input);
   UpdateLastProcessRaster(p^.Input);
-  p^.Done.v := True;
+  p^.Done.V := True;
 end;
 
 procedure TAI_DNN_Thread_GDCNIC.OnComputeThreadResult(ThSender: TCompute);
@@ -17341,27 +18252,23 @@ begin
       DisposeObject(p^.Input);
   SetLength(p^.output, 0);
   Dispose(p);
-  AtomDec(FCPUAsyncThreadNum);
+  DoEventDone(ThSender);
 end;
 
 procedure TAI_DNN_Thread_GDCNIC.CMD_AsyncProcess(data: Pointer);
 var
   p: PCMD_AsyncProcess;
 begin
-  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
-      TCompute.Sleep(1);
   p := data;
   p^.output := FAI.GDCNIC_Process(GDCNICHnd, p^.SS_Width, p^.SS_Height, p^.Input);
   UpdateLastProcessRaster(p^.Input);
-  AtomInc(FCPUAsyncThreadNum);
-  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+  DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
 end;
 
 constructor TAI_DNN_Thread_GDCNIC.Create;
 begin
   inherited Create;
   GDCNICHnd := nil;
-  FCPUAsyncThreadNum := 0;
 end;
 
 procedure TAI_DNN_Thread_GDCNIC.Open(train_file: SystemString);
@@ -17384,7 +18291,7 @@ begin
   CMD_.SS_Width := SS_Width;
   CMD_.SS_Height := SS_Height;
   FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
-  while not CMD_.Done.v do
+  while not CMD_.Done.V do
       TCompute.Sleep(1);
   Result := CMD_.output;
   DisposeObject(CMD_.Done);
@@ -17444,11 +18351,6 @@ begin
   FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
 end;
 
-function TAI_DNN_Thread_GDCNIC.Busy(): Boolean;
-begin
-  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
-end;
-
 procedure TAI_DNN_Thread_GNIC.ThreadFree;
 begin
   FAI.GNIC_Close(GNICHnd);
@@ -17471,7 +18373,7 @@ begin
   p := data;
   p^.output := FAI.GNIC_Process(GNICHnd, p^.SS_Width, p^.SS_Height, p^.Input);
   UpdateLastProcessRaster(p^.Input);
-  p^.Done.v := True;
+  p^.Done.V := True;
 end;
 
 procedure TAI_DNN_Thread_GNIC.OnComputeThreadResult(ThSender: TCompute);
@@ -17492,27 +18394,23 @@ begin
       DisposeObject(p^.Input);
   SetLength(p^.output, 0);
   Dispose(p);
-  AtomDec(FCPUAsyncThreadNum);
+  DoEventDone(ThSender);
 end;
 
 procedure TAI_DNN_Thread_GNIC.CMD_AsyncProcess(data: Pointer);
 var
   p: PCMD_AsyncProcess;
 begin
-  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
-      TCompute.Sleep(1);
   p := data;
   p^.output := FAI.GNIC_Process(GNICHnd, p^.SS_Width, p^.SS_Height, p^.Input);
   UpdateLastProcessRaster(p^.Input);
-  AtomInc(FCPUAsyncThreadNum);
-  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+  DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
 end;
 
 constructor TAI_DNN_Thread_GNIC.Create;
 begin
   inherited Create;
   GNICHnd := nil;
-  FCPUAsyncThreadNum := 0;
 end;
 
 procedure TAI_DNN_Thread_GNIC.Open(train_file: SystemString);
@@ -17535,7 +18433,7 @@ begin
   CMD_.SS_Width := SS_Width;
   CMD_.SS_Height := SS_Height;
   FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
-  while not CMD_.Done.v do
+  while not CMD_.Done.V do
       TCompute.Sleep(1);
   Result := CMD_.output;
   DisposeObject(CMD_.Done);
@@ -17595,11 +18493,6 @@ begin
   FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
 end;
 
-function TAI_DNN_Thread_GNIC.Busy(): Boolean;
-begin
-  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
-end;
-
 procedure TAI_DNN_Thread_SS.ThreadFree;
 begin
   FAI.SS_Close(SSHnd);
@@ -17622,7 +18515,7 @@ begin
   p := data;
   p^.output := FAI.SS_Process(SSHnd, p^.Input, p^.colorPool, p^.SSTokenOutput);
   UpdateLastProcessRaster(p^.Input);
-  p^.Done.v := True;
+  p^.Done.V := True;
 end;
 
 procedure TAI_DNN_Thread_SS.OnComputeThreadResult(ThSender: TCompute);
@@ -17645,28 +18538,24 @@ begin
   if p^.output <> nil then
       DisposeObject(p^.output);
   Dispose(p);
-  AtomDec(FCPUAsyncThreadNum);
+  DoEventDone(ThSender);
 end;
 
 procedure TAI_DNN_Thread_SS.CMD_AsyncProcess(data: Pointer);
 var
   p: PCMD_AsyncProcess;
 begin
-  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
-      TCompute.Sleep(1);
   p := data;
   p^.SSTokenOutput := TPascalStringList.Create;
   p^.output := FAI.SS_Process(SSHnd, p^.Input, p^.colorPool, p^.SSTokenOutput);
   UpdateLastProcessRaster(p^.Input);
-  AtomInc(FCPUAsyncThreadNum);
-  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+  DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
 end;
 
 constructor TAI_DNN_Thread_SS.Create;
 begin
   inherited Create;
   SSHnd := nil;
-  FCPUAsyncThreadNum := 0;
 end;
 
 procedure TAI_DNN_Thread_SS.Open(train_file: SystemString);
@@ -17688,7 +18577,7 @@ begin
   CMD_.colorPool := colorPool;
   CMD_.SSTokenOutput := SSTokenOutput;
   FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
-  while not CMD_.Done.v do
+  while not CMD_.Done.V do
       TCompute.Sleep(1);
   Result := CMD_.output;
   DisposeObject(CMD_.Done);
@@ -17745,11 +18634,6 @@ begin
   FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
 end;
 
-function TAI_DNN_Thread_SS.Busy(): Boolean;
-begin
-  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
-end;
-
 procedure TAI_DNN_Thread_ZMetric.ThreadFree;
 begin
   FAI.ZMetric_Close(ZMetricHnd);
@@ -17772,10 +18656,10 @@ begin
   p := data;
   p^.output := LVecCopy(FAI.ZMetric_Process(ZMetricHnd, p^.Input, p^.SS_Width, p^.SS_Height));
   UpdateLastProcessRaster(p^.Input);
-  p^.Done.v := True;
+  p^.Done.V := True;
 end;
 
-procedure TAI_DNN_Thread_ZMetric.OnComputeThreadResult(ThSender: TCompute);
+procedure TAI_DNN_Thread_ZMetric.CMD_AsyncProcess_Result(ThSender: TCompute);
 var
   p: PCMD_AsyncProcess;
 begin
@@ -17793,27 +18677,56 @@ begin
       DisposeObject(p^.Input);
   SetLength(p^.output, 0);
   Dispose(p);
-  AtomDec(FCPUAsyncThreadNum);
+  DoEventDone(ThSender);
 end;
 
 procedure TAI_DNN_Thread_ZMetric.CMD_AsyncProcess(data: Pointer);
 var
   p: PCMD_AsyncProcess;
 begin
-  while (FCPUThreadCritical > 0) and (FCPUAsyncThreadNum > FCPUThreadCritical) do
-      TCompute.Sleep(1);
   p := data;
   p^.output := LVecCopy(FAI.ZMetric_Process(ZMetricHnd, p^.Input, p^.SS_Width, p^.SS_Height));
   UpdateLastProcessRaster(p^.Input);
-  AtomInc(FCPUAsyncThreadNum);
-  TCompute.RunM(p, nil, {$IFDEF FPC}@{$ENDIF FPC}OnComputeThreadResult);
+  DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess_Result);
+end;
+
+procedure TAI_DNN_Thread_ZMetric.CMD_AsyncProcess_List_Result(ThSender: TCompute);
+var
+  p: PCMD_AsyncProcess_List;
+begin
+  p := ThSender.UserData;
+  try
+    if Assigned(p^.OnResult_C) then
+        p^.OnResult_C(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_M) then
+        p^.OnResult_M(Self, p^.UserData, p^.Input, p^.output);
+    if Assigned(p^.OnResult_P) then
+        p^.OnResult_P(Self, p^.UserData, p^.Input, p^.output);
+  except
+  end;
+  if p^.FreeInput then
+      DisposeObject(p^.Input);
+  SetLength(p^.output, 0, 0);
+  Dispose(p);
+  DoEventDone(ThSender);
+end;
+
+procedure TAI_DNN_Thread_ZMetric.CMD_AsyncProcess_List(data: Pointer);
+var
+  arry: TMemoryRasterArray;
+  p: PCMD_AsyncProcess_List;
+begin
+  p := data;
+  arry := p^.Input.BuildArray;
+  p^.output := LMatrixCopy(FAI.ZMetric_Process(ZMetricHnd, arry, p^.SS_Width, p^.SS_Height));
+  SetLength(arry, 0);
+  DoRunEvent(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess_List_Result);
 end;
 
 constructor TAI_DNN_Thread_ZMetric.Create;
 begin
   inherited Create;
   ZMetricHnd := nil;
-  FCPUAsyncThreadNum := 0;
 end;
 
 procedure TAI_DNN_Thread_ZMetric.Open(train_file: SystemString);
@@ -17836,7 +18749,7 @@ begin
   CMD_.SS_Width := SS_Width;
   CMD_.SS_Height := SS_Height;
   FThreadPost.PostM2(@CMD_, {$IFDEF FPC}@{$ENDIF FPC}CMD_SyncProcess);
-  while not CMD_.Done.v do
+  while not CMD_.Done.V do
       TCompute.Sleep(1);
   Result := CMD_.output;
   DisposeObject(CMD_.Done);
@@ -17896,9 +18809,58 @@ begin
   FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess);
 end;
 
-function TAI_DNN_Thread_ZMetric.Busy(): Boolean;
+procedure TAI_DNN_Thread_ZMetric.ProcessListC(UserData: Pointer; Input: TMemoryRasterList; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_ZMetric_AsyncProcess_List_C);
+var
+  p: PCMD_AsyncProcess_List;
 begin
-  Result := inherited Busy() or (FCPUAsyncThreadNum > 0);
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.SS_Width := SS_Width;
+  p^.SS_Height := SS_Height;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := OnResult;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess_List);
+end;
+
+procedure TAI_DNN_Thread_ZMetric.ProcessListM(UserData: Pointer; Input: TMemoryRasterList; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_ZMetric_AsyncProcess_List_M);
+var
+  p: PCMD_AsyncProcess_List;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.SS_Width := SS_Width;
+  p^.SS_Height := SS_Height;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := OnResult;
+  p^.OnResult_P := nil;
+  SetLength(p^.output, 0, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess_List);
+end;
+
+procedure TAI_DNN_Thread_ZMetric.ProcessListP(UserData: Pointer; Input: TMemoryRasterList; SS_Width, SS_Height: Integer; FreeInput: Boolean; OnResult: TAI_DNN_Thread_ZMetric_AsyncProcess_List_P);
+var
+  p: PCMD_AsyncProcess_List;
+begin
+  CheckGPUPerformanceCritical;
+  new(p);
+  p^.UserData := UserData;
+  p^.Input := Input;
+  p^.SS_Width := SS_Width;
+  p^.SS_Height := SS_Height;
+  p^.FreeInput := FreeInput;
+  p^.OnResult_C := nil;
+  p^.OnResult_M := nil;
+  p^.OnResult_P := OnResult;
+  SetLength(p^.output, 0, 0);
+  FThreadPost.PostM2(p, {$IFDEF FPC}@{$ENDIF FPC}CMD_AsyncProcess_List);
 end;
 
 constructor TAI_Parallel.Create;
@@ -17916,10 +18878,10 @@ begin
   inherited Destroy;
 end;
 
-procedure TAI_Parallel.Remove(a: TAI);
+procedure TAI_Parallel.Remove(AI_: TAI);
 begin
-  inherited Remove(a);
-  DisposeObject(a);
+  inherited Remove(AI_);
+  DisposeObject(AI_);
 end;
 
 procedure TAI_Parallel.Clear;
@@ -18402,7 +19364,7 @@ begin
           DoProcessPick(pickList);
       DisposeObject(pickList);
     end;
-  FIOThreadRuning.v := False;
+  FIOThreadRuning.V := False;
   AtomDec(IOProcessorActivtedThreadNum);
 end;
 
@@ -18422,8 +19384,8 @@ end;
 
 destructor TAI_IO_Processor.Destroy;
 begin
-  while FIOThreadRuning.v do
-      CheckThreadSynchronize(100);
+  while FIOThreadRuning.V do
+      TCompute.Sleep(1);
   DisposeObject(FIOThreadRuning);
 
   Clear;
@@ -18492,16 +19454,16 @@ end;
 
 procedure TAI_IO_Processor.Process(UserData: Pointer);
 begin
-  if (FIOThreadRuning.v) or (InputCount = 0) then
+  if (FIOThreadRuning.V) or (InputCount = 0) then
       exit;
 
-  FIOThreadRuning.v := True;
+  FIOThreadRuning.V := True;
   TCompute.RunM(UserData, Self, {$IFDEF FPC}@{$ENDIF FPC}IOProcessorThreadRun);
 end;
 
 function TAI_IO_Processor.Finished: Boolean;
 begin
-  Result := (InputCount = 0) and (not FIOThreadRuning.v);
+  Result := (InputCount = 0) and (not FIOThreadRuning.V);
 end;
 
 procedure TAI_IO_Processor.WaitProcessDone;
@@ -18509,7 +19471,7 @@ begin
   while not Finished do
     begin
       DoStatus();
-      CheckThreadSynchronize(10);
+      TCompute.Sleep(1);
     end;
 end;
 

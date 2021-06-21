@@ -409,13 +409,13 @@ initialization
 if not Bass_Available then
     exit;
 try
-{$IFDEF MSWINDOWS}
+  {$IFDEF MSWINDOWS}
   if not BASS_Init(-1, 44100, 0, 0, nil) then
       RaiseInfo('bass init failed (%d)', [BASS_ErrorGetCode]);
-{$ELSE}
+  {$ELSE}
   if not BASS_Init(-1, 44100, 0, nil, nil) then
       RaiseInfo('bass init failed (%d)', [BASS_ErrorGetCode]);
-{$ENDIF}
+  {$ENDIF}
   BASS_SetConfig(BASS_CONFIG_NET_PLAYLIST, 1); // enable playlist processing
   BASS_SetConfig(BASS_CONFIG_NET_READTIMEOUT, 2000);
   BASS_SetConfig(BASS_CONFIG_IOS_SPEAKER, 1);

@@ -22,7 +22,7 @@ unit FFMPEG_Reader;
 
 interface
 
-uses SysUtils, CoreClasses, PascalStrings, UnicodeMixedLib, MemoryStream64, MemoryRaster, DoStatusIO, FFMPEG;
+uses SysUtils, Classes, CoreClasses, PascalStrings, UnicodeMixedLib, MemoryStream64, MemoryRaster, DoStatusIO, FFMPEG;
 
 type
   TFFMPEG_Reader = class;
@@ -32,17 +32,17 @@ type
   private
     FVideoSource: TPascalString;
     FWorkOnGPU: Boolean;
-    FormatCtx: PAVFormatContext;
-    videoCodecCtx: PAVCodecContext;
-    audioCodecCtx: PAVCodecContext;
-    videoCodec: PAVCodec;
-    audioCodec: PAVCodec;
+    FFormatCtx: PAVFormatContext;
+    FVideoCodecCtx: PAVCodecContext;
+    FAudioCodecCtx: PAVCodecContext;
+    FVideoCodec: PAVCodec;
+    FAudioCodec: PAVCodec;
     Frame, FrameRGB: PAVFrame;
     FrameRGB_buffer: PByte;
-    Sws_Ctx: PSwsContext;
-    videoStreamIndex: integer;
-    audioStreamIndex: integer;
-    videoStream: PAVStream;
+    FSWS_CTX: PSwsContext;
+    VideoStreamIndex: integer;
+    AudioStreamIndex: integer;
+    VideoStream: PAVStream;
     AVPacket_ptr: PAVPacket;
   public
     Current: Double;
@@ -58,6 +58,8 @@ type
     procedure OpenVideo(const VideoSource_: TPascalString; useGPU_: Boolean); overload;
     procedure OpenVideo(const VideoSource_: TPascalString); overload;
     procedure CloseVideo;
+
+    procedure ResetFit(NewWidth, NewHeight: integer);
 
     function NextFrame(): Boolean;
     function ReadFrame(output: TMemoryRaster; RasterizationCopy_: Boolean): Boolean;
@@ -79,13 +81,13 @@ type
 
   TFFMPEG_VideoStreamReader = class(TCoreClassObject)
   private
-    videoCodecCtx: PAVCodecContext;
-    videoCodec: PAVCodec;
+    FVideoCodecCtx: PAVCodecContext;
+    FVideoCodec: PAVCodec;
     AVParser: PAVCodecParserContext;
     AVPacket_ptr: PAVPacket;
     Frame, FrameRGB: PAVFrame;
     FrameRGB_buffer: PByte;
-    Sws_Ctx: PSwsContext;
+    FSWS_CTX: PSwsContext;
     SwapBuff: TMemoryStream64;
     VideoRasterPool: TMemoryRasterList;
   protected
@@ -113,8 +115,10 @@ type
 
     // parser and decode frame
     // return decode frame number on this step
-    function WriteBuffer(p: Pointer; siz: NativeUInt): integer; virtual;
+    function WriteBuffer(p: Pointer; siz: NativeUInt): integer; overload;
+    function WriteBuffer(stream_: TCoreClassStream): integer; overload;
 
+    function DecodedRasterNum: integer;
     function LockVideoPool: TMemoryRasterList;
     procedure UnLockVideoPool(freeRaster_: Boolean); overload;
     procedure UnLockVideoPool(); overload;
@@ -135,7 +139,7 @@ var
 
 implementation
 
-uses H264, FFMPEG_Writer;
+uses H264, FFMPEG_Writer, Geometry2DUnit;
 
 function ExtractVideoAsPasH264(VideoSource_: TPascalString; dest: TCoreClassStream): integer;
 var
@@ -247,12 +251,13 @@ function ExtractVideoAsH264(VideoSource_: TPascalString; DestH264: TPascalString
 var
   fs: TCoreClassFileStream;
 begin
-  fs := TCoreClassFileStream.Create(DestH264, fmCreate);
   try
-      Result := ExtractVideoAsH264(VideoSource_, fs, Bitrate);
+    fs := TCoreClassFileStream.Create(DestH264, fmCreate);
+    Result := ExtractVideoAsH264(VideoSource_, fs, Bitrate);
+    disposeObject(fs);
   except
+      Result := 0;
   end;
-  disposeObject(fs);
 end;
 
 constructor TFFMPEG_Reader.Create(const VideoSource_: TPascalString);
@@ -287,15 +292,15 @@ begin
   FWorkOnGPU := False;
 
   AV_Options := nil;
-  FormatCtx := nil;
-  videoCodecCtx := nil;
-  audioCodecCtx := nil;
-  videoCodec := nil;
-  audioCodec := nil;
+  FFormatCtx := nil;
+  FVideoCodecCtx := nil;
+  FAudioCodecCtx := nil;
+  FVideoCodec := nil;
+  FAudioCodec := nil;
   Frame := nil;
   FrameRGB := nil;
   AVPacket_ptr := nil;
-  Sws_Ctx := nil;
+  FSWS_CTX := nil;
 
   p := VideoSource_.BuildPlatformPChar;
 
@@ -308,119 +313,119 @@ begin
     av_dict_set(@AV_Options, 'rtsp_transport', '+tcp', 0);
     TPascalString.FreePlatformPChar(tmp);
 
-    if (avformat_open_input(@FormatCtx, PAnsiChar(p), nil, @AV_Options) <> 0) then
+    if (avformat_open_input(@FFormatCtx, PAnsiChar(p), nil, @AV_Options) <> 0) then
       begin
         RaiseInfo('Could not open source file %s', [VideoSource_.Text]);
         exit;
       end;
 
     // Retrieve stream information
-    if avformat_find_stream_info(FormatCtx, nil) < 0 then
+    if avformat_find_stream_info(FFormatCtx, nil) < 0 then
       begin
-        if FormatCtx <> nil then
-            avformat_close_input(@FormatCtx);
+        if FFormatCtx <> nil then
+            avformat_close_input(@FFormatCtx);
 
         RaiseInfo('Could not find stream information %s', [VideoSource_.Text]);
         exit;
       end;
 
     if IsConsole then
-        av_dump_format(FormatCtx, 0, PAnsiChar(p), 0);
+        av_dump_format(FFormatCtx, 0, PAnsiChar(p), 0);
 
-    videoStreamIndex := -1;
-    audioStreamIndex := -1;
-    videoStream := nil;
-    av_st := FormatCtx^.streams;
-    for i := 0 to FormatCtx^.nb_streams - 1 do
+    VideoStreamIndex := -1;
+    AudioStreamIndex := -1;
+    VideoStream := nil;
+    av_st := FFormatCtx^.streams;
+    for i := 0 to FFormatCtx^.nb_streams - 1 do
       begin
         if av_st^^.codec^.codec_type = AVMEDIA_TYPE_VIDEO then
           begin
-            videoStreamIndex := av_st^^.index;
-            videoCodecCtx := av_st^^.codec;
-            videoStream := av_st^;
+            VideoStreamIndex := av_st^^.index;
+            FVideoCodecCtx := av_st^^.codec;
+            VideoStream := av_st^;
           end
         else if av_st^^.codec^.codec_type = AVMEDIA_TYPE_AUDIO then
           begin
-            audioStreamIndex := av_st^^.index;
-            audioCodecCtx := av_st^^.codec;
+            AudioStreamIndex := av_st^^.index;
+            FAudioCodecCtx := av_st^^.codec;
           end;
         inc(av_st);
       end;
 
-    if videoStreamIndex = -1 then
+    if VideoStreamIndex = -1 then
       begin
         RaiseInfo('Dont find a video stream');
         exit;
       end;
 
-    videoCodec := avcodec_find_decoder(videoCodecCtx^.codec_id);
-    if videoCodec = nil then
+    FVideoCodec := avcodec_find_decoder(FVideoCodecCtx^.codec_id);
+    if FVideoCodec = nil then
       begin
-        RaiseInfo('Unsupported videoCodec!');
+        RaiseInfo('Unsupported FVideoCodec!');
         exit;
       end;
 
-    if (useGPU_) and (CurrentPlatform in [epWin32, epWin64]) and (videoCodecCtx^.codec_id in [AV_CODEC_ID_H264, AV_CODEC_ID_HEVC]) then
+    if (useGPU_) and (CurrentPlatform in [epWin32, epWin64]) and (FVideoCodecCtx^.codec_id in [AV_CODEC_ID_H264, AV_CODEC_ID_HEVC]) then
       begin
         gpu_decodec := nil;
-        if videoCodecCtx^.codec_id = AV_CODEC_ID_H264 then
+        if FVideoCodecCtx^.codec_id = AV_CODEC_ID_H264 then
             gpu_decodec := avcodec_find_decoder_by_name('h264_cuvid')
-        else if videoCodecCtx^.codec_id = AV_CODEC_ID_HEVC then
+        else if FVideoCodecCtx^.codec_id = AV_CODEC_ID_HEVC then
             gpu_decodec := avcodec_find_decoder_by_name('hevc_cuvid');
 
-        if (avcodec_open2(videoCodecCtx, gpu_decodec, nil) < 0) then
+        if (avcodec_open2(FVideoCodecCtx, gpu_decodec, nil) < 0) then
           begin
-            if avcodec_open2(videoCodecCtx, videoCodec, nil) < 0 then
+            if avcodec_open2(FVideoCodecCtx, FVideoCodec, nil) < 0 then
               begin
-                RaiseInfo('Could not open videoCodec');
+                RaiseInfo('Could not open FVideoCodec');
                 exit;
               end;
           end
         else
           begin
-            videoCodec := gpu_decodec;
+            FVideoCodec := gpu_decodec;
             FWorkOnGPU := True;
           end;
       end
     else
       begin
-        if avcodec_open2(videoCodecCtx, videoCodec, nil) < 0 then
+        if avcodec_open2(FVideoCodecCtx, FVideoCodec, nil) < 0 then
           begin
-            RaiseInfo('Could not open videoCodec');
+            RaiseInfo('Could not open FVideoCodec');
             exit;
           end;
       end;
 
-    if audioStreamIndex >= 0 then
+    if AudioStreamIndex >= 0 then
       begin
-        audioCodec := avcodec_find_decoder(audioCodecCtx^.codec_id);
-        if audioCodec <> nil then
-            avcodec_open2(audioCodecCtx, audioCodec, nil);
+        FAudioCodec := avcodec_find_decoder(FAudioCodecCtx^.codec_id);
+        if FAudioCodec <> nil then
+            avcodec_open2(FAudioCodecCtx, FAudioCodec, nil);
       end;
+
+    Width := FVideoCodecCtx^.Width;
+    Height := FVideoCodecCtx^.Height;
 
     Frame := av_frame_alloc();
     FrameRGB := av_frame_alloc();
     if (FrameRGB = nil) or (Frame = nil) then
         RaiseInfo('Could not allocate AVFrame structure');
-    numByte := avpicture_get_size(AV_PIX_FMT_RGB32, videoCodecCtx^.Width, videoCodecCtx^.Height);
+    numByte := avpicture_get_size(AV_PIX_FMT_RGB32, Width, Height);
     FrameRGB_buffer := av_malloc(numByte * sizeof(Cardinal));
-    Sws_Ctx := sws_getContext(
-      videoCodecCtx^.Width,
-      videoCodecCtx^.Height,
-      videoCodecCtx^.pix_fmt,
-      videoCodecCtx^.Width,
-      videoCodecCtx^.Height,
+    FSWS_CTX := sws_getContext(
+      FVideoCodecCtx^.Width,
+      FVideoCodecCtx^.Height,
+      FVideoCodecCtx^.pix_fmt,
+      Width,
+      Height,
       AV_PIX_FMT_RGB32,
       SWS_FAST_BILINEAR,
       nil,
       nil,
       nil);
-    avpicture_fill(PAVPicture(FrameRGB), FrameRGB_buffer, AV_PIX_FMT_RGB32, videoCodecCtx^.Width, videoCodecCtx^.Height);
+    avpicture_fill(PAVPicture(FrameRGB), FrameRGB_buffer, AV_PIX_FMT_RGB32, Width, Height);
 
     AVPacket_ptr := av_packet_alloc();
-
-    Width := videoCodecCtx^.Width;
-    Height := videoCodecCtx^.Height;
 
     Current := 0;
     Current_Frame := 0;
@@ -448,43 +453,82 @@ begin
   if Frame <> nil then
       av_free(Frame);
 
-  if videoCodecCtx <> nil then
-      avcodec_close(videoCodecCtx);
+  if FVideoCodecCtx <> nil then
+      avcodec_close(FVideoCodecCtx);
 
-  if audioCodecCtx <> nil then
-      avcodec_close(audioCodecCtx);
+  if FAudioCodecCtx <> nil then
+      avcodec_close(FAudioCodecCtx);
 
-  if FormatCtx <> nil then
-      avformat_close_input(@FormatCtx);
+  if FFormatCtx <> nil then
+      avformat_close_input(@FFormatCtx);
 
-  if Sws_Ctx <> nil then
-      sws_freeContext(Sws_Ctx);
+  if FSWS_CTX <> nil then
+      sws_freeContext(FSWS_CTX);
 
-  FormatCtx := nil;
-  videoCodecCtx := nil;
-  audioCodecCtx := nil;
-  videoCodec := nil;
-  audioCodec := nil;
+  FFormatCtx := nil;
+  FVideoCodecCtx := nil;
+  FAudioCodecCtx := nil;
+  FVideoCodec := nil;
+  FAudioCodec := nil;
   Frame := nil;
   FrameRGB := nil;
+  FrameRGB_buffer := nil;
   AVPacket_ptr := nil;
-  Sws_Ctx := nil;
+  FSWS_CTX := nil;
+end;
+
+procedure TFFMPEG_Reader.ResetFit(NewWidth, NewHeight: integer);
+var
+  numByte: integer;
+  R: TRectV2;
+begin
+  if FrameRGB_buffer <> nil then
+      av_free(FrameRGB_buffer);
+  FrameRGB_buffer := nil;
+  if FrameRGB <> nil then
+      av_free(FrameRGB);
+  FrameRGB := nil;
+  if FSWS_CTX <> nil then
+      sws_freeContext(FSWS_CTX);
+  FSWS_CTX := nil;
+
+  R := FitRect(FVideoCodecCtx^.Width, FVideoCodecCtx^.Height, RectV2(0, 0, NewWidth, NewHeight));
+  Width := Round(RectWidth(R));
+  Height := Round(RectHeight(R));
+
+  FrameRGB := av_frame_alloc();
+  if (FrameRGB = nil) then
+      RaiseInfo('Could not allocate AVFrame structure');
+  numByte := avpicture_get_size(AV_PIX_FMT_RGB32, Width, Height);
+  FrameRGB_buffer := av_malloc(numByte * sizeof(Cardinal));
+  FSWS_CTX := sws_getContext(
+    FVideoCodecCtx^.Width,
+    FVideoCodecCtx^.Height,
+    FVideoCodecCtx^.pix_fmt,
+    Width,
+    Height,
+    AV_PIX_FMT_RGB32,
+    SWS_FAST_BILINEAR,
+    nil,
+    nil,
+    nil);
+  avpicture_fill(PAVPicture(FrameRGB), FrameRGB_buffer, AV_PIX_FMT_RGB32, Width, Height);
 end;
 
 function TFFMPEG_Reader.NextFrame(): Boolean;
 var
   done: Boolean;
-  r: integer;
+  R: integer;
 begin
   Result := False;
   done := False;
   try
-    while (av_read_frame(FormatCtx, AVPacket_ptr) >= 0) do
+    while (av_read_frame(FFormatCtx, AVPacket_ptr) >= 0) do
       begin
-        if (AVPacket_ptr^.stream_index = videoStreamIndex) then
+        if (AVPacket_ptr^.stream_index = VideoStreamIndex) then
           begin
-            r := avcodec_send_packet(videoCodecCtx, AVPacket_ptr);
-            if r < 0 then
+            R := avcodec_send_packet(FVideoCodecCtx, AVPacket_ptr);
+            if R < 0 then
               begin
                 if FWorkOnGPU then
                   begin
@@ -500,14 +544,14 @@ begin
             done := False;
             while True do
               begin
-                r := avcodec_receive_frame(videoCodecCtx, Frame);
+                R := avcodec_receive_frame(FVideoCodecCtx, Frame);
 
                 // success, a frame was returned
-                if r = 0 then
+                if R = 0 then
                     break;
 
                 // AVERROR(EAGAIN): output is not available in this state - user must try to send new input
-                if r = AVERROR_EAGAIN then
+                if R = AVERROR_EAGAIN then
                   begin
                     av_packet_unref(AVPacket_ptr);
                     Result := NextFrame();
@@ -515,14 +559,14 @@ begin
                   end;
 
                 // AVERROR_EOF: the decoder has been fully flushed, and there will be no more output frames
-                if r = AVERROR_EOF then
+                if R = AVERROR_EOF then
                   begin
-                    avcodec_flush_buffers(videoCodecCtx);
+                    avcodec_flush_buffers(FVideoCodecCtx);
                     continue;
                   end;
 
                 // error
-                if r < 0 then
+                if R < 0 then
                   begin
                     if FWorkOnGPU then
                       begin
@@ -554,17 +598,17 @@ end;
 function TFFMPEG_Reader.ReadFrame(output: TMemoryRaster; RasterizationCopy_: Boolean): Boolean;
 var
   done: Boolean;
-  r: integer;
+  R: integer;
 begin
   Result := False;
   done := False;
   try
-    while (av_read_frame(FormatCtx, AVPacket_ptr) >= 0) do
+    while (av_read_frame(FFormatCtx, AVPacket_ptr) >= 0) do
       begin
-        if (AVPacket_ptr^.stream_index = videoStreamIndex) then
+        if (AVPacket_ptr^.stream_index = VideoStreamIndex) then
           begin
-            r := avcodec_send_packet(videoCodecCtx, AVPacket_ptr);
-            if r < 0 then
+            R := avcodec_send_packet(FVideoCodecCtx, AVPacket_ptr);
+            if R < 0 then
               begin
                 if FWorkOnGPU then
                   begin
@@ -580,14 +624,14 @@ begin
             done := False;
             while True do
               begin
-                r := avcodec_receive_frame(videoCodecCtx, Frame);
+                R := avcodec_receive_frame(FVideoCodecCtx, Frame);
 
                 // success, a frame was returned
-                if r = 0 then
+                if R = 0 then
                     break;
 
                 // AVERROR(EAGAIN): output is not available in this state - user must try to send new input
-                if r = AVERROR_EAGAIN then
+                if R = AVERROR_EAGAIN then
                   begin
                     av_packet_unref(AVPacket_ptr);
                     Result := ReadFrame(output, RasterizationCopy_);
@@ -595,14 +639,14 @@ begin
                   end;
 
                 // AVERROR_EOF: the decoder has been fully flushed, and there will be no more output frames
-                if r = AVERROR_EOF then
+                if R = AVERROR_EOF then
                   begin
-                    avcodec_flush_buffers(videoCodecCtx);
+                    avcodec_flush_buffers(FVideoCodecCtx);
                     continue;
                   end;
 
                 // error
-                if r < 0 then
+                if R < 0 then
                   begin
                     if FWorkOnGPU then
                       begin
@@ -620,24 +664,24 @@ begin
             if (not done) then
               begin
                 sws_scale(
-                  Sws_Ctx,
+                  FSWS_CTX,
                   @Frame^.data,
                   @Frame^.linesize,
                   0,
-                  videoCodecCtx^.Height,
+                  FVideoCodecCtx^.Height,
                   @FrameRGB^.data,
                   @FrameRGB^.linesize);
 
                 if RasterizationCopy_ then
                   begin
-                    output.SetSize(videoCodecCtx^.Width, videoCodecCtx^.Height);
-                    CopyRColor(FrameRGB^.data[0]^, output.Bits^[0], videoCodecCtx^.Width * videoCodecCtx^.Height);
+                    output.SetSize(Width, Height);
+                    CopyPtr(FrameRGB^.data[0], @output.Bits^[0], FVideoCodecCtx^.Width * FVideoCodecCtx^.Height * 4);
                   end
                 else
-                    output.SetWorkMemory(FrameRGB^.data[0], videoCodecCtx^.Width, videoCodecCtx^.Height);
+                    output.SetWorkMemory(FrameRGB^.data[0], Width, Height);
 
-                if (AVPacket_ptr^.pts > 0) and (av_q2d(videoStream^.time_base) > 0) then
-                    Current := AVPacket_ptr^.pts * av_q2d(videoStream^.time_base);
+                if (AVPacket_ptr^.pts > 0) and (av_q2d(VideoStream^.time_base) > 0) then
+                    Current := AVPacket_ptr^.pts * av_q2d(VideoStream^.time_base);
                 done := True;
                 inc(Current_Frame);
               end;
@@ -661,22 +705,22 @@ begin
       OpenVideo(FVideoSource, FWorkOnGPU);
     end
   else
-      av_seek_frame(FormatCtx, -1, Round(second * AV_TIME_BASE), AVSEEK_FLAG_ANY);
+      av_seek_frame(FFormatCtx, -1, Round(second * AV_TIME_BASE), AVSEEK_FLAG_ANY);
 end;
 
 function TFFMPEG_Reader.Total: Double;
 begin
-  Result := umlMax(FormatCtx^.duration / AV_TIME_BASE, 0);
+  Result := umlMax(FFormatCtx^.duration / AV_TIME_BASE, 0);
 end;
 
 function TFFMPEG_Reader.CurrentStream_Total_Frame: int64;
 begin
-  Result := umlMax(videoStream^.nb_frames, 0);
+  Result := umlMax(VideoStream^.nb_frames, 0);
 end;
 
 function TFFMPEG_Reader.CurrentStream_PerSecond_Frame(): Double;
 begin
-  with videoStream^.r_frame_rate do
+  with VideoStream^.r_frame_rate do
       Result := umlMax(num / den, 0);
 end;
 
@@ -708,17 +752,17 @@ var
   tmp: Pointer;
   AV_Options: PPAVDictionary;
 begin
-  videoCodec := codec;
+  FVideoCodec := codec;
 
-  if videoCodec = nil then
+  if FVideoCodec = nil then
       RaiseInfo('no found decoder', []);
 
-  AVParser := av_parser_init(Ord(videoCodec^.id));
+  AVParser := av_parser_init(Ord(FVideoCodec^.id));
   if not assigned(AVParser) then
       RaiseInfo('Parser not found');
 
-  videoCodecCtx := avcodec_alloc_context3(videoCodec);
-  if not assigned(videoCodecCtx) then
+  FVideoCodecCtx := avcodec_alloc_context3(FVideoCodec);
+  if not assigned(FVideoCodecCtx) then
       RaiseInfo('Could not allocate video Codec context');
 
   AV_Options := nil;
@@ -726,7 +770,7 @@ begin
   av_dict_set(@AV_Options, 'buffer_size', tmp, 0);
   TPascalString.FreePlatformPChar(tmp);
 
-  if avcodec_open2(videoCodecCtx, videoCodec, @AV_Options) < 0 then
+  if avcodec_open2(FVideoCodecCtx, FVideoCodec, @AV_Options) < 0 then
       RaiseInfo('Could not open Codec.');
 
   AVPacket_ptr := av_packet_alloc();
@@ -736,14 +780,14 @@ end;
 constructor TFFMPEG_VideoStreamReader.Create;
 begin
   inherited Create;
-  videoCodecCtx := nil;
-  videoCodec := nil;
+  FVideoCodecCtx := nil;
+  FVideoCodec := nil;
   AVParser := nil;
   AVPacket_ptr := nil;
   Frame := nil;
   FrameRGB := nil;
   FrameRGB_buffer := nil;
-  Sws_Ctx := nil;
+  FSWS_CTX := nil;
 
   SwapBuff := TMemoryStream64.CustomCreate(128 * 1024);
   VideoRasterPool := TMemoryRasterList.Create;
@@ -816,8 +860,8 @@ begin
   if AVParser <> nil then
       av_parser_close(AVParser);
 
-  if videoCodecCtx <> nil then
-      avcodec_free_context(@videoCodecCtx);
+  if FVideoCodecCtx <> nil then
+      avcodec_free_context(@FVideoCodecCtx);
 
   if Frame <> nil then
       av_frame_free(@Frame);
@@ -828,20 +872,20 @@ begin
   if FrameRGB_buffer <> nil then
       av_free(FrameRGB_buffer);
 
-  if Sws_Ctx <> nil then
-      sws_freeContext(Sws_Ctx);
+  if FSWS_CTX <> nil then
+      sws_freeContext(FSWS_CTX);
 
   if FrameRGB <> nil then
       av_frame_free(@FrameRGB);
 
-  videoCodecCtx := nil;
-  videoCodec := nil;
+  FVideoCodecCtx := nil;
+  FVideoCodec := nil;
   AVParser := nil;
   AVPacket_ptr := nil;
   Frame := nil;
   FrameRGB := nil;
   FrameRGB_buffer := nil;
-  Sws_Ctx := nil;
+  FSWS_CTX := nil;
 
   SwapBuff.Clear;
   UnLockObject(SwapBuff);
@@ -853,27 +897,27 @@ var
 
   function decode(): Boolean;
   var
-    r: integer;
+    R: integer;
     numByte: integer;
     vr: TMemoryRaster;
     SaveToPool: Boolean;
   begin
     Result := False;
 
-    r := avcodec_send_packet(videoCodecCtx, AVPacket_ptr);
-    if r < 0 then
+    R := avcodec_send_packet(FVideoCodecCtx, AVPacket_ptr);
+    if R < 0 then
       begin
         RaiseInfo('Error sending a packet for decoding');
         exit;
       end;
 
-    while r >= 0 do
+    while R >= 0 do
       begin
-        r := avcodec_receive_frame(videoCodecCtx, Frame);
-        if (r = AVERROR_EAGAIN) or (r = AVERROR_EOF) then
+        R := avcodec_receive_frame(FVideoCodecCtx, Frame);
+        if (R = AVERROR_EAGAIN) or (R = AVERROR_EOF) then
             break;
 
-        if r < 0 then
+        if R < 0 then
           begin
             RaiseInfo('Error during decoding');
             exit;
@@ -886,16 +930,16 @@ var
                 av_frame_free(@FrameRGB);
             if FrameRGB_buffer <> nil then
                 av_free(FrameRGB_buffer);
-            if Sws_Ctx <> nil then
-                sws_freeContext(Sws_Ctx);
+            if FSWS_CTX <> nil then
+                sws_freeContext(FSWS_CTX);
 
             FrameRGB := av_frame_alloc();
             numByte := avpicture_get_size(AV_PIX_FMT_RGB32, Frame^.Width, Frame^.Height);
             FrameRGB_buffer := av_malloc(numByte * sizeof(Cardinal));
-            Sws_Ctx := sws_getContext(
+            FSWS_CTX := sws_getContext(
               Frame^.Width,
               Frame^.Height,
-              videoCodecCtx^.pix_fmt,
+              FVideoCodecCtx^.pix_fmt,
               Frame^.Width,
               Frame^.Height,
               AV_PIX_FMT_RGB32,
@@ -910,7 +954,7 @@ var
 
         try
           sws_scale(
-            Sws_Ctx,
+            FSWS_CTX,
             @Frame^.data,
             @Frame^.linesize,
             0,
@@ -941,7 +985,7 @@ var
   np: Pointer;
   nsiz: NativeUInt;
   bufPos: int64;
-  r: integer;
+  R: integer;
   nbuff: TMemoryStream64;
 begin
   decodeFrameNum := 0;
@@ -961,13 +1005,13 @@ begin
     bufPos := 0;
     while SwapBuff.Size - bufPos > 0 do
       begin
-        r := av_parser_parse2(AVParser, videoCodecCtx, @AVPacket_ptr^.data, @AVPacket_ptr^.Size,
+        R := av_parser_parse2(AVParser, FVideoCodecCtx, @AVPacket_ptr^.data, @AVPacket_ptr^.Size,
           SwapBuff.PositionAsPtr(bufPos), SwapBuff.Size - bufPos, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
 
-        if r < 0 then
+        if R < 0 then
             RaiseInfo('Error while parsing');
 
-        inc(bufPos, r);
+        inc(bufPos, R);
 
         if AVPacket_ptr^.Size <> 0 then
           if not decode() then
@@ -993,6 +1037,44 @@ begin
   Result := decodeFrameNum;
   av_packet_unref(AVPacket_ptr);
   DoWriteBufferAfter(np, nsiz, decodeFrameNum);
+end;
+
+function TFFMPEG_VideoStreamReader.WriteBuffer(stream_: TCoreClassStream): integer;
+const
+  C_Chunk_Buff_Size = 1 * 1024 * 1024;
+var
+  tempBuff: Pointer;
+  chunk: NativeInt;
+begin
+  if stream_ is TMemoryStream64 then
+    begin
+      Result := WriteBuffer(TMemoryStream64(stream_).Memory, stream_.Size);
+      exit;
+    end;
+  if stream_ is TMemoryStream then
+    begin
+      Result := WriteBuffer(TMemoryStream(stream_).Memory, stream_.Size);
+      exit;
+    end;
+
+  tempBuff := System.GetMemory(C_Chunk_Buff_Size);
+  stream_.Position := 0;
+  while (stream_.Position < stream_.Size) do
+    begin
+      chunk := umlMin(stream_.Size - stream_.Position, C_Chunk_Buff_Size);
+      if chunk <= 0 then
+          break;
+      stream_.Read(tempBuff^, chunk);
+      WriteBuffer(tempBuff, chunk);
+    end;
+  System.FreeMemory(tempBuff);
+end;
+
+function TFFMPEG_VideoStreamReader.DecodedRasterNum: integer;
+begin
+  LockObject(VideoRasterPool);
+  Result := VideoRasterPool.Count;
+  UnLockObject(VideoRasterPool);
 end;
 
 function TFFMPEG_VideoStreamReader.LockVideoPool: TMemoryRasterList;

@@ -68,6 +68,7 @@ var
   bak_event: TNotifyEvent;
   bak_progress: TProgressEvent;
 begin
+  mr.ReadyBits;
   bak_event := bmp.OnChange;
   bak_progress := bmp.OnProgress;
   bmp.OnChange := nil;

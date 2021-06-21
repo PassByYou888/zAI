@@ -878,7 +878,7 @@ begin
     begin
       rgbHnd := AI.Prepare_RGB_Image(p^.Data.Raster);
       for i := 0 to Length(spData.MMOD_Desc) - 1 do
-          spData.SP_Desc[i] := AI.SP_Process_Vec2(AI.Parallel_SP_Hnd, rgbHnd, spData.MMOD_Desc[i].R);
+          spData.SP_Desc[i] := AI.SP_ProcessRGB_Vec2(AI.Parallel_SP_Hnd, rgbHnd, spData.MMOD_Desc[i].R);
       AI.Close_RGB_Image(rgbHnd);
       Successed_ := True;
     end;

@@ -94,7 +94,7 @@
   {$R-}
   {$I-}
   {$S-}
-  {$OPTIMIZATION OFF}
+  {$OPTIMIZATION ON}
 {$ELSE FPC} { IF DELPHI }
   {$DEFINE Delphi}
 
@@ -255,6 +255,17 @@
   {$UNDEF JPEG_Debug}
 {$ENDIF DEBUG}
 
+{$IFDEF Parallel}
+  // TMemoryRaster Parallel switch.
+  {$UNDEF MemoryRaster_Parallel}
+  // TRasterVertex Parallel switch.
+  {$UNDEF Vertex_Parallel}
+  // TMorphomatics Parallel switch.
+  {$DEFINE Morphomatics_Parallel}
+  // TMorphologyBinaryzation Parallel switch.
+  {$DEFINE MorphologyBinaryzation_Parallel}
+{$ENDIF Parallel}
+
 {$HINTS OFF}
 {$C+} { Assertions }
 {$M-} { Run-Time Type Information }
@@ -295,3 +306,109 @@
 {$IFOPT Q+}
   {$DEFINE OverflowCheck}
 {$ENDIF}
+
+(*
+{$IFDEF FPC}
+  FPCGenericStructlist,
+{$ENDIF FPC}
+
+  {$IFDEF DEBUG}
+  {$ELSE DEBUG}
+  {$ENDIF DEBUG}
+
+  {$IFDEF FPC}
+  {$ELSE FPC}
+  {$ENDIF FPC}
+
+  {$IFDEF FPC}
+  {$ENDIF FPC}
+
+  {$IFDEF DELPHI}
+  {$ENDIF DELPHI}
+
+  {$IFDEF FPC}@{$ENDIF FPC}
+  {$IFDEF FPC}specialize {$ENDIF FPC}
+
+  {$IFNDEF FPC}
+  {$ENDIF FPC}
+
+  {$IFDEF CPU64}
+  {$ENDIF CPU64}
+
+  {$IFDEF JPEG_Debug}
+  {$ENDIF JPEG_Debug}
+
+  {$IFDEF Linux}
+  {$ELSE Linux}
+  {$ENDIF Linux}
+
+  {$IFDEF MSWINDOWS}
+  {$ELSE MSWINDOWS}
+  {$ENDIF MSWINDOWS}
+
+  {$IFDEF Parallel}
+  {$ELSE Parallel}
+  {$ENDIF Parallel}
+
+  {$IFNDEF Parallel}
+  {$ENDIF Parallel}
+
+  {$IFDEF SystemParallel}
+  {$ELSE SystemParallel}
+  {$ENDIF SystemParallel}
+
+  {$IFDEF initializationStatus}
+  {$ENDIF initializationStatus}
+
+  {$Region 'RegionName'}
+  {$EndRegion 'RegionName'}
+
+  {$IFDEF OverflowCheck}{$Q-}{$ENDIF}
+  {$IFDEF OverflowCheck}{$Q+}{$ENDIF}
+
+  {$IFDEF RangeCheck}{$R-}{$ENDIF}
+  {$IFDEF RangeCheck}{$R+}{$ENDIF}
+
+  {$IFDEF Z_AI_Dataset_Build_In}
+  {$ELSE Z_AI_Dataset_Build_In}
+  {$ENDIF Z_AI_Dataset_Build_In}
+
+  {$IFDEF SystemParallel}
+  {$ELSE SystemParallel}
+  {$ENDIF SystemParallel}
+
+  {$IFDEF MT19937SeedOnTComputeThreadIs0}
+  {$ELSE MT19937SeedOnTComputeThreadIs0}
+  {$ENDIF MT19937SeedOnTComputeThreadIs0}
+
+{$IFDEF Parallel}
+{$IFDEF FPC}
+  procedure Nested_ParallelFor(pass: Integer);
+  begin
+  end;
+{$ENDIF FPC}
+{$ELSE Parallel}
+  procedure DoFor();
+  var
+    pass: Integer;
+  begin
+    for pass:= 0 to Count - 1 do
+      begin
+      end;
+  end;
+{$ENDIF Parallel}
+
+{$IFDEF Parallel}
+{$IFDEF FPC}
+      FPCParallelFor(@Nested_ParallelFor, 0, Count - 1);
+{$ELSE FPC}
+      DelphiParallelFor(0, Count - 1, procedure(pass: Integer)
+        begin
+        end);
+{$ENDIF FPC}
+{$ELSE Parallel}
+      DoFor();
+{$ENDIF Parallel}
+
+*)
+

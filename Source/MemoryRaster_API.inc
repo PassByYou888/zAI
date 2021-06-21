@@ -989,10 +989,11 @@ begin
   FillPtr(@dest^[0], DestCount * SizeOf(TRColor), 0);
 
   for i := 0 to MaxCount_ - 1 do
-      dest^[i] :=
-      RColor(((i shr Max(0, GBits + BBits - 1)) and (1 shl RBits - 1)) * $FF div (1 shl RBits - 1),
+      dest^[i] := RColor(
+      ((i shr Max(0, GBits + BBits - 1)) and (1 shl RBits - 1)) * $FF div (1 shl RBits - 1),
       ((i shr Max(0, BBits - 1)) and (1 shl GBits - 1)) * $FF div (1 shl GBits - 1),
-      ((i shr 0) and (1 shl BBits - 1)) * $FF div (1 shl BBits - 1));
+      ((i shr 0) and (1 shl BBits - 1)) * $FF div (1 shl BBits - 1)
+      );
 end;
 {$IFDEF OverflowCheck}{$Q+}{$ENDIF}
 {$IFDEF RangeCheck}{$R+}{$ENDIF}
@@ -1064,15 +1065,15 @@ end;
 
 function ComputeSize(const MAX_Width, MAX_Height: Integer; var width, height: Integer): TGeoFloat;
 var
-  fw, fh: TGeoFloat;
+  FW, FH: TGeoFloat;
 begin
-  fw := MAX_Width / width;
-  fh := MAX_Height / height;
+  FW := MAX_Width / width;
+  FH := MAX_Height / height;
 
-  if fw < fh then
-      Result := fw
+  if FW < FH then
+      Result := FW
   else
-      Result := fh;
+      Result := FH;
 
   width := Trunc(width * Result);
   height := Trunc(height * Result);
@@ -1650,10 +1651,10 @@ begin
           b2 := p2^[X] and $FF;
 
           // composition
-          A := (A0 + a2 + A1Prev + A1Next) div 4;
-          R := (r0 + r2 + R1Prev + R1Next) div 4;
-          G := (G0 + g2 + G1Prev + G1Next) div 4;
-          B := (b0 + b2 + B1Prev + B1Next) div 4;
+          A := (A0 + a2 + A1Prev + A1Next) shr 2;
+          R := (r0 + r2 + R1Prev + R1Next) shr 2;
+          G := (G0 + g2 + G1Prev + G1Next) shr 2;
+          B := (b0 + b2 + B1Prev + B1Next) shr 2;
 
           p1^[X] := (A shl 24) or (R shl 16) or (G shl 8) or B;
         end;
@@ -2350,7 +2351,7 @@ end;
 
 procedure FillBlackGrayBackgroundTexture(bk: TMemoryRaster; block_size: Integer);
 begin
-  FillBlackGrayBackgroundTexture(bk, block_size, RColorF(0.15,0.15,0.15), RColorF(0.25,0.25,0.25), RColorF(0.2,0.2,0.2));
+  FillBlackGrayBackgroundTexture(bk, block_size, RColorF(0.15, 0.15, 0.15), RColorF(0.25, 0.25, 0.25), RColorF(0.2, 0.2, 0.2));
 end;
 
 procedure ColorToTransparent(SrcColor: TRColor; Src, Dst: TMemoryRaster);
@@ -2727,7 +2728,7 @@ end;
 function MergeReg(f, B: TRColor): TRColor;
 var
   FA, BA, WA: TRColor;
-  fw, BW: PByteArray;
+  FW, BW: PByteArray;
   FX: TRColorEntry absolute f;
   BX: TRColorEntry absolute B;
   RX: TRColorEntry absolute Result;
@@ -2744,11 +2745,11 @@ begin
     begin
       RX.A := DivTable[FA xor $FF, BA xor $FF] xor $FF;
       WA := RcTable[RX.A, FA];
-      fw := @DivTable[WA];
+      FW := @DivTable[WA];
       BW := @DivTable[WA xor $FF];
-      RX.R := fw^[FX.R] + BW^[BX.R];
-      RX.G := fw^[FX.G] + BW^[BX.G];
-      RX.B := fw^[FX.B] + BW^[BX.B];
+      RX.R := FW^[FX.R] + BW^[BX.R];
+      RX.G := FW^[FX.G] + BW^[BX.G];
+      RX.B := FW^[FX.B] + BW^[BX.B];
     end;
 end;
 
@@ -3280,7 +3281,7 @@ begin
     end
   else
     begin
-      memsiz := head.width * head.height + (head.width * head.height) div 2;
+      memsiz := head.width * head.height + (head.width * head.height) shr 1;
       luma_ptr := GetMemory(memsiz);
       sour.read(luma_ptr^, memsiz);
       needFree := True;
@@ -3289,9 +3290,9 @@ begin
   u_ptr := luma_ptr;
   inc(u_ptr, head.width * head.height);
   v_ptr := u_ptr;
-  inc(v_ptr, (head.width * head.height) div 4);
+  inc(v_ptr, (head.width * head.height) shr 2);
   stride := head.width;
-  stride_c := head.width div 2;
+  stride_c := head.width shr 1;
   YV12ToRaster(luma_ptr, u_ptr, v_ptr, head.width, head.height, stride, stride_c, dest, False, False);
 
   if needFree then
@@ -3313,12 +3314,12 @@ begin
   head.width := (sour.width shr 1) * 2;
   head.height := (sour.height shr 1) * 2;
 
-  memsiz := head.width * head.height + (head.width * head.height) div 2;
+  memsiz := head.width * head.height + (head.width * head.height) shr 1;
   luma_ptr := GetMemory(memsiz);
   u_ptr := luma_ptr;
   inc(u_ptr, head.width * head.height);
   v_ptr := u_ptr;
-  inc(v_ptr, (head.width * head.height) div 4);
+  inc(v_ptr, (head.width * head.height) shr 2);
   RasterToYV12(sour, luma_ptr, u_ptr, v_ptr, head.width, head.height);
 
   dest.write(head, SizeOf(head));

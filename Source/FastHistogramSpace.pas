@@ -343,10 +343,10 @@ procedure THOG.ComputeRGB_Diff(img: TMemoryRaster; const M: PLMatrix);
 
 
 begin
-{$IFDEF Parallel}
-{$IFDEF FPC}
+  {$IFDEF Parallel}
+  {$IFDEF FPC}
   FPCParallelFor(@Nested_ParallelFor, 0, height - 1);
-{$ELSE FPC}
+  {$ELSE FPC}
   DelphiParallelFor(0, height - 1, procedure(pass: Integer)
     var
       x, xDiffs, yDiffs, magni: TLInt;
@@ -380,18 +380,18 @@ begin
             end;
         end;
     end);
-{$ENDIF FPC}
-{$ELSE Parallel}
+  {$ENDIF FPC}
+  {$ELSE Parallel}
   DoFor;
-{$ENDIF Parallel}
+  {$ENDIF Parallel}
 end;
 
 procedure THOG.ComputeHistogram(const AntiLight: Boolean; const oriH, oriF: PLIMatrix; const BW: PLMatrix; const itp: THOGTable.PItpRecArray);
 var
   setoff: TLInt;
 
-{$IFDEF Parallel}
-{$IFDEF FPC}
+  {$IFDEF Parallel}
+  {$IFDEF FPC}
   procedure Nested_ParallelFor_Weight(y: Integer);
   var
     x, n: TLInt;
@@ -486,7 +486,7 @@ var
       end;
   end;
 {$ENDIF FPC}
-{$ELSE Parallel}
+  {$ELSE Parallel}
   procedure DoFor_Weight;
   var
     y, x, n: TLInt;
@@ -589,12 +589,12 @@ var
 begin
   setoff := ori[0, 0].nOriH + ori[0, 0].nOriF;
 
-{$IFDEF Parallel}
-{$IFDEF FPC}
+  {$IFDEF Parallel}
+  {$IFDEF FPC}
   FPCParallelFor(@Nested_ParallelFor_Weight, 0, height - 1);
   FPCParallelFor(@Nested_ParallelFor_normH, 0, hSizY - 1);
   FPCParallelFor(@Nested_ParallelFor_Ori, 1, nCY - 1);
-{$ELSE FPC}
+  {$ELSE FPC}
   DelphiParallelFor(0, height - 1, procedure(y: Integer)
     var
       x, n: TLInt;
@@ -688,12 +688,12 @@ begin
             end;
         end;
     end);
-{$ENDIF FPC}
-{$ELSE Parallel}
+  {$ENDIF FPC}
+  {$ELSE Parallel}
   DoFor_Weight;
   DoFor_normH;
   DoFor_Ori;
-{$ENDIF Parallel}
+  {$ENDIF Parallel}
 end;
 
 constructor THOG.Create(Table: THOGTable; img: TMemoryRaster);

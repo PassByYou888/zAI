@@ -102,7 +102,4 @@ begin
   Result := FYW.PerSecondFrame;
 end;
 
-end.  
- 
- 
- 
+end.

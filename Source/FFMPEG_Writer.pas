@@ -27,15 +27,16 @@ uses SysUtils, CoreClasses, PascalStrings, UnicodeMixedLib, MemoryStream64, Memo
 type
   TFFMPEG_Writer = class(TCoreClassObject)
   protected
-    videoCodec: PAVCodec;
-    videoCodecCtx: PAVCodecContext;
-    AVPacket_ptr: PAVPacket;
+    VideoCodec: PAVCodec;
+    VideoCodecCtx: PAVCodecContext;
+    AVPacket_Ptr: PAVPacket;
     Frame, FrameRGB: PAVFrame;
-    Sws_Ctx: PSwsContext;
+    SWS_CTX: PSwsContext;
     FOutput: TCoreClassStream;
     FAutoFreeOutput: Boolean;
     FPixelFormat: TAVPixelFormat;
     FLastWidth, FLastHeight: Integer;
+    FEncodeNum: Integer;
     function InternalOpenCodec(const codec: PAVCodec; const Width, Height, PSF, gop, bFrame, quantizerMin, quantizerMax: Integer; const Bitrate: Int64): Boolean;
   public
     constructor Create(output_: TCoreClassStream);
@@ -52,9 +53,11 @@ type
     function OpenJPEGCodec(const Width, Height: Integer): Boolean; overload;
     procedure CloseCodec;
 
-    function EncodeRaster(raster: TMemoryRaster): Boolean;
+    function EncodeRaster(raster: TMemoryRaster; var Updated: Integer): Boolean; overload;
+    function EncodeRaster(raster: TMemoryRaster): Boolean; overload;
     procedure Flush;
 
+    property EncodeNum: Integer read FEncodeNum;
     function Size: Int64;
     function LockOutput: TCoreClassStream;
     procedure UnLockOutoput;
@@ -71,36 +74,36 @@ var
   r: Integer;
 begin
   Result := False;
-  videoCodec := codec;
-  if not Assigned(videoCodec) then
+  VideoCodec := codec;
+  if not Assigned(VideoCodec) then
     begin
       DoStatus('not found Codec.');
       exit;
     end;
 
-  videoCodecCtx := avcodec_alloc_context3(videoCodec);
-  if not Assigned(videoCodecCtx) then
+  VideoCodecCtx := avcodec_alloc_context3(VideoCodec);
+  if not Assigned(VideoCodecCtx) then
     begin
       DoStatus('Could not allocate video codec context');
       exit;
     end;
 
-  AVPacket_ptr := av_packet_alloc();
+  AVPacket_Ptr := av_packet_alloc();
 
-  videoCodecCtx^.bit_rate := Bitrate;
-  videoCodecCtx^.Width := Width - (Width mod 2);
-  videoCodecCtx^.Height := Height - (Height mod 2);
-  videoCodecCtx^.time_base.num := 1;
-  videoCodecCtx^.time_base.den := PSF;
-  videoCodecCtx^.framerate.num := PSF;
-  videoCodecCtx^.framerate.den := 1;
-  videoCodecCtx^.gop_size := gop;
-  videoCodecCtx^.max_b_frames := bFrame;
-  videoCodecCtx^.pix_fmt := FPixelFormat;
-  videoCodecCtx^.qmin := quantizerMin;
-  videoCodecCtx^.qmax := quantizerMax;
+  VideoCodecCtx^.bit_rate := Bitrate;
+  VideoCodecCtx^.Width := Width - (Width mod 2);
+  VideoCodecCtx^.Height := Height - (Height mod 2);
+  VideoCodecCtx^.time_base.num := 1;
+  VideoCodecCtx^.time_base.den := PSF;
+  VideoCodecCtx^.framerate.num := PSF;
+  VideoCodecCtx^.framerate.den := 1;
+  VideoCodecCtx^.gop_size := gop;
+  VideoCodecCtx^.max_b_frames := bFrame;
+  VideoCodecCtx^.pix_fmt := FPixelFormat;
+  VideoCodecCtx^.qmin := quantizerMin;
+  VideoCodecCtx^.qmax := quantizerMax;
 
-  r := avcodec_open2(videoCodecCtx, videoCodec, nil);
+  r := avcodec_open2(VideoCodecCtx, VideoCodec, nil);
   if r < 0 then
     begin
       DoStatus('Could not open codec: %s', [av_err2str(r)]);
@@ -116,9 +119,9 @@ begin
       exit;
     end;
 
-  Frame^.format := Ord(videoCodecCtx^.pix_fmt);
-  Frame^.Width := videoCodecCtx^.Width;
-  Frame^.Height := videoCodecCtx^.Height;
+  Frame^.format := Ord(VideoCodecCtx^.pix_fmt);
+  Frame^.Width := VideoCodecCtx^.Width;
+  Frame^.Height := VideoCodecCtx^.Height;
   Frame^.pts := 0;
 
   // alignment
@@ -133,7 +136,7 @@ begin
   FrameRGB^.Width := Frame^.Width;
   FrameRGB^.Height := Frame^.Height;
 
-  Sws_Ctx := sws_getContext(
+  SWS_CTX := sws_getContext(
     FrameRGB^.Width,
     FrameRGB^.Height,
     AV_PIX_FMT_RGB32,
@@ -147,23 +150,25 @@ begin
 
   FLastWidth := Width;
   FLastHeight := Height;
+  FEncodeNum := 0;
   Result := True;
 end;
 
 constructor TFFMPEG_Writer.Create(output_: TCoreClassStream);
 begin
   inherited Create;
-  videoCodecCtx := nil;
-  videoCodec := nil;
-  AVPacket_ptr := nil;
+  VideoCodecCtx := nil;
+  VideoCodec := nil;
+  AVPacket_Ptr := nil;
   Frame := nil;
   FrameRGB := nil;
-  Sws_Ctx := nil;
+  SWS_CTX := nil;
   FOutput := output_;
   FAutoFreeOutput := False;
   FPixelFormat := AV_PIX_FMT_YUV420P;
   FLastWidth := 0;
   FLastHeight := 0;
+  FEncodeNum := 0;
 end;
 
 destructor TFFMPEG_Writer.Destroy;
@@ -226,30 +231,30 @@ end;
 
 procedure TFFMPEG_Writer.CloseCodec;
 begin
-  if videoCodecCtx <> nil then
-      avcodec_free_context(@videoCodecCtx);
+  if VideoCodecCtx <> nil then
+      avcodec_free_context(@VideoCodecCtx);
 
   if Frame <> nil then
       av_frame_free(@Frame);
 
-  if AVPacket_ptr <> nil then
-      av_packet_free(@AVPacket_ptr);
+  if AVPacket_Ptr <> nil then
+      av_packet_free(@AVPacket_Ptr);
 
-  if Sws_Ctx <> nil then
-      sws_freeContext(Sws_Ctx);
+  if SWS_CTX <> nil then
+      sws_freeContext(SWS_CTX);
 
   if FrameRGB <> nil then
       av_frame_free(@FrameRGB);
 
-  videoCodecCtx := nil;
-  videoCodec := nil;
-  AVPacket_ptr := nil;
+  VideoCodecCtx := nil;
+  VideoCodec := nil;
+  AVPacket_Ptr := nil;
   Frame := nil;
   FrameRGB := nil;
-  Sws_Ctx := nil;
+  SWS_CTX := nil;
 end;
 
-function TFFMPEG_Writer.EncodeRaster(raster: TMemoryRaster): Boolean;
+function TFFMPEG_Writer.EncodeRaster(raster: TMemoryRaster; var Updated: Integer): Boolean;
 var
   r: Integer;
 begin
@@ -258,13 +263,13 @@ begin
       exit;
   if raster = nil then
       exit;
-  if Sws_Ctx = nil then
+  if SWS_CTX = nil then
       exit;
   if Frame = nil then
       exit;
-  if videoCodecCtx = nil then
+  if VideoCodecCtx = nil then
       exit;
-  if AVPacket_ptr = nil then
+  if AVPacket_Ptr = nil then
       exit;
 
   LockObject(FOutput);
@@ -277,7 +282,7 @@ begin
 
     // transform BGRA to YV420
     sws_scale(
-      Sws_Ctx,
+      SWS_CTX,
       @FrameRGB^.data,
       @FrameRGB^.linesize,
       0,
@@ -293,7 +298,7 @@ begin
         exit;
       end;
 
-    r := avcodec_send_frame(videoCodecCtx, Frame);
+    r := avcodec_send_frame(VideoCodecCtx, Frame);
     if r < 0 then
       begin
         DoStatus('Error sending a frame for encoding');
@@ -305,7 +310,7 @@ begin
 
     while r >= 0 do
       begin
-        r := avcodec_receive_packet(videoCodecCtx, AVPacket_ptr);
+        r := avcodec_receive_packet(VideoCodecCtx, AVPacket_Ptr);
         if (r = AVERROR_EAGAIN) or (r = AVERROR_EOF) then
             Break;
         if r < 0 then
@@ -314,31 +319,62 @@ begin
             exit;
           end;
 
-        FOutput.Write(AVPacket_ptr^.data^, AVPacket_ptr^.Size);
-        av_packet_unref(AVPacket_ptr);
+        FOutput.Write(AVPacket_Ptr^.data^, AVPacket_Ptr^.Size);
+        inc(Updated);
+        av_packet_unref(AVPacket_Ptr);
       end;
     Result := True;
     AtomInc(Frame^.pts);
   finally
-      UnLockObject(FOutput);
+    AtomInc(FEncodeNum);
+    UnLockObject(FOutput);
   end;
+end;
+
+function TFFMPEG_Writer.EncodeRaster(raster: TMemoryRaster): Boolean;
+var
+  Updated: Integer;
+begin
+  Updated := 0;
+  Result := EncodeRaster(raster, Updated);
 end;
 
 procedure TFFMPEG_Writer.Flush;
 var
-  buff: array [0 .. 3] of Byte;
+  r: Integer;
 begin
   LockObject(FOutput);
   try
+    (*
+      avcodec_send_frame(VideoCodecCtx, here It can be NULL), in which case it is considered a flush packet.
+      This signals the end of the stream. If the encoder still has packets buffered,
+      it will return them after this call.
+      Once flushing mode has been entered, additional flush packets are ignored, and sending frames will return AVERROR_EOF.
+    *)
+    r := avcodec_send_frame(VideoCodecCtx, nil);
+    if r < 0 then
+      begin
+        DoStatus('Error sending eof frame');
+        exit;
+      end;
+
     // seek stream to end
     FOutput.Position := FOutput.Size;
 
-    buff[0] := 0;
-    buff[1] := 0;
-    buff[2] := 1;
-    buff[3] := $B7;
+    while r >= 0 do
+      begin
+        r := avcodec_receive_packet(VideoCodecCtx, AVPacket_Ptr);
+        if (r = AVERROR_EAGAIN) or (r = AVERROR_EOF) then
+            Break;
+        if r < 0 then
+          begin
+            DoStatus('Error during encoding');
+            Break;
+          end;
 
-    FOutput.Write(buff[0], 4);
+        FOutput.Write(AVPacket_Ptr^.data^, AVPacket_Ptr^.Size);
+        av_packet_unref(AVPacket_Ptr);
+      end;
   finally
       UnLockObject(FOutput);
   end;

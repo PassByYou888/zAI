@@ -31046,6 +31046,9 @@ begin
   sws_get_class := GetExtProc_SWSCALE_LIBNAME(_PU + 'sws_get_class');
 {$ENDIF API_Dynamic}
   av_register_all();
+  avformat_network_init();
+  avdevice_register_all();
+  avfilter_register_all();
 end;
 
 procedure Free_ffmpeg();
@@ -31055,6 +31058,7 @@ begin
     (AVFORMAT_LIBNAME_HND = 0) or (AVFILTER_LIBNAME_HND = 0) or
     (AVDEVICE_LIBNAME_HND = 0) or (SWRESAMPLE_LIBNAME_HND = 0) or (SWSCALE_LIBNAME_HND = 0) then
       exit;
+  avformat_network_deinit();
 
   av_reduce := nil;
   av_nearer_q := nil;
@@ -31889,6 +31893,8 @@ begin
   FreeLibrary(AVDEVICE_LIBNAME_HND);
   FreeLibrary(SWRESAMPLE_LIBNAME_HND);
   FreeLibrary(SWSCALE_LIBNAME_HND);
+{$ELSE API_Dynamic}
+  avformat_network_deinit();
 {$ENDIF API_Dynamic}
 end;
 

@@ -692,7 +692,7 @@ type
   TMemoryRaster2DArray = array of TMemoryRasterArray;
   TRaster2DArray = TMemoryRaster2DArray;
   TRasterMatrix = TMemoryRaster2DArray;
-
+  TMemoryRaster2DMatrix = class;
   TMemoryRasterList_Decl = {$IFDEF FPC}specialize {$ENDIF FPC} TGenericsList<TMemoryRaster>;
 
   TMemoryRasterList = class(TMemoryRasterList_Decl)
@@ -708,6 +708,8 @@ type
     procedure Remove(obj: TMemoryRaster);
     procedure Delete(index: Integer);
     procedure Clear;
+    procedure AddRasterList(L_: TMemoryRasterList);
+    procedure AddRaster2DMatrix(M_: TMemoryRaster2DMatrix);
 
     function BuildArray: TMemoryRasterArray;
     procedure Clean;
@@ -727,6 +729,7 @@ type
     procedure Remove(obj: TMemoryRasterList);
     procedure Delete(index: Integer);
     procedure Clear;
+    procedure AddRaster2DMatrix(M_: TMemoryRaster2DMatrix);
 
     function BuildArray: TMemoryRaster2DArray;
     procedure Clean;
@@ -1770,8 +1773,8 @@ procedure BlockTransfer(Dst: TMemoryRaster; Dstx: Integer; Dsty: Integer; DstCli
 
 procedure FillRasterColor(BitPtr: Pointer; Count: Cardinal; Value: TRasterColor);
 procedure CopyRasterColor(const Source; var dest; Count: Cardinal);
-function RandomRasterColor(rand: TRandom; const A_, min_, max_: Byte): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-function RandomRasterColor(const A_, min_, max_: Byte): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function RandomRasterColor(rand: TRandom; const A_, Min_, Max_: Byte): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function RandomRasterColor(const A_, Min_, Max_: Byte): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RandomRasterColor(const A: Byte): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RandomRasterColor(): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RandomRasterColorF(const minR, maxR, minG, maxG, minB, maxB, minA, maxA: TGeoFloat): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
@@ -1797,8 +1800,8 @@ function SetRasterColorAlpha(const C: TRasterColor; const A: Byte): TRColor; {$I
 
 procedure FillRColor(BitPtr: Pointer; Count: Cardinal; Value: TRColor);
 procedure CopyRColor(const Source; var dest; Count: Cardinal);
-function RandomRColor(rand: TRandom; const A_, min_, max_: Byte): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
-function RandomRColor(const A_, min_, max_: Byte): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function RandomRColor(rand: TRandom; const A_, Min_, Max_: Byte): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
+function RandomRColor(const A_, Min_, Max_: Byte): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RandomRColor(const A: Byte): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RandomRColor(): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
 function RandomRColorF(const minR, maxR, minG, maxG, minB, maxB, minA, maxA: TGeoFloat): TRColor; overload; {$IFDEF INLINE_ASM} inline; {$ENDIF}
@@ -2033,6 +2036,162 @@ const
     'Magenta',
     'mpYellow'
     );
+
+  // Some predefined color constants
+  rcBlack32 = TRColor($FF000000);
+  rcDimGray32 = TRColor($FF3F3F3F);
+  rcGray32 = TRColor($FF7F7F7F);
+  rcLightGray32 = TRColor($FFBFBFBF);
+  rcWhite32 = TRColor($FFFFFFFF);
+  rcMaroon32 = TRColor($FF7F0000);
+  rcGreen32 = TRColor($FF007F00);
+  rcOlive32 = TRColor($FF7F7F00);
+  rcNavy32 = TRColor($FF00007F);
+  rcPurple32 = TRColor($FF7F007F);
+  rcTeal32 = TRColor($FF007F7F);
+  rcRed32 = TRColor($FFFF0000);
+  rcLime32 = TRColor($FF00FF00);
+  rcYellow32 = TRColor($FFFFFF00);
+  rcBlue32 = TRColor($FF0000FF);
+  rcFuchsia32 = TRColor($FFFF00FF);
+  rcAqua32 = TRColor($FF00FFFF);
+  rcAliceBlue32 = TRColor($FFF0F8FF);
+  rcAntiqueWhite32 = TRColor($FFFAEBD7);
+  rcAquamarine32 = TRColor($FF7FFFD4);
+  rcAzure32 = TRColor($FFF0FFFF);
+  rcBeige32 = TRColor($FFF5F5DC);
+  rcBisque32 = TRColor($FFFFE4C4);
+  rcBlancheDalmond32 = TRColor($FFFFEBCD);
+  rcBlueViolet32 = TRColor($FF8A2BE2);
+  rcBrown32 = TRColor($FFA52A2A);
+  rcBurlyWood32 = TRColor($FFDEB887);
+  rcCadetblue32 = TRColor($FF5F9EA0);
+  rcChartReuse32 = TRColor($FF7FFF00);
+  rcChocolate32 = TRColor($FFD2691E);
+  rcCoral32 = TRColor($FFFF7F50);
+  rcCornFlowerBlue32 = TRColor($FF6495ED);
+  rcCornSilk32 = TRColor($FFFFF8DC);
+  rcCrimson32 = TRColor($FFDC143C);
+  rcDarkBlue32 = TRColor($FF00008B);
+  rcDarkCyan32 = TRColor($FF008B8B);
+  rcDarkGoldenRod32 = TRColor($FFB8860B);
+  rcDarkGray32 = TRColor($FFA9A9A9);
+  rcDarkGreen32 = TRColor($FF006400);
+  rcDarkGrey32 = TRColor($FFA9A9A9);
+  rcDarkKhaki32 = TRColor($FFBDB76B);
+  rcDarkMagenta32 = TRColor($FF8B008B);
+  rcDarkOliveGreen32 = TRColor($FF556B2F);
+  rcDarkOrange32 = TRColor($FFFF8C00);
+  rcDarkOrchid32 = TRColor($FF9932CC);
+  rcDarkRed32 = TRColor($FF8B0000);
+  rcDarkSalmon32 = TRColor($FFE9967A);
+  rcDarkSeaGreen32 = TRColor($FF8FBC8F);
+  rcDarkSlateBlue32 = TRColor($FF483D8B);
+  rcDarkSlateGray32 = TRColor($FF2F4F4F);
+  rcDarkSlateGrey32 = TRColor($FF2F4F4F);
+  rcDarkTurquoise32 = TRColor($FF00CED1);
+  rcDarkViolet32 = TRColor($FF9400D3);
+  rcDeepPink32 = TRColor($FFFF1493);
+  rcDeepSkyBlue32 = TRColor($FF00BFFF);
+  rcDodgerBlue32 = TRColor($FF1E90FF);
+  rcFireBrick32 = TRColor($FFB22222);
+  rcFloralWhite32 = TRColor($FFFFFAF0);
+  rcGainsBoro32 = TRColor($FFDCDCDC);
+  rcGhostWhite32 = TRColor($FFF8F8FF);
+  rcGold32 = TRColor($FFFFD700);
+  rcGoldenRod32 = TRColor($FFDAA520);
+  rcGreenYellow32 = TRColor($FFADFF2F);
+  rcGrey32 = TRColor($FF808080);
+  rcHoneyDew32 = TRColor($FFF0FFF0);
+  rcHotPink32 = TRColor($FFFF69B4);
+  rcIndianRed32 = TRColor($FFCD5C5C);
+  rcIndigo32 = TRColor($FF4B0082);
+  rcIvory32 = TRColor($FFFFFFF0);
+  rcKhaki32 = TRColor($FFF0E68C);
+  rcLavender32 = TRColor($FFE6E6FA);
+  rcLavenderBlush32 = TRColor($FFFFF0F5);
+  rcLawnGreen32 = TRColor($FF7CFC00);
+  rcLemonChiffon32 = TRColor($FFFFFACD);
+  rcLightBlue32 = TRColor($FFADD8E6);
+  rcLightCoral32 = TRColor($FFF08080);
+  rcLightCyan32 = TRColor($FFE0FFFF);
+  rcLightGoldenRodYellow32 = TRColor($FFFAFAD2);
+  rcLightGreen32 = TRColor($FF90EE90);
+  rcLightGrey32 = TRColor($FFD3D3D3);
+  rcLightPink32 = TRColor($FFFFB6C1);
+  rcLightSalmon32 = TRColor($FFFFA07A);
+  rcLightSeagreen32 = TRColor($FF20B2AA);
+  rcLightSkyblue32 = TRColor($FF87CEFA);
+  rcLightSlategray32 = TRColor($FF778899);
+  rcLightSlategrey32 = TRColor($FF778899);
+  rcLightSteelblue32 = TRColor($FFB0C4DE);
+  rcLightYellow32 = TRColor($FFFFFFE0);
+  rcLtGray32 = TRColor($FFC0C0C0);
+  rcMedGray32 = TRColor($FFA0A0A4);
+  rcDkGray32 = TRColor($FF808080);
+  rcMoneyGreen32 = TRColor($FFC0DCC0);
+  rcLegacySkyBlue32 = TRColor($FFA6CAF0);
+  rcCream32 = TRColor($FFFFFBF0);
+  rcLimeGreen32 = TRColor($FF32CD32);
+  rcLinen32 = TRColor($FFFAF0E6);
+  rcMediumAquamarine32 = TRColor($FF66CDAA);
+  rcMediumBlue32 = TRColor($FF0000CD);
+  rcMediumOrchid32 = TRColor($FFBA55D3);
+  rcMediumPurple32 = TRColor($FF9370DB);
+  rcMediumSeaGreen32 = TRColor($FF3CB371);
+  rcMediumSlateBlue32 = TRColor($FF7B68EE);
+  rcMediumSpringGreen32 = TRColor($FF00FA9A);
+  rcMediumTurquoise32 = TRColor($FF48D1CC);
+  rcMediumVioletRed32 = TRColor($FFC71585);
+  rcMidnightBlue32 = TRColor($FF191970);
+  rcMintCream32 = TRColor($FFF5FFFA);
+  rcMistyRose32 = TRColor($FFFFE4E1);
+  rcMoccasin32 = TRColor($FFFFE4B5);
+  rcNavajoWhite32 = TRColor($FFFFDEAD);
+  rcOldLace32 = TRColor($FFFDF5E6);
+  rcOliveDrab32 = TRColor($FF6B8E23);
+  rcOrange32 = TRColor($FFFFA500);
+  rcOrangeRed32 = TRColor($FFFF4500);
+  rcOrchid32 = TRColor($FFDA70D6);
+  rcPaleGoldenRod32 = TRColor($FFEEE8AA);
+  rcPaleGreen32 = TRColor($FF98FB98);
+  rcPaleTurquoise32 = TRColor($FFAFEEEE);
+  rcPaleVioletred32 = TRColor($FFDB7093);
+  rcPapayaWhip32 = TRColor($FFFFEFD5);
+  rcPeachPuff32 = TRColor($FFFFDAB9);
+  rcPeru32 = TRColor($FFCD853F);
+  rcPlum32 = TRColor($FFDDA0DD);
+  rcPowderBlue32 = TRColor($FFB0E0E6);
+  rcRosyBrown32 = TRColor($FFBC8F8F);
+  rcRoyalBlue32 = TRColor($FF4169E1);
+  rcSaddleBrown32 = TRColor($FF8B4513);
+  rcSalmon32 = TRColor($FFFA8072);
+  rcSandyBrown32 = TRColor($FFF4A460);
+  rcSeaGreen32 = TRColor($FF2E8B57);
+  rcSeaShell32 = TRColor($FFFFF5EE);
+  rcSienna32 = TRColor($FFA0522D);
+  rcSilver32 = TRColor($FFC0C0C0);
+  rcSkyblue32 = TRColor($FF87CEEB);
+  rcSlateBlue32 = TRColor($FF6A5ACD);
+  rcSlateGray32 = TRColor($FF708090);
+  rcSlateGrey32 = TRColor($FF708090);
+  rcSnow32 = TRColor($FFFFFAFA);
+  rcSpringgreen32 = TRColor($FF00FF7F);
+  rcSteelblue32 = TRColor($FF4682B4);
+  rcTan32 = TRColor($FFD2B48C);
+  rcThistle32 = TRColor($FFD8BFD8);
+  rcTomato32 = TRColor($FFFF6347);
+  rcTurquoise32 = TRColor($FF40E0D0);
+  rcViolet32 = TRColor($FFEE82EE);
+  rcWheat32 = TRColor($FFF5DEB3);
+  rcWhitesmoke32 = TRColor($FFF5F5F5);
+  rcYellowgreen32 = TRColor($FF9ACD32);
+  rcTrWhite32 = TRColor($7FFFFFFF);
+  rcTrGray32 = TRColor($7F7F7F7F);
+  rcTrBlack32 = TRColor($7F000000);
+  rcTrRed32 = TRColor($7FFF0000);
+  rcTrGreen32 = TRColor($7F00FF00);
+  rcTrBlue32 = TRColor($7F0000FF);
 {$ENDREGION 'Constant'}
 {$REGION 'Var'}
 
@@ -2181,14 +2340,14 @@ end;
 
 initialization
 
-TMemoryRaster.Parallel := True;
+TMemoryRaster.Parallel := {$IFDEF MemoryRaster_Parallel}True{$ELSE MemoryRaster_Parallel}False{$ENDIF MemoryRaster_Parallel};
 TRasterVertex.DebugTriangle := False;
 TRasterVertex.DebugTriangleColor := RColor($FF, $7F, $7F, $7F);
-TRasterVertex.Parallel := True;
+TRasterVertex.Parallel := {$IFDEF Vertex_Parallel}True{$ELSE Vertex_Parallel}False{$ENDIF Vertex_Parallel};
 TRasterVertex.ParallelHeightTrigger := 500;
 TRasterVertex.ParallelWidthTrigger := 100;
-TMorphomatics.Parallel := True;
-TMorphologyBinaryzation.Parallel := True;
+TMorphomatics.Parallel := {$IFDEF Morphomatics_Parallel}True{$ELSE Morphomatics_Parallel}False{$ENDIF Morphomatics_Parallel};
+TMorphologyBinaryzation.Parallel := {$IFDEF MorphologyBinaryzation_Parallel}True{$ELSE MorphologyBinaryzation_Parallel}False{$ENDIF MorphologyBinaryzation_Parallel};
 
 NewRaster := {$IFDEF FPC}@{$ENDIF FPC}NewRaster_;
 NewRasterFromFile := {$IFDEF FPC}@{$ENDIF FPC}NewRasterFromFile_;
@@ -2202,8 +2361,6 @@ RasterSerializedPool := TRasterSerializedPool.Create(TRasterSerializedPool_Decl.
 
 FillColorTable(3, 3, 2, $FF, @Color255);
 FillColorTable(6, 5, 5, $FFFF, @Color65535);
-FindColor255Index(RColor($7F, $7F, $9F));
-FindColor65535Index(RColor($7F, $7F, $9F));
 
 finalization
 

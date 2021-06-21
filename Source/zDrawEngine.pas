@@ -530,13 +530,14 @@ type
   TDrawEnginePoolData = record
     DrawEng: TDrawEngine;
     workObj: TCoreClassObject;
-    LastActivted: Cardinal;
+    LastActivted: TTimeTick;
   end;
 
   TDrawEngineClass = class of TDrawEngine;
 
   TDrawEnginePool = class(TCoreClassInterfacedObject, ICadencerProgressInterface)
   protected
+    FCritical: TCritical;
     FDrawEngineClass: TDrawEngineClass;
     FDrawEngineList: TCoreClassList;
     FPostProgress: TNProgressPost;
@@ -548,7 +549,7 @@ type
     destructor Destroy; override;
 
     procedure Clear;
-    procedure ClearActivtedTimeOut(tick: Cardinal);
+    procedure ClearActivtedTimeOut(tick: TTimeTick);
 
     procedure Progress(deltaTime: Double); overload;
     function Progress(): Double; overload;
@@ -557,6 +558,7 @@ type
 
     function GetEng(const workObj: TCoreClassObject; const Draw: TDrawEngineInterface): TDrawEngine; overload;
     function GetEng(const workObj: TCoreClassObject): TDrawEngine; overload;
+    function EngNum: Integer;
 
     // delay run support
     property ProgressEngine: TNProgressPost read FPostProgress;
@@ -694,6 +696,7 @@ type
     FFPSFontSize: TDEFloat;
     FFPSFontColor: TDEColor;
     FScreenFrameColor: TDEColor;
+    FScreenFrameSize: TDEFloat;
 
     FTextureLibrary: THashObjectList;
     FOnGetTexture: TGetTexture;
@@ -875,6 +878,10 @@ type
     procedure DrawDE4V(d: TDE4V; COLOR: TDEColor; LineWidth: TDEFloat);
     procedure DrawDE4VInScene(d: TDE4V; COLOR: TDEColor; LineWidth: TDEFloat);
 
+    { draw screen point }
+    procedure DrawScreenPoint(pt: TDEVec; COLOR: TDEColor; LineWidth: TDEFloat);
+    procedure DrawScreenPointInScene(pt: TDEVec; COLOR: TDEColor; LineWidth: TDEFloat);
+
     { draw point }
     procedure DrawCross(pt: TDEVec; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
     procedure DrawPoint(pt: TDEVec; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
@@ -944,10 +951,11 @@ type
       Comment_prefix_, Comment_postfix_,
       Number_prefix_, Number_postfix_,
       Symbol_prefix_, Symbol_postfix_,
-      Ascii_prefix_, Ascii_postfix_: SystemString): SystemString; overload;
+      Ascii_prefix_, Ascii_postfix_: SystemString): SystemString;
     class function RebuildNumAndWordColor(Text: SystemString;
       Number_prefix_, Number_postfix_: SystemString;
-      Ascii_matched_, Ascii_replace_: array of SystemString): SystemString; overload;
+      Ascii_matched_, Ascii_replace_: array of SystemString): SystemString;
+    class function RebuildNumColor(Text: SystemString; Number_prefix_, Number_postfix_: SystemString): SystemString;
     function DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat): TV2Rect4; overload;
     function DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean): TV2Rect4; overload;
     function DrawText(const Text: SystemString; Size: TDEFloat; COLOR: TDEColor; ScreenPt: TDEVec): TV2Rect4; overload;
@@ -968,7 +976,8 @@ type
     function DrawSegmentionTextInScene(const buff: TDArraySegmentionText; pt: TDEVec): TV2Rect4; overload;
 
     { draw tile texture }
-    procedure DrawTile(t: TCoreClassObject; Sour: TDERect; Alpha: TDEFloat);
+    procedure DrawTile(t: TCoreClassObject; Sour: TDERect; Alpha: TDEFloat); overload;
+    procedure DrawTile(t: TCoreClassObject); overload;
     { draw texture }
     procedure DrawPicture(t: TCoreClassObject; Sour, DestScreen: TDE4V; Alpha: TDEFloat); overload;
     procedure DrawPicture(t: TCoreClassObject; Sour: TDERect; DestScreen: TDE4V; Alpha: TDEFloat); overload;
@@ -1089,6 +1098,8 @@ type
     property FPSFontColor: TDEColor read FFPSFontColor write FFPSFontColor;
     property ScreenFrameColor: TDEColor read FScreenFrameColor write FScreenFrameColor;
     property EdgeColor: TDEColor read FScreenFrameColor write FScreenFrameColor;
+    property ScreenFrameSize: TDEFloat read FScreenFrameSize write FScreenFrameSize;
+    property EdgeSize: TDEFloat read FScreenFrameSize write FScreenFrameSize;
 
     { texture }
     property TextureLibrary: THashObjectList read FTextureLibrary;
@@ -1131,6 +1142,9 @@ function DEColor(const r, g, b, a: TDEFloat): TDEColor; overload;
 function DEColor(const r, g, b: TDEFloat): TDEColor; overload;
 function DEColor(const C: TDEColor; const Alpha: TDEFloat): TDEColor; overload;
 function DEColor(const C: TVec3; const Alpha: TDEFloat): TDEColor; overload;
+function DEColor(const C: TVec4): TDEColor; overload;
+function DEColor(const C: TVector3; const Alpha: TDEFloat): TDEColor; overload;
+function DEColor(const C: TVector4): TDEColor; overload;
 function DEColor(const C: TRasterColor): TDEColor; overload;
 function DEColor2RasterColor(const C: TDEColor): TRasterColor;
 
@@ -1250,6 +1264,30 @@ begin
   Result[1] := C[1];
   Result[2] := C[2];
   Result[3] := Alpha;
+end;
+
+function DEColor(const C: TVec4): TDEColor;
+begin
+  Result[0] := C[0];
+  Result[1] := C[1];
+  Result[2] := C[2];
+  Result[3] := C[3];
+end;
+
+function DEColor(const C: TVector3; const Alpha: TDEFloat): TDEColor;
+begin
+  Result[0] := C.buff[0];
+  Result[1] := C.buff[1];
+  Result[2] := C.buff[2];
+  Result[3] := Alpha;
+end;
+
+function DEColor(const C: TVector4): TDEColor;
+begin
+  Result[0] := C.buff[0];
+  Result[1] := C.buff[1];
+  Result[2] := C.buff[2];
+  Result[3] := C.buff[3];
 end;
 
 function DEColor(const C: TRasterColor): TDEColor;
@@ -2043,6 +2081,7 @@ end;
 
 destructor TDETextureList.Destroy;
 begin
+  ReleaseGPUMemory();
   disposeObject(Critical);
   Critical := nil;
   inherited Destroy;
@@ -2364,6 +2403,7 @@ var
   i: Integer;
   p: PDrawCommand;
 begin
+  LockObject(FCommandList);
   for i := 0 to FCommandList.Count - 1 do
     begin
       p := FCommandList[i];
@@ -2372,6 +2412,7 @@ begin
       Dispose(p);
     end;
   FCommandList.Clear;
+  UnLockObject(FCommandList);
 end;
 
 procedure TDrawQueue.SetSize(r: TDERect);
@@ -2755,6 +2796,7 @@ begin
 
       lst := TCoreClassList.Create;
 
+      LockObject(FCommandList);
       while i < FCommandList.Count do
         begin
           p := PDrawCommand(FCommandList[i]);
@@ -2793,7 +2835,6 @@ begin
             end;
         end;
 
-      LockObject(FCommandList);
       for i := 0 to lst.Count - 1 do
           FCommandList.Add(lst[i]);
       UnLockObject(FCommandList);
@@ -2816,6 +2857,7 @@ begin
 
     SetLength(buff, j);
     j := 0;
+    LockObject(FCommandList);
     for i := 0 to FCommandList.Count - 1 do
       begin
         p := PDrawCommand(FCommandList[i]);
@@ -2831,6 +2873,7 @@ begin
             inc(j);
           end;
       end;
+    UnLockObject(FCommandList);
   except
   end;
 end;
@@ -2895,11 +2938,13 @@ var
 begin
   Draw.ResetState;
   Draw.BeginDraw;
-  try
-    for i := 0 to FCommandList.Count - 1 do
-        PDrawCommand(FCommandList[i])^.Execute(Self, Draw);
-  except
-  end;
+  for i := 0 to FCommandList.Count - 1 do
+    begin
+      try
+          PDrawCommand(FCommandList[i])^.Execute(Self, Draw);
+      except
+      end;
+    end;
   Draw.Flush;
   Draw.EndDraw;
 
@@ -3533,6 +3578,7 @@ end;
 constructor TDrawEnginePool.Create;
 begin
   inherited Create;
+  FCritical := TCritical.Create;
   FDrawEngineClass := TDrawEngine;
   FDrawEngineList := TCoreClassList.Create;
   FPostProgress := TNProgressPost.Create;
@@ -3547,6 +3593,7 @@ begin
   disposeObject(FDrawEngineList);
   disposeObject(FPostProgress);
   disposeObject(FCadEng);
+  disposeObject(FCritical);
   inherited Destroy;
 end;
 
@@ -3555,6 +3602,7 @@ var
   i: Integer;
   p: PDrawEnginePoolData;
 begin
+  FCritical.Lock;
   for i := 0 to FDrawEngineList.Count - 1 do
     begin
       p := FDrawEngineList[i];
@@ -3562,38 +3610,43 @@ begin
       Dispose(p);
     end;
   FDrawEngineList.Clear;
+  FCritical.UnLock;
 end;
 
-procedure TDrawEnginePool.ClearActivtedTimeOut(tick: Cardinal);
+procedure TDrawEnginePool.ClearActivtedTimeOut(tick: TTimeTick);
 var
   i: Integer;
   p: PDrawEnginePoolData;
+  tk: TTimeTick;
 begin
-  i := 0;
-  while i < FDrawEngineList.Count do
+  FCritical.Lock;
+  tk := GetTimeTick;
+  i := FDrawEngineList.Count - 1;
+  while i >= 0 do
     begin
       p := FDrawEngineList[i];
-      if GetTimeTick - p^.LastActivted > tick then
+      if tk - p^.LastActivted > tick then
         begin
-          disposeObject(p^.workObj);
+          disposeObject(p^.DrawEng);
           Dispose(p);
           FDrawEngineList.delete(i);
-        end
-      else
-          inc(i);
+        end;
+      dec(i);
     end;
+  FCritical.UnLock;
 end;
 
 procedure TDrawEnginePool.Progress(deltaTime: Double);
 var
   i: Integer;
 begin
+  ClearActivtedTimeOut(60 * 1000);
+  FCritical.Lock;
   FPostProgress.Progress(deltaTime);
-
   for i := 0 to FDrawEngineList.Count - 1 do
       PDrawEnginePoolData(FDrawEngineList[i])^.DrawEng.Progress(deltaTime);
-
   FLastDeltaTime := deltaTime;
+  FCritical.UnLock;
 end;
 
 function TDrawEnginePool.Progress(): Double;
@@ -3607,17 +3660,21 @@ var
   i: Integer;
   p: PDrawEnginePoolData;
 begin
+  FCritical.Lock;
   for i := 0 to FDrawEngineList.Count - 1 do
     begin
       p := FDrawEngineList[i];
       if p^.workObj = workObj then
         begin
           p^.LastActivted := GetTimeTick();
+          if i > 0 then
+              FDrawEngineList.Move(i, 0);
           if p^.DrawEng.FDrawInterface <> Draw then
               p^.DrawEng.FDrawInterface := Draw;
-
           p^.DrawEng.SetSize;
-          exit(p^.DrawEng);
+          FCritical.UnLock;
+          Result := p^.DrawEng;
+          exit;
         end;
     end;
   new(p);
@@ -3628,6 +3685,7 @@ begin
   p^.LastActivted := GetTimeTick;
   p^.DrawEng.SetSize;
   FDrawEngineList.Add(p);
+  FCritical.UnLock;
   Result := p^.DrawEng;
 end;
 
@@ -3636,13 +3694,18 @@ var
   i: Integer;
   p: PDrawEnginePoolData;
 begin
+  FCritical.Lock;
   for i := 0 to FDrawEngineList.Count - 1 do
     begin
       p := FDrawEngineList[i];
       if p^.workObj = workObj then
         begin
           p^.LastActivted := GetTimeTick();
-          exit(p^.DrawEng);
+          if i > 0 then
+              FDrawEngineList.Move(i, 0);
+          FCritical.UnLock;
+          Result := p^.DrawEng;
+          exit;
         end;
     end;
   new(p);
@@ -3651,7 +3714,13 @@ begin
   p^.workObj := workObj;
   p^.LastActivted := GetTimeTick;
   FDrawEngineList.Add(p);
+  FCritical.UnLock;
   Result := p^.DrawEng;
+end;
+
+function TDrawEnginePool.EngNum: Integer;
+begin
+  Result := FDrawEngineList.Count;
 end;
 
 function TDrawEngine_Raster.DEColor2RasterColor(const COLOR: TDEColor): TRasterColor;
@@ -4241,6 +4310,7 @@ begin
   FFPSFontSize := 12;
   FFPSFontColor := DEColor(1, 1, 1, 1);
   FScreenFrameColor := DEColor(0.5, 0.2, 0.2, 0.5);
+  FScreenFrameSize := 1;
 
   FTextureLibrary := THashObjectList.Create(True);
   FOnGetTexture := nil;
@@ -5332,6 +5402,17 @@ begin
   DrawDE4V(SceneToScreen(d), COLOR, LineWidth * Scale);
 end;
 
+procedure TDrawEngine.DrawScreenPoint(pt: TDEVec; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawLine(Vec2(pt[0], 0), Vec2(pt[0], height), COLOR, LineWidth);
+  DrawLine(Vec2(0, pt[1]), Vec2(width, pt[1]), COLOR, LineWidth);
+end;
+
+procedure TDrawEngine.DrawScreenPointInScene(pt: TDEVec; COLOR: TDEColor; LineWidth: TDEFloat);
+begin
+  DrawScreenPoint(SceneToScreen(pt), COLOR, LineWidth);
+end;
+
 procedure TDrawEngine.DrawCross(pt: TDEVec; COLOR: TDEColor; LineLength, LineWidth: TDEFloat);
 begin
   DrawPoint(pt, COLOR, LineLength, LineWidth);
@@ -5762,6 +5843,30 @@ begin
       Result := Text;
 end;
 
+class function TDrawEngine.RebuildNumColor(Text: SystemString; Number_prefix_, Number_postfix_: SystemString): SystemString;
+var
+  tp: TTextParsing;
+  i: Integer;
+  p: PTokenData;
+begin
+  if not IsSegmentionText(Text) then
+    begin
+      tp := TTextParsing.Create(Text);
+      for i := 0 to tp.TokenCount - 1 do
+        begin
+          p := tp[i];
+          case p^.tokenType of
+            ttNumber: p^.Text := Number_prefix_ + p^.Text + Number_postfix_;
+          end;
+        end;
+      tp.RebuildToken;
+      Result := tp.Text;
+      disposeObject(tp);
+    end
+  else
+      Result := Text;
+end;
+
 function TDrawEngine.DrawText(const Text: SystemString; Size: TDEFloat; r: TDERect; COLOR: TDEColor; center: Boolean; RotateVec: TDEVec; Angle: TDEFloat): TV2Rect4;
 var
   nr: TDERect;
@@ -5947,6 +6052,12 @@ begin
         end;
       i := i + w;
     end;
+end;
+
+procedure TDrawEngine.DrawTile(t: TCoreClassObject);
+begin
+  if t is TDETexture then
+      DrawTile(t, TDETexture(t).BoundsRectV2, 1.0);
 end;
 
 procedure TDrawEngine.DrawPicture(t: TCoreClassObject; Sour, DestScreen: TDE4V; Alpha: TDEFloat);
@@ -6656,7 +6767,7 @@ begin
 
   if voEdge in FViewOptions then
     begin
-      FDrawCommand.SetLineWidth(1);
+      FDrawCommand.SetLineWidth(FScreenFrameSize);
       FDrawCommand.DrawRect(MakeRect(1, 1, width - 1, height - 1), 0, FScreenFrameColor);
     end;
 
@@ -6712,24 +6823,27 @@ end;
 
 procedure TDrawEngine.Flush(Prepare: Boolean);
 begin
-  FDrawCommand.BuildTextureOutputState(FPictureFlushInfo);
+  try
+    FDrawCommand.BuildTextureOutputState(FPictureFlushInfo);
 
-  if Prepare then
-      PrepareFlush;
+    if Prepare then
+        PrepareFlush;
 
-  if FDrawInterface <> nil then
-    begin
-      LockObject(FDrawExecute);
-      try
-        FDrawExecute.PickQueue(FDrawCommand);
-        FCommandCounter := FCommandCounter + FDrawExecute.FCommandList.Count;
-        FDrawExecute.Execute(FDrawInterface);
-      finally
-          UnLockObject(FDrawExecute);
-      end;
-    end
-  else
-      ClearFlush;
+    if FDrawInterface <> nil then
+      begin
+        LockObject(FDrawExecute);
+        try
+          FDrawExecute.PickQueue(FDrawCommand);
+          FCommandCounter := FCommandCounter + FDrawExecute.FCommandList.Count;
+          FDrawExecute.Execute(FDrawInterface);
+        finally
+            UnLockObject(FDrawExecute);
+        end;
+      end
+    else
+        ClearFlush;
+  except
+  end;
 end;
 
 procedure TDrawEngine.CopyFlushTo(Dst: TDrawExecute);

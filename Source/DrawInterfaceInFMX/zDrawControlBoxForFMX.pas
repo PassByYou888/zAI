@@ -24,11 +24,11 @@ interface
 
 uses System.Types, FMX.Controls, zDrawEngine, Geometry2DUnit, Geometry3DUnit;
 
-procedure DrawChildrenControl(WorkCtrl: TControl; DrawEng: TDrawEngine; ctrl: TControl; COLOR: TDEColor; LineWidth:TDEFloat);
+procedure DrawChildrenControl(WorkCtrl: TControl; DrawEng: TDrawEngine; ctrl: TControl; COLOR: TDEColor; LineWidth: TDEFloat);
 
 implementation
 
-procedure DrawChildrenControl(WorkCtrl: TControl; DrawEng: TDrawEngine; ctrl: TControl; COLOR: TDEColor; LineWidth:TDEFloat);
+procedure DrawChildrenControl(WorkCtrl: TControl; DrawEng: TDrawEngine; ctrl: TControl; COLOR: TDEColor; LineWidth: TDEFloat);
   procedure DrawControlRect(c: TControl);
   var
     r4: TRectf;
@@ -52,6 +52,4 @@ begin
     end;
 end;
 
-end. 
- 
- 
+end.

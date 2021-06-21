@@ -769,6 +769,8 @@ begin
 
   AI_Parallel_Count := ini.GetDefaultValue('AI', 'Parallel', AI_Parallel_Count);
 
+  CoreClasses.SetParallelGranularity(AI_Parallel_Count);
+
   AI_Configure_ReadyDone := True;
 end;
 

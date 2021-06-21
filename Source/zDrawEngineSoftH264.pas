@@ -102,7 +102,4 @@ begin
   Result := FH264W.PerSecondFrame;
 end;
 
-end.  
- 
- 
- 
+end.

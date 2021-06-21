@@ -270,33 +270,37 @@ var
   p1, p2: PCardinal;
   c: TRasterColorEntry;
 begin
+  try
 {$IF Defined(ANDROID) or Defined(IOS)}
-  Surface.SetSize(raster.width, raster.height, TPixelFormat.RGBA);
+    Surface.SetSize(raster.width, raster.height, TPixelFormat.RGBA);
 {$ELSE}
-  Surface.SetSize(raster.width, raster.height, TPixelFormat.BGRA);
+    Surface.SetSize(raster.width, raster.height, TPixelFormat.BGRA);
 {$ENDIF}
-  for y := 0 to Surface.height - 1 do
-    begin
-      p1 := PCardinal(raster.ScanLine[y]);
-      p2 := PCardinal(Surface.ScanLine[y]);
-      for x := 0 to raster.width - 1 do
-        begin
+    raster.ReadyBits;
+    for y := 0 to Surface.height - 1 do
+      begin
+        p1 := PCardinal(raster.ScanLine[y]);
+        p2 := PCardinal(Surface.ScanLine[y]);
+        for x := 0 to raster.width - 1 do
+          begin
 {$IF Defined(ANDROID) or Defined(IOS) or Defined(OSX)}
-          c.BGRA := RGBA2BGRA(TRasterColor(p1^));
+            c.BGRA := RGBA2BGRA(TRasterColor(p1^));
 {$ELSE}
-          c.BGRA := TRasterColor(p1^);
+            c.BGRA := TRasterColor(p1^);
 {$IFEND}
-          with TAlphaColorRec(p2^) do
-            begin
-              r := c.r;
-              g := c.g;
-              b := c.b;
-              a := c.a;
-            end;
-          inc(p1);
-          inc(p2);
-        end;
-    end;
+            with TAlphaColorRec(p2^) do
+              begin
+                r := c.r;
+                g := c.g;
+                b := c.b;
+                a := c.a;
+              end;
+            inc(p1);
+            inc(p2);
+          end;
+      end;
+  except
+  end;
 end;
 
 procedure MemoryBitmapToSurface(raster: TMemoryRaster; sourRect: TRect; Surface: TBitmapSurface);
@@ -306,6 +310,7 @@ begin
   nb := TMemoryRaster.Create;
   nb.DrawMode := dmBlend;
   nb.SetSize(sourRect.width, sourRect.height, RasterColor(0, 0, 0, 0));
+  raster.ReadyBits;
   raster.DrawTo(nb, 0, 0, sourRect);
   MemoryBitmapToSurface(nb, Surface);
   DisposeObject(nb);
@@ -315,13 +320,16 @@ procedure SurfaceToMemoryBitmap(Surface: TBitmapSurface; raster: TMemoryRaster);
 var
   y, x: Integer;
 begin
-  raster.SetSize(Surface.width, Surface.height);
-  for y := 0 to Surface.height - 1 do
-    begin
-      for x := 0 to Surface.width - 1 do
-        with TAlphaColorRec(Surface.pixels[x, y]) do
-            raster.Pixel[x, y] := RasterColor(r, g, b, a)
-    end;
+  try
+    raster.SetSize(Surface.width, Surface.height);
+    for y := 0 to Surface.height - 1 do
+      begin
+        for x := 0 to Surface.width - 1 do
+          with TAlphaColorRec(Surface.pixels[x, y]) do
+              raster.Pixel[x, y] := RasterColor(r, g, b, a)
+      end;
+  except
+  end;
 end;
 
 procedure MemoryBitmapToBitmap(raster: TMemoryRaster; bmp: TBitmap);
